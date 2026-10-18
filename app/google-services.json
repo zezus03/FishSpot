@@ -62,6 +62,14 @@
           }
         },
         {
+          "client_id": "154890695958-d4s18vb7j969ai0ufcu7ltskvo07oth6.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "rs.fishspot.app",
+            "certificate_hash": "9ced69e976571c6f814d99b8b4e5d9e437c6d7e8"
+          }
+        },
+        {
           "client_id": "154890695958-dacld07urlmn7rcsgn3eloopsokk3tpl.apps.googleusercontent.com",
           "client_type": 3
         }
