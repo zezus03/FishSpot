@@ -38,7 +38,6 @@ android {
 
 // Zamenjuješ stare linije ovim bezbednim varijantama:
         buildConfigField("String", "OPENWEATHER_API_KEY", "\"${properties.getProperty("OPENWEATHER_API_KEY")}\"")
-        buildConfigField("String", "GEMINI_API_KEY", "\"${properties.getProperty("GEMINI_API_KEY")}\"")
     }
 
     buildFeatures {
@@ -98,7 +97,6 @@ dependencies {
     implementation("org.tensorflow:tensorflow-lite-support:0.4.4")
 
     implementation("androidx.compose.runtime:runtime-livedata:1.6.7")
-    implementation("com.google.ai.client.generativeai:generativeai:0.9.0")
     implementation("androidx.navigation:navigation-compose:2.7.7")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.0")
 
@@ -120,6 +118,7 @@ dependencies {
     implementation("com.google.firebase:firebase-firestore-ktx")
     implementation("com.google.firebase:firebase-storage-ktx")
     implementation("com.google.firebase:firebase-messaging-ktx")
+    implementation("com.google.firebase:firebase-functions-ktx")
     implementation("com.google.android.gms:play-services-auth:21.2.0")
 
     // Ostalo
@@ -137,6 +136,12 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+}
+
+// Secrets plugin ubacuje sve ključeve iz local.properties u BuildConfig.
+// Gemini ključ se koristi samo u Cloud Function i ne sme da završi u aplikaciji.
+secrets {
+    ignoreList.add("GEMINI_API_KEY")
 }
 
 // KLJUČNI DEO: Čišćenje dupliranih API klasa i održavanje AR-a
