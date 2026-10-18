@@ -420,7 +420,7 @@ class MapViewModel : ViewModel() {
             return
         }
 
-        val intent = Intent(context, Class.forName("${context.packageName}.MainActivity")).apply {
+        val intent = Intent(context, com.example.fishspot.MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
             if (lat != null && lng != null) {
                 putExtra("ZUMIRAJ_LAT", lat)

@@ -90,6 +90,7 @@ fun RegisterScreen(
                             onRegistrationSuccess() // ili onRegistrationSuccess() u RegisterScreen-u
                         },
                         onFailure = { e ->
+                            android.util.Log.e("GoogleAuth", "Firebase prijava neuspešna", e)
                             Toast.makeText(context, "Firebase greška: ${e.message}", Toast.LENGTH_LONG).show()
                         }
                     )
