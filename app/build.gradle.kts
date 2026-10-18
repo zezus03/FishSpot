@@ -20,7 +20,7 @@ android {
         }
     }
     defaultConfig {
-        applicationId = "com.example.fishspot"
+        applicationId = "rs.fishspot.app"
         minSdk = 24
         targetSdk = 35
         versionCode = 1
