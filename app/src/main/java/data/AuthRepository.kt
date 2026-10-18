@@ -38,7 +38,6 @@ class AuthRepository {
                 userName = userName,
                 imePrezime = imePrezime,
                 telefon = telefon,
-                sifra = sifra,
                 slikaURL = slikaUrl,
                 poeni = 0
             )

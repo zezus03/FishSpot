@@ -8,7 +8,6 @@ data class Korisnici(
     var imePrezime: String = "",
     var telefon: String = "",
     var email: String = "",
-    var sifra: String = "",
 
     // Sada je var, pa @set: radi savršeno!
     @get:PropertyName("fotoUrl") @set:PropertyName("fotoUrl")
