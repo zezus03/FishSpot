@@ -101,8 +101,10 @@ fun ProfileScreen(
                 val doc = firestore.collection("Korisnici").document(user.uid)
                     .get(com.google.firebase.firestore.Source.SERVER)
                     .await()
-                username = doc.getString("userName") ?: ""
-                profileImageUrl = doc.getString("slikaURL") ?: ""
+                // fotoUrl/username su stara imena polja (dokumenti pre usklađivanja)
+                username = doc.getString("userName") ?: doc.getString("username") ?: ""
+                profileImageUrl = (doc.getString("slikaURL") ?: doc.getString("fotoUrl"))
+                    ?.takeIf { it != "null" } ?: ""
 
                 isLoading = false
             } catch (e: Exception) {

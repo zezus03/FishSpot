@@ -21,6 +21,8 @@ import com.example.fishspot.R
 import com.example.fishspot.data.Korisnici
 import com.google.android.gms.location.*
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.storage.FirebaseStorage
@@ -149,6 +151,7 @@ class MapViewModel : ViewModel() {
                 }
 
                 if (document != null && document.exists()) {
+                    uskladiStaraPolja(document)
                     val korisnik = document.toObject(Korisnici::class.java)
                     _trenutniKorisnik.value = korisnik
 
@@ -162,6 +165,38 @@ class MapViewModel : ViewModel() {
                 }
             }
     }
+    // Stari dokumenti imaju polja fotoUrl/username umesto slikaURL/userName ili nemaju poene,
+    // pa ih prebacujemo na nova imena. Posle prve izmene listener ne nalazi ništa i ne upisuje ponovo.
+    private fun uskladiStaraPolja(document: DocumentSnapshot) {
+        val izmene = mutableMapOf<String, Any>()
+
+        val slika = document.getString("slikaURL")?.takeIf { it.isNotBlank() && it != "null" }
+        if (slika == null) {
+            // Prvo stara slika iz baze, pa slika sa naloga (npr. Google profilna)
+            val zamena = document.getString("fotoUrl")?.takeIf { it.isNotBlank() && it != "null" }
+                ?: auth.currentUser?.photoUrl?.toString()
+            if (zamena != null) {
+                izmene["slikaURL"] = zamena
+            } else if (document.getString("slikaURL") == "null") {
+                izmene["slikaURL"] = ""
+            }
+        }
+        if (document.contains("fotoUrl")) izmene["fotoUrl"] = FieldValue.delete()
+
+        val staroIme = document.getString("username")
+        if (document.getString("userName").isNullOrBlank() && !staroIme.isNullOrBlank()) {
+            izmene["userName"] = staroIme
+        }
+        if (document.contains("username")) izmene["username"] = FieldValue.delete()
+
+        if (!document.contains("poeni")) izmene["poeni"] = 0
+
+        if (izmene.isNotEmpty()) {
+            document.reference.update(izmene)
+                .addOnFailureListener { Log.e("MapViewModel", "Greška pri usklađivanju polja korisnika", it) }
+        }
+    }
+
     fun azurirajProfilnuSliku(novaUrl: String) {
         val urlSaCacheBusting = "$novaUrl?t=${System.currentTimeMillis()}"
         _userProfileImage.value = urlSaCacheBusting

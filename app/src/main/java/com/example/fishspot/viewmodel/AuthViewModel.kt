@@ -1,6 +1,7 @@
 package com.example.fishspot.viewmodel
 
 import android.util.Log
+import com.example.fishspot.data.Korisnici
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.auth.FirebaseUser
@@ -34,20 +35,27 @@ class AuthViewModel {
     }
 
     private fun inicijalizujKorisnikaUFirestore(user: FirebaseUser, onSuccess: () -> Unit, onFailure: (Exception) -> Unit) {
-        val uid = user.uid
+        val korisnikRef = firestore.collection("Korisnici").document(user.uid)
 
-        // Izvlačimo osnovne podatke sa Google naloga
-        val podaciKorisnika = hashMapOf(
-            "uid" to uid,
-            "email" to user.email,
-            "username" to (user.displayName ?: "Pecaroš"),
-            "slikaURL" to user.photoUrl.toString(),
-            "kreiran" to System.currentTimeMillis()
-        )
-
-        // SetOptions.merge() osigurava da ako korisnik već postoji, ne brišemo njegove stare podatke (npr. lokaciju)
-        firestore.collection("Korisnici").document(uid)
-            .set(podaciKorisnika, SetOptions.merge())
+        korisnikRef.get()
+            .continueWithTask { task ->
+                val postoji = task.result?.exists() == true
+                if (postoji) {
+                    // Postojećem korisniku ne diramo ime i sliku koje je možda promenio na profilu
+                    korisnikRef.set(mapOf("email" to (user.email ?: "")), SetOptions.merge())
+                } else {
+                    // Ista polja kao kod registracije emailom (klasa Korisnici)
+                    val noviKorisnik = Korisnici(
+                        id = user.uid,
+                        email = user.email ?: "",
+                        userName = user.displayName ?: "Pecaroš",
+                        imePrezime = user.displayName ?: "",
+                        slikaURL = user.photoUrl?.toString() ?: "",
+                        poeni = 0
+                    )
+                    korisnikRef.set(noviKorisnik)
+                }
+            }
             .addOnSuccessListener {
                 Log.d("AuthViewModel", "Korisnik uspešno sinhronizovan sa Firestore-om.")
                 onSuccess()
