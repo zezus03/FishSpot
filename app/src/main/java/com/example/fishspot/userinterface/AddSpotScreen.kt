@@ -22,6 +22,8 @@ import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import com.google.ar.core.ArCoreApk
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -306,6 +308,17 @@ fun AddSpotScreen(
 
                     Spacer(modifier = Modifier.height(8.dp))
 
+                    // AR je opcion: dugme za AR merenje prikazujemo samo na telefonima koji podržavaju ARCore
+                    var arPodrzan by remember { mutableStateOf(false) }
+                    LaunchedEffect(Unit) {
+                        var dostupnost = ArCoreApk.getInstance().checkAvailability(context)
+                        while (dostupnost.isTransient) {
+                            delay(200)
+                            dostupnost = ArCoreApk.getInstance().checkAvailability(context)
+                        }
+                        arPodrzan = dostupnost.isSupported
+                    }
+
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         OutlinedTextField(
                             value = duzinaRibe,
@@ -318,14 +331,16 @@ fun AddSpotScreen(
                                 },
                             shape = RoundedCornerShape(12.dp),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            trailingIcon = {
-                                IconButton(onClick = {
-                                    val intent = android.content.Intent(context, ArMeasureActivity::class.java)
-                                    arLauncher.launch(intent)
-                                }) {
-                                    Icon(Icons.Default.Straighten, contentDescription = "Izmeri AR metrom", tint = MaterialTheme.colorScheme.primary)
+                            trailingIcon = if (arPodrzan) {
+                                {
+                                    IconButton(onClick = {
+                                        val intent = android.content.Intent(context, ArMeasureActivity::class.java)
+                                        arLauncher.launch(intent)
+                                    }) {
+                                        Icon(Icons.Default.Straighten, contentDescription = "Izmeri AR metrom", tint = MaterialTheme.colorScheme.primary)
+                                    }
                                 }
-                            }
+                            } else null
                         )
                         OutlinedTextField(
                             value = tezinaRibe,

@@ -10,7 +10,9 @@
     <uses-permission android:name="android.permission.CAMERA" />
 
 
-    <uses-feature android:name="android.hardware.camera.ar" android:required="true" />
+    <!-- AR je opcion: aplikacija se instalira i na telefone bez ARCore-a, samo bez AR merenja -->
+    <uses-feature android:name="android.hardware.camera.ar" android:required="false"
+        tools:replace="android:required" />
     <uses-feature android:name="android.hardware.camera" android:required="false"/>
 
 
@@ -29,8 +31,9 @@
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyBOX1-FFqcL5MMWkwERPzyBhxzj0cxC3xc" />
 
-        <!-- Ostavili smo samo REQUIRED za ARCore -->
-        <meta-data android:name="com.google.ar.core" android:value="required" />
+        <!-- ARCore je opcion; AddSpotScreen proverava podršku pre prikaza dugmeta za AR -->
+        <meta-data android:name="com.google.ar.core" android:value="optional"
+            tools:replace="android:value" />
 
         <!-- 1. GLAVNI EKRAN (MainActivity) -->
         <activity
