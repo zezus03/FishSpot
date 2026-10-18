@@ -16,5 +16,9 @@ data class FishSpot(
     val duzinaRibe: Double = 0.0,
     val tezinaRibe: Double = 0.0,
     val mamac: String = "",
-    val tehnika: String = ""
+    val tehnika: String = "",
+    val temperatura: String = "",
+    val pritisak: String = "",
+    val vetar: String = "",
+    val likedBy: List<String> = emptyList() // <-- OVO DODAJ!
 )

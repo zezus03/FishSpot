@@ -1,13 +1,19 @@
-
 package com.example.fishspot.data
 
+import com.google.firebase.firestore.PropertyName
+
 data class Korisnici(
-    val id: String = "",
-    val userName: String = "",
-    val imePrezime: String = "",
-    val telefon: String = "",
-    val email: String = "",
-    val sifra: String = "",
-    val slikaURL: String = "",
-    val poeni: Int = 0
+    var id: String = "",
+    var userName: String = "",
+    var imePrezime: String = "",
+    var telefon: String = "",
+    var email: String = "",
+    var sifra: String = "",
+
+    // Sada je var, pa @set: radi savršeno!
+    @get:PropertyName("fotoUrl") @set:PropertyName("fotoUrl")
+    @PropertyName("fotoUrl")
+    var slikaURL: String = "",
+
+    var poeni: Int = 0
 )

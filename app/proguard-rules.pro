@@ -1,21 +1,36 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# 1. ZABRANA: Ne diraj poznate foldere
+-keep class com.example.fishspot.data.** { *; }
+-keep class com.example.fishspot.viewmodel.** { *; }
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# 2. UNIVERZALNI ŠTIT: Zaštiti SVE interfejse (da API komande poput getWeather ne puknu)
+-keep interface com.example.fishspot.** { *; }
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# 3. UNIVERZALNI ŠTIT: Zaštiti SVE Kotlin 'data' klase u aplikaciji (gde god da su)
+-keepclasseswithmembers class * {
+    *** component1();
+}
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# 4. Zaštita za Gson (da bi umeo da pročita JSON sa interneta)
+-keepclassmembers class * {
+    @com.google.gson.annotations.SerializedName <fields>;
+}
+
+# 5. Zaštita za Google Login i Firebase
+-keep class com.google.firebase.** { *; }
+-keep class com.google.android.gms.** { *; }
+-keepclassmembers class * {
+    @com.google.firebase.firestore.PropertyName <fields>;
+    @com.google.firebase.firestore.Exclude <methods>;
+}
+
+# 6. Zaštita za Retrofit (OSM API i Vremenska prognoza)
+-keep class retrofit2.** { *; }
+-keep class com.google.gson.** { *; }
+-keepclasseswithmembers class * {
+    @retrofit2.http.* <methods>;
+}
+
+# 7. Očuvanje strukture i putokaza (Ovo direktno sprečava ClassCastException)
+-keepattributes *Annotation*
+-keepattributes Signature
+-keepattributes Exceptions

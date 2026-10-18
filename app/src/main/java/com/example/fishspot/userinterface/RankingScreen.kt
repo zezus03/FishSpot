@@ -1,7 +1,5 @@
-
 package com.example.fishspot.userinterface
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -22,6 +20,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.fishspot.data.Korisnici
 import com.example.fishspot.viewmodel.RankingViewModel
+
+// NOVI IMPORTI UMESNO CLICKABLE
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -73,7 +75,10 @@ fun RankingListItem(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 4.dp)
-            .clickable { onUserClick(user.id) }
+            // MAGIJA KOJA SPREČAVA PUCANJE:
+            .pointerInput(Unit) {
+                detectTapGestures(onTap = { onUserClick(user.id) })
+            }
     ) {
         Row(
             modifier = Modifier.padding(16.dp),

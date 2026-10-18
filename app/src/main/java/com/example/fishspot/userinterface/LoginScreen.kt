@@ -1,38 +1,43 @@
-
 package com.example.fishspot.userinterface
 
+import android.app.Activity
+import android.util.Log
 import android.widget.Toast
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.fishspot.R
 import com.example.fishspot.data.AuthRepository
+import com.example.fishspot.viewmodel.AuthViewModel
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(
     authRepository: AuthRepository,
+    authViewModel: AuthViewModel, // Dodat ViewModel za Google Auth
     onLoginSuccess: () -> Unit,
     onNavigateToRegister: () -> Unit
 ) {
@@ -41,52 +46,238 @@ fun LoginScreen(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        OutlinedTextField(
-            value = email,
-            onValueChange = { email = it },
-            label = { Text("Email") },
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                unfocusedTextColor = MaterialTheme.colorScheme.onSurface
-            )
-        )
-        OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
-            label = { Text("Šifra") },
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = MaterialTheme.colorScheme.onSurface,
-                unfocusedTextColor = MaterialTheme.colorScheme.onSurface
-            )
+    // ─── GOOGLE SIGN IN PODEŠAVANJE ZA JETPACK COMPOSE ───
+    val gso = remember {
+        GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            // Direktno prosleđuješ string iz google-services.json fajla
+            .requestIdToken("154890695958-dacld07urlmn7rcsgn3eloopsokk3tpl.apps.googleusercontent.com")
+            .requestEmail()
+            .build()
+    }
+    val googleSignInClient = remember { GoogleSignIn.getClient(context, gso) }
+
+    val googleLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+            try {
+                val account = task.getResult(ApiException::class.java)
+                val idToken = account.idToken
+                if (idToken != null) {
+                    authViewModel.loginSaGoogleom(
+                        idToken = idToken,
+                        onSuccess = {
+                            Toast.makeText(context, "Uspešna prijava!", Toast.LENGTH_SHORT).show()
+                            onLoginSuccess() // ili onRegistrationSuccess() u RegisterScreen-u
+                        },
+                        onFailure = { e ->
+                            Toast.makeText(context, "Firebase greška: ${e.message}", Toast.LENGTH_LONG).show()
+                        }
+                    )
+                }
+            } catch (e: ApiException) {
+                Log.e("GoogleAuth", "Google prijava neuspešna. Kod: ${e.statusCode}", e)
+                // SADA ĆEŠ VIDETI TAČAN KOD GREŠKE (Ako piše 10, fali ti SHA-1 ili je loš Client ID)
+                Toast.makeText(context, "Google Greška! Kod: ${e.statusCode}. Proveri SHA-1 u Firebase konzoli.", Toast.LENGTH_LONG).show()
+            }
+        } else {
+            Toast.makeText(context, "Prozor za prijavu zatvoren.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        // 1. POZADINSKA SLIKA
+        Image(
+            painter = painterResource(id = R.drawable.pp),
+            contentDescription = "Pozadina",
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.matchParentSize()
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        // 2. ZATAMNJENJE
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .background(Color.Black.copy(alpha = 0.5f))
+        )
 
-        Button(onClick = {
-            scope.launch {
-                val result = authRepository.prijaviKorisnika(email, password)
-                if (result.isSuccess) {
-                    onLoginSuccess()
-                } else {
-                    val errorMessage = result.exceptionOrNull()?.message ?: "Došlo je do nepoznate greške."
-                    Toast.makeText(context, "Greška pri prijavi: $errorMessage", Toast.LENGTH_LONG).show()
+        // 3. GLAVNI SADRŽAJ
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = "FishSpot",
+                fontSize = 42.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = Color.White
+            )
+            Text(
+                text = "Tvoja digitalna čuvarka",
+                fontSize = 16.sp,
+                color = Color.LightGray,
+                modifier = Modifier.padding(bottom = 32.dp)
+            )
+
+            // Kartica sa poljima
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.9f)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+
+                    // Email Polje
+                    OutlinedTextField(
+                        value = email,
+                        onValueChange = { email = it },
+                        label = { Text("Email adresa") },
+                        leadingIcon = { Icon(Icons.Default.Email, contentDescription = "Email ikonica") },
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.Black,
+                            unfocusedTextColor = Color.Black,
+                            focusedLabelColor = Color.Black.copy(alpha = 0.7f),
+                            unfocusedLabelColor = Color.Black.copy(alpha = 0.7f),
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = Color.Gray.copy(alpha = 0.5f),
+                            focusedLeadingIconColor = Color.Black.copy(alpha = 0.6f),
+                            unfocusedLeadingIconColor = Color.Black.copy(alpha = 0.6f)
+                        ),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Šifra Polje
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        label = { Text("Šifra") },
+                        leadingIcon = { Icon(Icons.Default.Lock, contentDescription = "Šifra ikonica") },
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.Black,
+                            unfocusedTextColor = Color.Black,
+                            focusedLabelColor = Color.Black.copy(alpha = 0.7f),
+                            unfocusedLabelColor = Color.Black.copy(alpha = 0.7f),
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = Color.Gray.copy(alpha = 0.5f),
+                            focusedLeadingIconColor = Color.Black.copy(alpha = 0.6f),
+                            unfocusedLeadingIconColor = Color.Black.copy(alpha = 0.6f)
+                        ),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Klasično dugme za prijavu
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                val result = authRepository.prijaviKorisnika(email, password)
+                                if (result.isSuccess) {
+                                    onLoginSuccess()
+                                } else {
+                                    val errorMessage = result.exceptionOrNull()?.message ?: "Došlo je do nepoznate greške."
+                                    Toast.makeText(context, "Greška: $errorMessage", Toast.LENGTH_LONG).show()
+                                }
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    ) {
+                        Text("Prijavi se", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Linija razgraničenja "ili"
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        HorizontalDivider(modifier = Modifier.weight(1f), color = Color.Gray.copy(alpha = 0.3f))
+                        Text(
+                            text = "ili",
+                            color = Color.Gray,
+                            fontSize = 14.sp,
+                            modifier = Modifier.padding(horizontal = 8.dp)
+                        )
+                        HorizontalDivider(modifier = Modifier.weight(1f), color = Color.Gray.copy(alpha = 0.3f))
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // ─── NOVO: GOOGLE DUGME ───
+                    OutlinedButton(
+                        onClick = {
+                            googleSignInClient.signOut().addOnCompleteListener {
+                                val signInIntent = googleSignInClient.signInIntent
+                                googleLauncher.launch(signInIntent)
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = Color.White,
+                            contentColor = Color.Black
+                        ),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            // OVDE JE SADA UBAČEN LOGO GOOGLE-A
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_google),
+                                contentDescription = "Google Logo",
+                                modifier = Modifier.size(22.dp)
+                            )
+
+                            Spacer(modifier = Modifier.width(12.dp))
+
+                            Text(
+                                text = "Nastavi putem Google-a",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.Black
+                            )
+                        }
+                    }
                 }
             }
-        }) {
-            Text("Prijavi se")
-        }
 
-        TextButton(onClick = onNavigateToRegister) {
-            Text("Nemaš nalog? Registruj se")
+            Spacer(modifier = Modifier.height(24.dp))
+
+            TextButton(onClick = onNavigateToRegister) {
+                Text(
+                    text = "Nemaš nalog? Registruj se ovde",
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
         }
     }
 }

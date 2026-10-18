@@ -12,7 +12,20 @@
           "package_name": "com.example.fishspot"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "154890695958-iil3tlaur19661nmv7agpp36rt43qeqd.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.fishspot",
+            "certificate_hash": "eaae29506b58769bcc1a8ef5fdd47127cf726419"
+          }
+        },
+        {
+          "client_id": "154890695958-dacld07urlmn7rcsgn3eloopsokk3tpl.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBOX1-FFqcL5MMWkwERPzyBhxzj0cxC3xc"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "154890695958-dacld07urlmn7rcsgn3eloopsokk3tpl.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

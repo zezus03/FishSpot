@@ -4,7 +4,15 @@
 
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.CAMERA" />
+
+
+    <uses-feature android:name="android.hardware.camera.ar" android:required="true" />
+    <uses-feature android:name="android.hardware.camera" android:required="false"/>
+
 
     <application
         android:allowBackup="true"
@@ -21,15 +29,32 @@
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyBOX1-FFqcL5MMWkwERPzyBhxzj0cxC3xc" />
 
+        <!-- Ostavili smo samo REQUIRED za ARCore -->
+        <meta-data android:name="com.google.ar.core" android:value="required" />
+
+        <!-- 1. GLAVNI EKRAN (MainActivity) -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:windowSoftInputMode="adjustResize"
             android:theme="@style/Theme.FishSpot">
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <service
+            android:name=".notifications.MyFirebaseMessagingService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+        <!-- 2. NOVI AR KAMERA EKRAN (na pravoj putanji) -->
+        <activity
+            android:name=".userinterface.ArMeasureActivity"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
 
     </application>
 </manifest>

@@ -3,9 +3,11 @@ package com.example.fishspot.viewmodel
 
 import android.location.Location
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.fishspot.data.FishSpot
+import com.example.fishspot.data.Comment
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
@@ -36,6 +38,9 @@ class SpotsViewModel : ViewModel() {
     private val _filterState = MutableStateFlow(FilterState())
     val filterState = _filterState.asStateFlow()
     private val _currentUserLocation = MutableStateFlow<Location?>(null)
+
+    private val komentari = MutableStateFlow<List<Comment>>(emptyList())
+    val comments = komentari.asStateFlow()
 
     val filteredSpots: StateFlow<List<FishSpot>> =
         combine(_spots, _filterState, _currentUserLocation) { spots, filter, userLocation ->
@@ -107,9 +112,12 @@ class SpotsViewModel : ViewModel() {
     }
 
     fun addSpot(
+        context: android.content.Context, // Dodat Context!
         naziv: String, vrstaRibe: String, ocena: Float, opis: String, slikaUri: Uri?,
         location: android.location.Location,
-        duzinaRibe: Double, tezinaRibe: Double, mamac: String, tehnika: String,
+        duzinaRibe: Double, tezinaRibe: Double, mamac: String, tehnika: String,temperatura: String,
+        pritisak: String,
+        vetar: String,
         onResult: (Result<Unit>) -> Unit
     ) {
         viewModelScope.launch {
@@ -119,49 +127,180 @@ class SpotsViewModel : ViewModel() {
                 return@launch
             }
             try {
+                // Generišemo ID dokumenta unapred (radi i bez neta)
+                val docRef = firestore.collection("MestaZaPecanje").document()
+                val spotId = docRef.id
+
                 val userDoc = firestore.collection("Korisnici").document(user.uid).get().await()
                 val username = userDoc.getString("userName") ?: "Nepoznat autor"
-                var slikaUrl: String? = null
-                if (slikaUri != null) {
-                    val ref = storage.reference.child("spot_slike/${UUID.randomUUID()}.jpg")
-                    ref.putFile(slikaUri).await()
-                    slikaUrl = ref.downloadUrl.await().toString()
-                }
+
                 val fishSpot = FishSpot(
+                    id = spotId,
                     authorId = user.uid,
                     authorUsername = username,
                     naziv = naziv,
                     vrstaRibe = vrstaRibe,
                     ocena = ocena,
                     opis = opis,
-                    slikaUrl = slikaUrl,
+                    slikaUrl = null, // Šalje se naknadno
                     lat = location.latitude,
                     lng = location.longitude,
                     timestamp = System.currentTimeMillis(),
                     duzinaRibe = duzinaRibe,
                     tezinaRibe = tezinaRibe,
                     mamac = mamac,
-                    tehnika = tehnika
+                    tehnika = tehnika,
+                    temperatura = temperatura,
+                    pritisak = pritisak,
+                    vetar = vetar
+
+
                 )
 
-                firestore.collection("MestaZaPecanje").add(fishSpot).await()
+                // Odmah upisujemo tekst u bazu (Firestore rešava offline keširanje)
+                docRef.set(fishSpot)
 
+                // Ako ima slike, predajemo je WorkManager-u
+                if (slikaUri != null) {
+                    try {
+                        val inputStream = context.contentResolver.openInputStream(slikaUri)
+                        val localFile = java.io.File(context.filesDir, "upload_${spotId}.jpg")
+                        val outputStream = java.io.FileOutputStream(localFile)
+                        inputStream?.copyTo(outputStream)
+                        inputStream?.close()
+                        outputStream.close()
+
+                        val inputData = androidx.work.Data.Builder()
+                            .putString("FILE_PATH", localFile.absolutePath)
+                            .putString("DOC_ID", spotId)
+                            .build()
+
+                        // Radnik se budi samo kad ima interneta
+                        val constraints = androidx.work.Constraints.Builder()
+                            .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
+                            .build()
+
+                        val uploadWorkRequest = androidx.work.OneTimeWorkRequestBuilder<UploadWorker>()
+                            .setConstraints(constraints)
+                            .setInputData(inputData)
+                            .build()
+
+                        androidx.work.WorkManager.getInstance(context).enqueue(uploadWorkRequest)
+
+                    } catch (e: Exception) {
+                        android.util.Log.e("SpotsViewModel", "Greška pri pripremi slike", e)
+                    }
+                }
+
+                // Računanje poena
                 val poeniZaOvajUlov = when {
                     tezinaRibe > 5.0 -> 50L
                     tezinaRibe > 2.0 -> 20L
                     tezinaRibe > 1.0 -> 10L
+                    tezinaRibe > 0.5 -> 5L
                     else -> 0L
                 }
 
                 if (poeniZaOvajUlov > 0) {
                     val userRef = firestore.collection("Korisnici").document(user.uid)
-                    userRef.update("poeni", FieldValue.increment(poeniZaOvajUlov)).await()
+                    userRef.update("poeni", com.google.firebase.firestore.FieldValue.increment(poeniZaOvajUlov))
                 }
 
                 onResult(Result.success(Unit))
             } catch (e: Exception) {
                 onResult(Result.failure(e))
             }
+        }
+    }
+    fun loadComments(spotId: String) {
+        viewModelScope.launch {
+            try {
+                firestore.collection("MestaZaPecanje").document(spotId)
+                    .collection("komentari")
+                    .orderBy("timestamp", Query.Direction.ASCENDING)
+                    .addSnapshotListener { snapshot, error ->
+                        if (error != null) {
+                            Log.w("SpotsViewModel", "Greška pri slušanju komentara:", error)
+                            komentari.value = emptyList()
+                            return@addSnapshotListener
+                        }
+                        if (snapshot != null) {
+                            val commentsList = snapshot.documents.mapNotNull { doc ->
+                                doc.toObject(Comment::class.java)?.copy(id = doc.id)
+                            }
+                            komentari.value = commentsList
+                        } else {
+                            komentari.value = emptyList()
+                        }
+                    }
+            } catch (e: Exception) {
+                Log.e("SpotsViewModel", "Neuspešno učitavanje komentara", e)
+                komentari.value = emptyList()
+            }
+        }
+    }
+
+    fun DodajKomentar(spotId: String, text: String, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val user = auth.currentUser
+            if (user == null) {
+                onResult(false)
+                return@launch
+            }
+            try {
+                val userDoc = firestore.collection("Korisnici").document(user.uid).get().await()
+                val username = userDoc.getString("userName") ?: "Nepoznat autor"
+
+                val newComment = Comment(
+                    authorId = user.uid,
+                    authorUsername = username,
+                    text = text,
+                    timestamp = System.currentTimeMillis()
+                )
+
+                firestore.collection("MestaZaPecanje").document(spotId)
+                    .collection("komentari")
+                    .add(newComment).await()
+
+                onResult(true)
+            } catch (e: Exception) {
+                Log.e("SpotsViewModel", "Greška pri dodavanju komentara", e)
+                onResult(false)
+            }
+        }
+    }
+
+    fun clearComments() {
+        komentari.value = emptyList()
+    }
+    fun sacuvajFcmToken() {
+        val user = auth.currentUser ?: return
+        com.google.firebase.messaging.FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+            if (!task.isSuccessful) {
+                Log.w("SpotsViewModel", "Fetching FCM registration token failed", task.exception)
+                return@addOnCompleteListener
+            }
+            // Dobili smo token uređaja
+            val token = task.result
+
+            // Zapisujemo ga u Firestore u dokument trenutnog korisnika
+            firestore.collection("Korisnici").document(user.uid)
+                .update("fcmToken", token)
+                .addOnFailureListener {
+                    Log.e("SpotsViewModel", "Greška pri čuvanju tokena", it)
+                }
+        }
+    }
+    fun toggleLike(spotId: String, isLiked: Boolean) {
+        val user = auth.currentUser ?: return
+        val spotRef = firestore.collection("MestaZaPecanje").document(spotId)
+
+        if (isLiked) {
+            // Ako je lajkovano, dodajemo ID korisnika u niz
+            spotRef.update("likedBy", FieldValue.arrayUnion(user.uid))
+        } else {
+            // Ako je "odlajkovano", brišemo ID korisnika iz niza
+            spotRef.update("likedBy", FieldValue.arrayRemove(user.uid))
         }
     }
 }

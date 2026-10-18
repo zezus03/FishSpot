@@ -1,5 +1,3 @@
-// Fajl: userinterface/SpotsListScreen.kt
-
 package com.example.fishspot.userinterface
 
 import androidx.compose.foundation.layout.*
@@ -21,11 +19,16 @@ import coil.compose.AsyncImage
 import com.example.fishspot.data.FishSpot
 import com.example.fishspot.viewmodel.SpotsViewModel
 
+// NOVI IMPORTI UMESNO CLICKABLE
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SpotsListScreen(
     spotsViewModel: SpotsViewModel = viewModel(),
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onSpotSelected: (spotId: String) -> Unit
 ) {
     val spots by spotsViewModel.filteredSpots.collectAsState()
 
@@ -43,23 +46,20 @@ fun SpotsListScreen(
     ) { paddingValues ->
         if (spots.isEmpty()) {
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
+                modifier = Modifier.fillMaxSize().padding(paddingValues),
                 contentAlignment = Alignment.Center
             ) {
                 Text("Nema ulova koji odgovaraju filterima.")
             }
         } else {
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
+                modifier = Modifier.fillMaxSize().padding(paddingValues),
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(spots) { spot ->
-                    SpotListItem(spot = spot)
+
+                    SpotListItem(spot = spot, onSpotClick = { onSpotSelected(spot.id) })
                 }
             }
         }
@@ -67,10 +67,17 @@ fun SpotsListScreen(
 }
 
 @Composable
-fun SpotListItem(spot: FishSpot) {
+fun SpotListItem(spot: FishSpot, onSpotClick: () -> Unit) {
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            // MAGIJA KOJA SPREČAVA PUCANJE:
+            .pointerInput(Unit) {
+                detectTapGestures(onTap = { onSpotClick() })
+            },
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+
     ) {
 
         Column {
@@ -82,7 +89,7 @@ fun SpotListItem(spot: FishSpot) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(180.dp),
-                    contentScale = ContentScale.Crop
+                    contentScale = ContentScale.Crop,
                 )
             }
 
