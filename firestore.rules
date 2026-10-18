@@ -1,0 +1,91 @@
+rules_version = '2';
+
+// Pravila za FishSpot bazu. Cloud Functions i Gemini ekstenzija koriste admin pristup
+// i ne prolaze kroz ova pravila. Sve sto nije navedeno ispod je zabranjeno.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function prijavljen() {
+      return request.auth != null;
+    }
+
+    function jaSam(uid) {
+      return prijavljen() && request.auth.uid == uid;
+    }
+
+    // Menjaju se samo navedena polja
+    function menjaSamo(polja) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(polja);
+    }
+
+    // ─── KORISNICI ───
+    // Svi prijavljeni vide profile (rang lista, imena kod komentara),
+    // a svako menja samo svoj dokument. Poeni mogu samo da rastu, najvise 50 odjednom
+    // (najveca nagrada za jedan ulov).
+    match /Korisnici/{uid} {
+      allow read: if prijavljen();
+      allow create: if jaSam(uid) && request.resource.data.get('poeni', 0) == 0;
+      allow update: if jaSam(uid) && poeniIspravni();
+      allow delete: if false;
+
+      function poeniIspravni() {
+        let stari = resource.data.get('poeni', 0);
+        let novi = request.resource.data.get('poeni', 0);
+        return novi == stari || (novi > stari && novi - stari <= 50);
+      }
+    }
+
+    // ─── ULOVI / MESTA ZA PECANJE ───
+    match /MestaZaPecanje/{spotId} {
+      allow read: if prijavljen();
+      allow create: if prijavljen() && request.resource.data.authorId == request.auth.uid;
+      // Autor menja svoj ulov (npr. UploadWorker dodaje slikaUrl), ali ne sme da promeni autora.
+      // Ostali smeju samo da dodaju ili uklone svoj lajk.
+      allow update: if prijavljen() && (
+        (resource.data.authorId == request.auth.uid
+          && request.resource.data.authorId == resource.data.authorId)
+        || (menjaSamo(['likedBy']) && menjaSamoSvojLajk())
+      );
+      allow delete: if prijavljen() && resource.data.authorId == request.auth.uid;
+
+      function menjaSamoSvojLajk() {
+        let stari = resource.data.get('likedBy', []).toSet();
+        let novi = request.resource.data.likedBy.toSet();
+        return novi.difference(stari).hasOnly([request.auth.uid])
+          && stari.difference(novi).hasOnly([request.auth.uid]);
+      }
+
+      match /komentari/{commentId} {
+        allow read: if prijavljen();
+        allow create: if prijavljen() && request.resource.data.authorId == request.auth.uid;
+        allow update: if false;
+        allow delete: if prijavljen() && resource.data.authorId == request.auth.uid;
+      }
+    }
+
+    // ─── AKTIVNI KORISNICI (lokacija uzivo) ───
+    match /ActiveUsers/{uid} {
+      allow read: if prijavljen();
+      allow write: if jaSam(uid);
+    }
+
+    // ─── PRIVATNE PORUKE ───
+    // ID sobe je "uid1_uid2", pa poruke citaju i salju samo ta dva korisnika
+    match /PrivateChats/{roomId}/Messages/{messageId} {
+      allow read: if prijavljen() && request.auth.uid in roomId.split('_');
+      allow create: if prijavljen()
+        && request.auth.uid in roomId.split('_')
+        && request.resource.data.senderId == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // ─── CHAT BOT (Deda Pera) ───
+    // Korisnik vidi samo svoj razgovor i salje samo pitanja; odgovor upisuje Gemini ekstenzija
+    match /bot_chats/{uid}/messages/{messageId} {
+      allow read: if jaSam(uid);
+      allow create: if jaSam(uid)
+        && request.resource.data.keys().hasOnly(['prompt', 'timestamp']);
+      allow update, delete: if false;
+    }
+  }
+}

@@ -1,0 +1,24 @@
+rules_version = '2';
+
+// Pravila za FishSpot slike. Ekstenzija za smanjivanje slika (_200x200) koristi admin
+// pristup i ne prolazi kroz ova pravila. Sve sto nije navedeno ispod je zabranjeno.
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Profilne slike: svi prijavljeni ih vide, a svako menja samo svoju (uid.jpg)
+    match /profilne_slike/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+        && fileName == request.auth.uid + '.jpg'
+        && request.resource.size < 5 * 1024 * 1024;
+    }
+
+    // Slike ulova: ime fajla je nasumicno (UUID), pa samo ogranicavamo velicinu i zabranjujemo menjanje
+    match /spot_slike/{fileName} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.resource.size < 10 * 1024 * 1024;
+      allow update, delete: if false;
+    }
+  }
+}
