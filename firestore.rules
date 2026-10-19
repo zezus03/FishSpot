@@ -78,6 +78,28 @@ service cloud.firestore {
       }
     }
 
+    // ─── PRIJAVE ULOVA ───
+    // ID prijave je "{idUlova}_{uid}", pa svako moze da prijavi isti ulov samo jednom.
+    // Korisnik vidi samo svoje prijave (da zna da je vec prijavio); sve prijave se pregledaju u konzoli.
+    match /Prijave/{prijavaId} {
+      allow read: if prijavljen() && prijavaId.matches('.*_' + request.auth.uid);
+      allow create: if prijavljen()
+        && request.resource.data.prijavioId == request.auth.uid
+        && prijavaId == request.resource.data.spotId + '_' + request.auth.uid
+        && request.resource.data.razlog is string
+        && request.resource.data.razlog.size() <= 100
+        && request.resource.data.get('opis', '').size() <= 500
+        // Svoj ulov ne moze da se prijavi
+        && get(/databases/$(database)/documents/MestaZaPecanje/$(request.resource.data.spotId)).data.authorId != request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // ─── PRIJAVLJENI ULOVI (pregled za admina) ───
+    // Puni ih Cloud Function obradiPrijavuUlova; admin ih gleda u Firebase konzoli.
+    match /PrijavljeniUlovi/{spotId} {
+      allow read, write: if false;
+    }
+
     // ─── AKTIVNI KORISNICI (lokacija uzivo) ───
     match /ActiveUsers/{uid} {
       allow read: if prijavljen();

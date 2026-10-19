@@ -52,6 +52,7 @@ import com.example.fishspot.feature.spots.FishSpot
 import com.example.fishspot.feature.chat.ActiveUsersViewModel
 
 import com.example.fishspot.feature.spots.SpotsViewModel
+import com.example.fishspot.feature.spots.UlovDetalji
 import com.example.fishspot.feature.weather.WaterLevelViewModel
 import com.example.fishspot.feature.chat.ActiveUser
 import com.google.android.gms.maps.model.BitmapDescriptor
@@ -301,6 +302,7 @@ fun MapScreen(
                             onClick = {
                                 selectedSpotForComments = spot
                                 spotsViewModel.loadComments(spot.id)
+                                spotsViewModel.ucitajDetaljeUlova(spot)
                                 scope.launch { sheetState.show() }
                                 true
                             }
@@ -746,10 +748,23 @@ fun MapScreen(
                 containerColor = MaterialTheme.colorScheme.surface,
                 dragHandle = { BottomSheetDefaults.DragHandle() }
             ) {
-                CommentsSection(
+                val autorUlova by spotsViewModel.autorUlova.collectAsState()
+                val ulovPrijavljen by spotsViewModel.ulovPrijavljen.collectAsState()
+                UlovDetalji(
                     spot = azuriraniSpot,
+                    autor = autorUlova,
                     comments = comments,
                     currentUserId = currentUserId,
+                    vecPrijavljen = ulovPrijavljen,
+                    onPrijavi = { razlog, opis ->
+                        spotsViewModel.prijaviUlov(azuriraniSpot, razlog, opis) { uspeh ->
+                            Toast.makeText(
+                                context,
+                                if (uspeh) "Ulov je prijavljen. Hvala!" else "Greška pri prijavi ulova",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    },
                     onAddComment = { text ->
                         spotsViewModel.DodajKomentar(
                             azuriraniSpot.id,
@@ -998,148 +1013,6 @@ data class ForecastDisplayData(
 )
 
 data class DayForecast(val date: String, val tempMax: Int, val tempMin: Int, val icon: String,val fishingIndex: Int,val rainChance: Int)
-
-@Composable
-fun CommentsSection(
-    spot: FishSpot,
-    comments: List<Comment>,
-    currentUserId: String?,
-    onAddComment: (String) -> Unit,
-    onToggleLike: (String, Boolean) -> Unit
-) {
-    var NoviKomentar by remember { mutableStateOf("") }
-    val dateFormat = remember { SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault()) }
-
-    var isLiked by remember(spot.likedBy) {
-        mutableStateOf(currentUserId != null && spot.likedBy.contains(currentUserId))
-    }
-    var likeCount by remember(spot.likedBy) {
-        mutableStateOf(spot.likedBy.size)
-    }
-    val heartScale by animateFloatAsState(
-        targetValue = if (isLiked) 1.2f else 1.0f,
-        animationSpec = tween(durationMillis = 200),
-        label = "heartScale"
-    )
-
-    val listState = rememberLazyListState()
-
-    LaunchedEffect(comments.size) {
-        if (comments.isNotEmpty()) {
-            listState.scrollToItem(comments.size)
-        }
-    }
-
-    Column(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        LazyColumn(
-            state = listState,
-            modifier = Modifier
-                .weight(1f)
-                .padding(horizontal = 16.dp)
-        ) {
-            item {
-                if (!spot.slikaUrl.isNullOrBlank()) {
-                    coil.compose.AsyncImage(
-                        model = spot.slikaUrl,
-                        contentDescription = "Slika ulova",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 350.dp)
-                            .clip(RoundedCornerShape(16.dp)),
-                        contentScale = ContentScale.Fit
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text("Komentari za: ${spot.naziv}", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
-
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(onClick = {
-                            if (currentUserId != null) {
-                                isLiked = !isLiked
-                                likeCount = if (isLiked) likeCount + 1 else likeCount - 1
-                                onToggleLike(spot.id, isLiked)
-                            }
-                        }) {
-                            Icon(
-                                imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                                contentDescription = "Sviđa mi se",
-                                tint = if (isLiked) Color.Red else Color.Gray,
-                                modifier = Modifier
-                                    .size(28.dp)
-                                    .scale(heartScale)
-                            )
-                        }
-                        Text(text = "$likeCount", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                    }
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-            }
-
-            if (comments.isEmpty()) {
-                item {
-                    Text("Nema komentara.", fontStyle = FontStyle.Italic, modifier = Modifier.padding(vertical = 16.dp))
-                }
-            } else {
-                items(comments) { comment ->
-                    Column(modifier = Modifier.padding(vertical = 4.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(comment.authorUsername, fontWeight = FontWeight.Bold)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(dateFormat.format(Date(comment.timestamp)), style = MaterialTheme.typography.bodySmall)
-                        }
-                        Text(comment.text)
-                    }
-                    Divider()
-                }
-            }
-        }
-
-        Divider()
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surface)
-                .imePadding()
-                .navigationBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-        ) {
-            OutlinedTextField(
-                value = NoviKomentar,
-                onValueChange = { NoviKomentar = it },
-                placeholder = { Text("Dodaj komentar...") },
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(24.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = Color.LightGray
-                )
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            FloatingActionButton(
-                onClick = {
-                    if (NoviKomentar.isNotBlank()) {
-                        onAddComment(NoviKomentar)
-                        NoviKomentar = ""
-                    }
-                },
-                modifier = Modifier.size(52.dp),
-                containerColor = MaterialTheme.colorScheme.primary,
-                shape = CircleShape
-            ) {
-                Icon(imageVector = Icons.Default.Send, contentDescription = "Pošalji", tint = Color.White)
-            }
-        }
-    }
-}
 
 fun pretvoriStepenUStraneSveta(stepeni: Int): String {
     val pravci = arrayOf(

@@ -245,6 +245,27 @@ fun AddSpotScreen(
         }
     )
 
+    fun otvoriKameru() {
+        val contentValues = android.content.ContentValues().apply {
+            put(android.provider.MediaStore.Images.Media.DISPLAY_NAME, "fishspot_${System.currentTimeMillis()}.jpg")
+            put(android.provider.MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+        }
+        tempCameraUri = context.contentResolver.insert(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+        tempCameraUri?.let { uri -> cameraLauncher.launch(uri) }
+    }
+
+    // Pošto manifest traži CAMERA (zbog AR merenja), Android ne pušta ni slikanje
+    // preko aplikacije za kameru dok korisnik ne odobri tu dozvolu
+    val kameraDozvolaLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { odobreno ->
+        if (odobreno) {
+            otvoriKameru()
+        } else {
+            Toast.makeText(context, "Za slikanje je potrebna dozvola za kameru", Toast.LENGTH_LONG).show()
+        }
+    }
+
     val trenutnaLokacija = remember(latitude, longitude) {
         android.location.Location("").apply {
             this.latitude = latitude
@@ -550,15 +571,11 @@ fun AddSpotScreen(
 
                         Button(
                             onClick = {
-                                val contentValues = android.content.ContentValues().apply {
-                                    put(android.provider.MediaStore.Images.Media.DISPLAY_NAME, "fishspot_${System.currentTimeMillis()}.jpg")
-                                    put(android.provider.MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
-                                }
-                                tempCameraUri = context.contentResolver.insert(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
-
-                                tempCameraUri?.let { uri ->
-                                    cameraLauncher.launch(uri)
-                                }
+                                val imaDozvolu = androidx.core.content.ContextCompat.checkSelfPermission(
+                                    context, android.Manifest.permission.CAMERA
+                                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                                if (imaDozvolu) otvoriKameru()
+                                else kameraDozvolaLauncher.launch(android.Manifest.permission.CAMERA)
                             },
                             modifier = Modifier.weight(1f).height(50.dp),
                             shape = RoundedCornerShape(12.dp)

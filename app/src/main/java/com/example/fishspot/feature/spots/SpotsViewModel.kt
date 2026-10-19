@@ -7,6 +7,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 
+import com.example.fishspot.core.model.Korisnici
 import com.example.fishspot.feature.fish.VrstaRibe
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
@@ -290,6 +291,50 @@ class SpotsViewModel : ViewModel() {
 
     fun clearComments() {
         komentari.value = emptyList()
+    }
+
+    // ─── DETALJI ULOVA: autor i prijava ───
+
+    private val _autorUlova = MutableStateFlow<Korisnici?>(null)
+    val autorUlova = _autorUlova.asStateFlow()
+
+    // Da li je trenutni korisnik već prijavio izabrani ulov
+    private val _ulovPrijavljen = MutableStateFlow(false)
+    val ulovPrijavljen = _ulovPrijavljen.asStateFlow()
+
+    fun ucitajDetaljeUlova(spot: FishSpot) {
+        _autorUlova.value = null
+        _ulovPrijavljen.value = false
+
+        firestore.collection("Korisnici").document(spot.authorId).get()
+            .addOnSuccessListener { doc ->
+                _autorUlova.value = doc.toObject(Korisnici::class.java)?.copy(id = doc.id)
+            }
+
+        val uid = auth.currentUser?.uid ?: return
+        firestore.collection("Prijave").document("${spot.id}_$uid").get()
+            .addOnSuccessListener { _ulovPrijavljen.value = it.exists() }
+    }
+
+    fun prijaviUlov(spot: FishSpot, razlog: String, opis: String, onResult: (Boolean) -> Unit) {
+        val uid = auth.currentUser?.uid ?: return onResult(false)
+        val prijava = mapOf(
+            "spotId" to spot.id,
+            "autorUlovaId" to spot.authorId,
+            "prijavioId" to uid,
+            "razlog" to razlog,
+            "opis" to opis.trim().take(500),
+            "timestamp" to System.currentTimeMillis()
+        )
+        firestore.collection("Prijave").document("${spot.id}_$uid").set(prijava)
+            .addOnSuccessListener {
+                _ulovPrijavljen.value = true
+                onResult(true)
+            }
+            .addOnFailureListener {
+                Log.e("SpotsViewModel", "Greška pri prijavi ulova", it)
+                onResult(false)
+            }
     }
     fun sacuvajFcmToken() {
         val user = auth.currentUser ?: return
