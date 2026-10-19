@@ -6,9 +6,13 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.example.fishspot.MainActivity
 import com.example.fishspot.R
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 
@@ -26,7 +30,11 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
     // Ako se token promeni (npr. korisnik reinstalira app), ažuriraj ga
     override fun onNewToken(token: String) {
         super.onNewToken(token)
-        // Ovde bi idealno pozvao ažuriranje u Firestore-u
+        // Bez prijavljenog korisnika nemamo gde da upišemo token; upisaće ga MapScreen posle prijave
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        FirebaseFirestore.getInstance().collection("Korisnici").document(uid)
+            .set(mapOf("fcmToken" to token), SetOptions.merge())
+            .addOnFailureListener { Log.e("FCM", "Greška pri čuvanju novog tokena", it) }
     }
 
     private fun prikaziNotifikaciju(title: String, messageBody: String) {
