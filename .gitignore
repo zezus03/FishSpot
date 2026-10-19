@@ -19,3 +19,6 @@ local.properties
 *.rar
 hs_err_pid*.log
 replay_pid*.log
+
+# Logovi Firebase emulatora
+*-debug.log
