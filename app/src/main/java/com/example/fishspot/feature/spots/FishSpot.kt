@@ -7,6 +7,8 @@ data class FishSpot(
     val authorUsername: String = "",
     val naziv: String = "",
     val vrstaRibe: String = "",
+    val vrstaId: String = "", // ID iz kolekcije VrsteRiba (prazno za stare ulove)
+    val latinskiNaziv: String = "",
     val ocena: Float = 0.0f,
     val opis: String = "",
     val slikaUrl: String? = null,

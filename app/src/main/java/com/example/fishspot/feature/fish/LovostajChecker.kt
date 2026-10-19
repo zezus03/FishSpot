@@ -65,7 +65,10 @@ object LovostajChecker {
         "Kaugler" to PraviloRibe(null, null, 0.0),
         "Beovica" to PraviloRibe(null, null, 0.0),
         "Vijun" to PraviloRibe(null, null, 0.0),
-        "Stampajzer" to PraviloRibe(null, null, 0.0)
+        "Stampajzer" to PraviloRibe(null, null, 0.0),
+        // Strane vrste bez zabrane; navedene da ih ne bi uhvatila pravila za "Som" ili "Saran"
+        "Patuljasti som" to PraviloRibe(null, null, 0.0),
+        "Babuska" to PraviloRibe(null, null, 0.0)
     )
 
     fun normalizujTekst(tekst: String): String {
@@ -79,9 +82,12 @@ object LovostajChecker {
             .trim()
     }
 
+    // Najduži naziv prvi, da "Patuljasti som" ne bude prepoznat kao "Som"
+    private val kljuceviPoDuzini = lovostaji.keys.sortedByDescending { it.length }
+
     private fun nadjiKljucnuRec(imeRibe: String): String? {
         val cistUnos = normalizujTekst(imeRibe)
-        return lovostaji.keys.find { kljuc ->
+        return kljuceviPoDuzini.find { kljuc ->
             val cistKluc = normalizujTekst(kljuc)
             cistUnos.contains(cistKluc)
         }

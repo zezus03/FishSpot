@@ -63,6 +63,21 @@ service cloud.firestore {
       }
     }
 
+    // ─── VRSTE RIBA ───
+    // Lista vrsta je samo za citanje (upisuje se iz functions/podaci/vrsteRiba.json).
+    // Pod svakom vrstom je spisak ulova te vrste; ID ulova je isti kao u MestaZaPecanje.
+    match /VrsteRiba/{vrstaId} {
+      allow read: if prijavljen();
+      allow write: if false;
+
+      match /Ulovi/{ulovId} {
+        allow read: if prijavljen();
+        allow create: if prijavljen() && request.resource.data.authorId == request.auth.uid;
+        allow update: if false;
+        allow delete: if prijavljen() && resource.data.authorId == request.auth.uid;
+      }
+    }
+
     // ─── AKTIVNI KORISNICI (lokacija uzivo) ───
     match /ActiveUsers/{uid} {
       allow read: if prijavljen();

@@ -7,6 +7,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 
+import com.example.fishspot.feature.fish.VrstaRibe
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
@@ -111,7 +112,7 @@ class SpotsViewModel : ViewModel() {
 
     fun addSpot(
         context: android.content.Context, // Dodat Context!
-        naziv: String, vrstaRibe: String, ocena: Float, opis: String, slikaUri: Uri?,
+        naziv: String, vrsta: VrstaRibe, ocena: Float, opis: String, slikaUri: Uri?,
         location: android.location.Location,
         duzinaRibe: Double, tezinaRibe: Double, mamac: String, tehnika: String,temperatura: String,
         pritisak: String,
@@ -137,7 +138,9 @@ class SpotsViewModel : ViewModel() {
                     authorId = user.uid,
                     authorUsername = username,
                     naziv = naziv,
-                    vrstaRibe = vrstaRibe,
+                    vrstaRibe = vrsta.naziv,
+                    vrstaId = vrsta.id,
+                    latinskiNaziv = vrsta.latinskiNaziv,
                     ocena = ocena,
                     opis = opis,
                     slikaUrl = null, // Šalje se naknadno
@@ -154,8 +157,26 @@ class SpotsViewModel : ViewModel() {
 
                 )
 
-                // Odmah upisujemo tekst u bazu (Firestore rešava offline keširanje)
-                docRef.set(fishSpot)
+                // Ulov se čuva i pod svojom vrstom (VrsteRiba/{vrsta}/Ulovi) sa istim ID-jem,
+                // u jednom paketu sa glavnim upisom (Firestore rešava offline keširanje)
+                val ulovPoVrsti = mapOf(
+                    "authorId" to user.uid,
+                    "authorUsername" to username,
+                    "duzinaRibe" to duzinaRibe,
+                    "tezinaRibe" to tezinaRibe,
+                    "mamac" to mamac,
+                    "tehnika" to tehnika,
+                    "timestamp" to fishSpot.timestamp
+                )
+                firestore.batch()
+                    .set(docRef, fishSpot)
+                    .set(
+                        firestore.collection("VrsteRiba").document(vrsta.id)
+                            .collection("Ulovi").document(spotId),
+                        ulovPoVrsti
+                    )
+                    .commit()
+                    .addOnFailureListener { Log.e("SpotsViewModel", "Greška pri upisu ulova", it) }
 
                 // Ako ima slike, predajemo je WorkManager-u
                 if (slikaUri != null) {

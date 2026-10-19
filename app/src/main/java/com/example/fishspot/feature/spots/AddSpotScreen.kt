@@ -21,6 +21,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.ui.window.PopupProperties
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.material3.*
@@ -43,6 +45,9 @@ import coil.compose.AsyncImage
 import com.example.fishspot.R
 import com.example.fishspot.feature.fish.FishDetector
 import com.example.fishspot.feature.fish.TezinaRibe
+import com.example.fishspot.feature.fish.VrstaRibe
+import com.example.fishspot.feature.fish.VrsteRibaViewModel
+import androidx.compose.ui.text.font.FontStyle
 
 import com.example.fishspot.feature.fish.LovostajChecker
 import kotlinx.coroutines.Dispatchers
@@ -61,6 +66,7 @@ fun loadBitmapFromUri(context: Context, uri: Uri): Bitmap {
 @Composable
 fun AddSpotScreen(
     spotsViewModel: SpotsViewModel = viewModel(),
+    vrsteRibaViewModel: VrsteRibaViewModel = viewModel(),
     latitude: Double,
     longitude: Double,
     onSpotAdded: () -> Unit
@@ -70,7 +76,12 @@ fun AddSpotScreen(
     var showArMeasureScreen by remember { mutableStateOf(false) }
 
     var naziv by remember { mutableStateOf("") }
-    var vrstaRibe by remember { mutableStateOf("") }
+    var vrstaRibe by remember { mutableStateOf("") } // Tekst u polju (ono što korisnik kuca)
+    var izabranaVrsta by remember { mutableStateOf<VrstaRibe?>(null) } // Vrsta izabrana iz padajućeg menija
+    var vrstaMeniOtvoren by remember { mutableStateOf(false) }
+    val sveVrste by vrsteRibaViewModel.vrste.collectAsState()
+    // Lovostaj i težina gledaju samo srpski naziv, bez latinskog
+    val nazivZaProveru = izabranaVrsta?.naziv ?: vrstaRibe
     var isValidatingFish by remember { mutableStateOf(false) }
     var ribaPronadjena by remember { mutableStateOf(false) }
 
@@ -92,9 +103,9 @@ fun AddSpotScreen(
 
     // Težina se računa iz dužine i vrste dok je korisnik ne unese ručno
     var tezinaRucnoUneta by remember { mutableStateOf(false) }
-    LaunchedEffect(vrstaRibe, duzinaRibe) {
+    LaunchedEffect(nazivZaProveru, duzinaRibe) {
         if (!tezinaRucnoUneta) {
-            val kg = TezinaRibe.proceniKg(vrstaRibe, duzinaRibe.replace(',', '.').toDoubleOrNull())
+            val kg = TezinaRibe.proceniKg(nazivZaProveru, duzinaRibe.replace(',', '.').toDoubleOrNull())
             tezinaRibe = kg?.let { String.format(Locale.US, "%.2f", it) } ?: ""
         }
     }
@@ -202,16 +213,17 @@ fun AddSpotScreen(
     var duzinaRibeImaFokus by remember { mutableStateOf(false) }
 
     // --- PROVERA LOVOSTAJA I MERE TEK KADA KORISNIK ZAVRŠI KUCAVRE (IZGUBI FOKUS) ---
-    LaunchedEffect(vrstaRibeImaFokus, duzinaRibeImaFokus) {
-        // Pokrećemo proveru SAMO ako su oba polja izgubila fokus (korisnik je kliknuo negde drugde)
-        if (!vrstaRibeImaFokus && !duzinaRibeImaFokus && vrstaRibe.isNotBlank()) {
+    LaunchedEffect(vrstaRibeImaFokus, duzinaRibeImaFokus, izabranaVrsta) {
+        // Proveravamo kad korisnik izabere vrstu iz menija ili kad oba polja izgube fokus
+        val vrstaGotova = izabranaVrsta != null || !vrstaRibeImaFokus
+        if (vrstaGotova && !duzinaRibeImaFokus && nazivZaProveru.isNotBlank()) {
             val duzinaDuplo = duzinaRibe.toDoubleOrNull() ?: 0.0
 
-            val uLovostaju = LovostajChecker.isRibaULovostaju(vrstaRibe)
-            val ispodMere = LovostajChecker.isRibaIspodMere(vrstaRibe, duzinaDuplo)
+            val uLovostaju = LovostajChecker.isRibaULovostaju(nazivZaProveru)
+            val ispodMere = LovostajChecker.isRibaIspodMere(nazivZaProveru, duzinaDuplo)
 
             if (uLovostaju || ispodMere) {
-                showLovostajUpozorenje = LovostajChecker.getUpozorenje(vrstaRibe, duzinaDuplo)
+                showLovostajUpozorenje = LovostajChecker.getUpozorenje(nazivZaProveru, duzinaDuplo)
             } else {
                 showLovostajUpozorenje = null
             }
@@ -303,17 +315,75 @@ fun AddSpotScreen(
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    OutlinedTextField(
-                        value = vrstaRibe,
-                        onValueChange = { vrstaRibe = it },
-                        label = { Text("Vrsta ribe") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .onFocusChanged { focusState ->
-                                vrstaRibeImaFokus = focusState.isFocused
+                    // Korisnik kuca ("dev") i bira vrstu iz liste ("Deverika (Abramis brama)").
+                    // Lista se pojavljuje tek od 3 slova, ispod polja, i ne uzima fokus tastaturi.
+                    val predlozi = remember(vrstaRibe, sveVrste) { vrsteRibaViewModel.pretrazi(vrstaRibe).take(6) }
+                    val prikaziPredloge = vrstaMeniOtvoren && izabranaVrsta == null &&
+                        vrstaRibe.trim().length >= 3 && predlozi.isNotEmpty()
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        OutlinedTextField(
+                            value = vrstaRibe,
+                            onValueChange = {
+                                vrstaRibe = it
+                                izabranaVrsta = null // Kucanje poništava izbor dok se ne izabere ponovo
+                                vrstaMeniOtvoren = true
                             },
-                        shape = RoundedCornerShape(12.dp)
-                    )
+                            label = { Text("Vrsta ribe") },
+                            placeholder = { Text("Ukucaj bar 3 slova, npr. dev") },
+                            isError = vrstaRibe.isNotBlank() && izabranaVrsta == null && !prikaziPredloge,
+                            supportingText = {
+                                if (vrstaRibe.isNotBlank() && izabranaVrsta == null && !prikaziPredloge) {
+                                    Text(if (vrstaRibe.trim().length < 3) "Ukucaj bar 3 slova" else "Izaberi vrstu sa liste")
+                                }
+                            },
+                            trailingIcon = {
+                                if (vrstaRibe.isNotEmpty()) {
+                                    IconButton(onClick = {
+                                        vrstaRibe = ""
+                                        izabranaVrsta = null
+                                        vrstaMeniOtvoren = false
+                                    }) {
+                                        Icon(Icons.Default.Clear, contentDescription = "Obriši vrstu")
+                                    }
+                                }
+                            },
+                            singleLine = true,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .onFocusChanged { focusState ->
+                                    vrstaRibeImaFokus = focusState.isFocused
+                                },
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        DropdownMenu(
+                            expanded = prikaziPredloge,
+                            onDismissRequest = { vrstaMeniOtvoren = false },
+                            properties = PopupProperties(focusable = false),
+                            modifier = Modifier.heightIn(max = 280.dp)
+                        ) {
+                            predlozi.forEach { vrsta ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Column {
+                                            Text(vrsta.naziv, fontWeight = FontWeight.SemiBold)
+                                            if (vrsta.latinskiNaziv.isNotBlank()) {
+                                                Text(
+                                                    vrsta.latinskiNaziv,
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    fontStyle = FontStyle.Italic
+                                                )
+                                            }
+                                        }
+                                    },
+                                    onClick = {
+                                        izabranaVrsta = vrsta
+                                        vrstaRibe = vrsta.prikaz
+                                        vrstaMeniOtvoren = false
+                                    }
+                                )
+                            }
+                        }
+                    }
 
                     Spacer(modifier = Modifier.height(8.dp))
 
@@ -503,10 +573,11 @@ fun AddSpotScreen(
 
                     Button(
                         onClick = {
+                            val vrsta = izabranaVrsta ?: return@Button
                             isSaving = true
                             spotsViewModel.addSpot(
                                 context = context,
-                                naziv = naziv, vrstaRibe = vrstaRibe, ocena = ocena, opis = opis, slikaUri = slikaUri,
+                                naziv = naziv, vrsta = vrsta, ocena = ocena, opis = opis, slikaUri = slikaUri,
                                 location = trenutnaLokacija,
                                 duzinaRibe = duzinaRibe.toDoubleOrNull() ?: 0.0,
                                 tezinaRibe = tezinaRibe.toDoubleOrNull() ?: 0.0,
@@ -526,7 +597,7 @@ fun AddSpotScreen(
                                 isSaving = false
                             }
                         },
-                        enabled = !isSaving && slikaUri != null && ribaPronadjena,
+                        enabled = !isSaving && slikaUri != null && ribaPronadjena && izabranaVrsta != null,
                         modifier = Modifier.fillMaxWidth().height(56.dp),
                         shape = RoundedCornerShape(12.dp)
                     ) {
