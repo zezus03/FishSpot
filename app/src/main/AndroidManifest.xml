@@ -48,7 +48,7 @@
             </intent-filter>
         </activity>
         <service
-            android:name=".notifications.MyFirebaseMessagingService"
+            android:name=".core.notifications.MyFirebaseMessagingService"
             android:exported="true">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
@@ -56,7 +56,7 @@
         </service>
         <!-- 2. NOVI AR KAMERA EKRAN (na pravoj putanji) -->
         <activity
-            android:name=".userinterface.ArMeasureActivity"
+            android:name=".feature.fish.ArMeasureActivity"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
 
     </application>

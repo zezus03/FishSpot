@@ -14,17 +14,17 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.fishspot.data.AuthRepository
-import com.example.fishspot.ui.theme.FishSpotTheme
-import com.example.fishspot.userinterface.AddSpotScreen
-import com.example.fishspot.userinterface.BotChatScreen
-import com.example.fishspot.userinterface.LoginScreen
-import com.example.fishspot.userinterface.MapScreen
-import com.example.fishspot.userinterface.ProfileScreen
-import com.example.fishspot.userinterface.RankingScreen
-import com.example.fishspot.userinterface.RegisterScreen
-import com.example.fishspot.userinterface.SpotsListScreen
-import com.example.fishspot.viewmodel.AuthViewModel // Uvezen AuthViewModel
+import com.example.fishspot.feature.auth.AuthRepository
+import com.example.fishspot.core.theme.FishSpotTheme
+import com.example.fishspot.feature.spots.AddSpotScreen
+import com.example.fishspot.feature.chat.BotChatScreen
+import com.example.fishspot.feature.auth.LoginScreen
+import com.example.fishspot.feature.map.MapScreen
+import com.example.fishspot.feature.profile.ProfileScreen
+import com.example.fishspot.feature.ranking.RankingScreen
+import com.example.fishspot.feature.auth.RegisterScreen
+import com.example.fishspot.feature.spots.SpotsListScreen
+import com.example.fishspot.feature.auth.AuthViewModel
 import com.google.firebase.auth.FirebaseAuth
 
 class MainActivity : ComponentActivity() {

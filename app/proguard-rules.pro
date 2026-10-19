@@ -1,6 +1,7 @@
-# 1. ZABRANA: Ne diraj poznate foldere
--keep class com.example.fishspot.data.** { *; }
--keep class com.example.fishspot.viewmodel.** { *; }
+# 1. ZABRANA: Ne diraj kod aplikacije. Modeli za Firestore i Gson (FishSpot, Korisnici,
+# WeatherResponse, OsmResponse...) su rasporedjeni po feature paketima i citaju se refleksijom.
+-keep class com.example.fishspot.core.** { *; }
+-keep class com.example.fishspot.feature.** { *; }
 
 # 2. UNIVERZALNI ŠTIT: Zaštiti SVE interfejse (da API komande poput getWeather ne puknu)
 -keep interface com.example.fishspot.** { *; }
