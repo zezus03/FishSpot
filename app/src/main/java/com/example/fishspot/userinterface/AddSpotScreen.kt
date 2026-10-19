@@ -38,8 +38,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.fishspot.R
-import com.example.fishspot.ml.GeminiClassifier
 import com.example.fishspot.viewmodel.FishDetector
+import com.example.fishspot.viewmodel.TezinaRibe
 import com.example.fishspot.viewmodel.SpotsViewModel
 import com.example.fishspot.viewmodel.LovostajChecker // UVEZEN TVOJ PROŠIRENI ČEKER
 import kotlinx.coroutines.Dispatchers
@@ -87,8 +87,14 @@ fun AddSpotScreen(
     var pritisak by remember { mutableStateOf("Nepoznato") }
     var vetar by remember { mutableStateOf("Nepoznato") }
 
-    val gemini = remember { GeminiClassifier() }
-    var isAnalyzing by remember { mutableStateOf(false) }
+    // Težina se računa iz dužine i vrste dok je korisnik ne unese ručno
+    var tezinaRucnoUneta by remember { mutableStateOf(false) }
+    LaunchedEffect(vrstaRibe, duzinaRibe) {
+        if (!tezinaRucnoUneta) {
+            val kg = TezinaRibe.proceniKg(vrstaRibe, duzinaRibe.replace(',', '.').toDoubleOrNull())
+            tezinaRibe = kg?.let { String.format(Locale.US, "%.2f", it) } ?: ""
+        }
+    }
     val coroutineScope = rememberCoroutineScope()
     val mojApiKey = BuildConfig.VREMENSKA_KEY
 
@@ -344,8 +350,17 @@ fun AddSpotScreen(
                         )
                         OutlinedTextField(
                             value = tezinaRibe,
-                            onValueChange = { tezinaRibe = it },
+                            onValueChange = {
+                                tezinaRibe = it
+                                // Brisanjem polja vraćamo automatski proračun
+                                tezinaRucnoUneta = it.isNotBlank()
+                            },
                             label = { Text("Težina (kg)") },
+                            supportingText = {
+                                if (!tezinaRucnoUneta && tezinaRibe.isNotBlank()) {
+                                    Text(if (TezinaRibe.poznataVrsta(vrstaRibe)) "Procena po dužini" else "Okvirna procena")
+                                }
+                            },
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(12.dp),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
@@ -442,55 +457,6 @@ fun AddSpotScreen(
                                 .clip(RoundedCornerShape(16.dp)),
                             contentScale = ContentScale.Crop
                         )
-
-                        Spacer(modifier = Modifier.height(16.dp))
-
-                        Button(
-                            onClick = {
-                                isAnalyzing = true
-                                coroutineScope.launch(Dispatchers.IO) {
-                                    try {
-                                        val bitmap = loadBitmapFromUri(context, uri)
-                                        val trenutnaDuzina = duzinaRibe.toDoubleOrNull()
-
-                                        val rezultat = gemini.prepoznajRibu(bitmap, trenutnaDuzina)
-
-                                        withContext(Dispatchers.Main) {
-                                            if (rezultat != null && !rezultat.first.contains("Nepoznato", ignoreCase = true)) {
-                                                vrstaRibe = rezultat.first
-                                                if (rezultat.second != "0" && rezultat.second.isNotEmpty()) {
-                                                    tezinaRibe = rezultat.second
-                                                    Toast.makeText(context, "AI: ${rezultat.first} teži oko ${rezultat.second} kg! \uD83C\uDFA3", Toast.LENGTH_LONG).show()
-                                                } else {
-                                                    Toast.makeText(context, "AI: Prepoznat ${rezultat.first}", Toast.LENGTH_SHORT).show()
-                                                }
-                                            } else {
-                                                Toast.makeText(context, "AI nije siguran šta je na slici.", Toast.LENGTH_SHORT).show()
-                                            }
-                                            isAnalyzing = false
-                                        }
-                                    } catch (e: Exception) {
-                                        withContext(Dispatchers.Main) {
-                                            isAnalyzing = false
-                                            Toast.makeText(context, "Greška: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
-                                            e.printStackTrace()
-                                        }
-                                    }
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth().height(50.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            enabled = !isAnalyzing,
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
-                        ) {
-                            if (isAnalyzing) {
-                                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
-                            } else {
-                                Icon(Icons.Default.AutoAwesome, contentDescription = null)
-                                Spacer(Modifier.width(8.dp))
-                                Text("Pitaj AI model za vrstu i težinu")
-                            }
-                        }
                     }
 
                     Spacer(modifier = Modifier.height(24.dp))

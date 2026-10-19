@@ -68,7 +68,7 @@ object LovostajChecker {
         "Stampajzer" to PraviloRibe(null, null, 0.0)
     )
 
-    private fun normalizujTekst(tekst: String): String {
+    fun normalizujTekst(tekst: String): String {
         return tekst
             .lowercase()
             .replace("š", "s")
