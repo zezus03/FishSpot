@@ -13,9 +13,9 @@ import org.tensorflow.lite.support.image.ops.ResizeOp
 import org.tensorflow.lite.support.tensorbuffer.TensorBuffer
 
 /**
- * Proverava da li je na slici riba (model fish_detector.tflite, EfficientNetB1).
+ * Proverava da li je na slici riba (model fish_detector.tflite, EfficientNetV2B0, float16).
  *
- * Model je treniran skriptom train_fish_detector_SIMPLE.py sa image_dataset_from_directory,
+ * Model je treniran skriptom ml/train_fish_detector.py sa image_dataset_from_directory,
  * koji klase sortira po abecedi: Fish = 0, NoFish = 1. Sigmoid izlaz modela je zato
  * verovatnoća klase 1, tj. da riba NIJE na slici.
  */
@@ -25,8 +25,10 @@ class FishDetector(context: Context) {
         private const val TAG = "FishDetector"
         private const val VELICINA_ULAZA = 256
 
-        // Odluka: riba ako je verovatnoća ribe veća od ovog praga (isto kao ranije: > 0.5 i razlika > 0.1)
-        private const val PRAG_RIBE = 0.55f
+        // Odluka: riba ako je verovatnoća ribe veća od ovog praga. Izabran na 128 slika sa telefona
+        // (fishspot_test, model od 20.10.2026., FishDetectorTest na telefonu): 2 propuštene ribe,
+        // 3 lažne, tačnost 96.1%. Prag 0.90 ima istu tačnost, ali propušta više pravih ulova.
+        private const val PRAG_RIBE = 0.85f
     }
 
     data class Rezultat(
