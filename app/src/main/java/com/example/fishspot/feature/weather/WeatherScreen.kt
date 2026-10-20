@@ -454,7 +454,8 @@ private fun FishingIndexBar(fishingIndex: Int) {
     val usloviTekst = when {
         fishingIndex > 75 -> "Odlični uslovi"
         fishingIndex > 50 -> "Dobri uslovi"
-        else -> "Osrednji uslovi"
+        fishingIndex >= 30 -> "Osrednji uslovi"
+        else -> "Loši uslovi"
     }
     val usloviBoja = when {
         fishingIndex > 75 -> AccentGreen
@@ -626,7 +627,7 @@ private fun ThreeDayForecast(days: List<DayForecast>) {
                 val fishIndex = day.fishingIndex
                 val indexColor = when {
                     fishIndex > 75 -> AccentGreen
-                    fishIndex > 55 -> Color(0xFFF1C40F)
+                    fishIndex > 50 -> Color(0xFFF1C40F)
                     else -> Color(0xFFE74C3C)
                 }
 
@@ -645,11 +646,7 @@ private fun ThreeDayForecast(days: List<DayForecast>) {
                 ) {
                     Text(getDayName(day.date, index), color = TextMuted, fontSize = 11.sp)
                     Spacer(modifier = Modifier.height(4.dp))
-                    AsyncImage(
-                        model = "https://openweathermap.org/img/wn/${day.icon}@2x.png",
-                        contentDescription = null,
-                        modifier = Modifier.size(34.dp)
-                    )
+                    IkonicaVremena(sifra = day.icon, velicina = 30.dp)
                     Spacer(modifier = Modifier.height(4.dp))
                     Text("${day.tempMax}°", color = TextPrimary, fontSize = 17.sp, fontWeight = FontWeight.Bold)
                     Text("${day.tempMin}°", color = TextMuted, fontSize = 12.sp)
@@ -670,11 +667,7 @@ private fun ThreeDayForecast(days: List<DayForecast>) {
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                AsyncImage(
-                    model = "https://openweathermap.org/img/wn/${selectedDay.icon}@2x.png",
-                    contentDescription = null,
-                    modifier = Modifier.size(28.dp)
-                )
+                IkonicaVremena(sifra = selectedDay.icon, velicina = 26.dp)
                 Spacer(modifier = Modifier.width(8.dp))
                 Column {
                     Text(
@@ -728,4 +721,21 @@ private fun getDayName(dateStr: String, fallbackIndex: Int): String {
             0 -> "Sreda"; 1 -> "Četvrtak"; else -> "Petak"
         }
     }
+}
+
+// Ikonica vremena iz OpenWeather šifre ("01d" vedro, "04d" oblačno, "10d" kiša...),
+// ugrađena u aplikaciju umesto slika sa interneta (radi odmah i bez mreže)
+@Composable
+private fun IkonicaVremena(sifra: String, velicina: androidx.compose.ui.unit.Dp) {
+    val (ikona, boja) = when (sifra.take(2)) {
+        "01" -> Icons.Default.WbSunny to Color(0xFFFFC107)
+        "02" -> Icons.Default.FilterDrama to Color(0xFFFFD54F)
+        "03", "04" -> Icons.Default.Cloud to TextSecondary
+        "09", "10" -> Icons.Default.Umbrella to Color(0xFF4FC3F7)
+        "11" -> Icons.Default.Thunderstorm to Color(0xFFF1C40F)
+        "13" -> Icons.Default.AcUnit to Color(0xFFE0F7FA)
+        "50" -> Icons.Default.Dehaze to TextMuted
+        else -> Icons.Default.WbSunny to Color(0xFFFFC107)
+    }
+    Icon(imageVector = ikona, contentDescription = null, tint = boja, modifier = Modifier.size(velicina))
 }

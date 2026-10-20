@@ -55,6 +55,7 @@ import com.example.fishspot.feature.spots.SpotsViewModel
 import com.example.fishspot.feature.spots.UlovDetalji
 import com.example.fishspot.core.theme.FishBoje
 import com.google.android.gms.maps.model.MapStyleOptions
+import com.example.fishspot.feature.weather.IndeksPecanja
 import com.example.fishspot.feature.weather.VodostajiScreen
 import com.example.fishspot.feature.weather.WaterLevelViewModel
 import com.example.fishspot.feature.chat.ActiveUser
@@ -68,6 +69,8 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.abs
+import kotlin.math.roundToInt
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.draw.scale
@@ -627,56 +630,53 @@ fun MapScreen(
                                     lat = selectedLat, lon = selectedLng, apiKey = mojApiKey
                                 )
                                 Log.d("API_DEBUG", "Prognoza: $forecastResponse")
-                                // Analiza za Indeks Pecanja (trenutni uslovi)
-                                val calculatedIndex = calculateFishingIndex(
-                                    pressure = currentResponse.main.pressure,
-                                    timestamp = currentResponse.dt * 1000L, // Koristimo 'dt' iz API-ja, ne trenutno vreme
-                                    temp = currentResponse.main.temp.toInt() // .toInt() rešava Double vs Int grešku
+                                // Indeks pecanja: za "sada" (sa dobom dana) i posebno za svaki od 3 dana,
+                                // od podataka tog dana (merenje najbliže podnevu)
+                                val pritisakZaDan = forecastResponse.list.getOrNull(7)?.main?.pressure // ~24 h kasnije
+                                val calculatedIndex = IndeksPecanja.izracunaj(
+                                    pritisak = currentResponse.main.pressure,
+                                    promenaPritiska = pritisakZaDan?.minus(currentResponse.main.pressure),
+                                    temperatura = currentResponse.main.temp,
+                                    vetar = currentResponse.wind.speed,
+                                    sifraVremena = currentResponse.weather.firstOrNull()?.icon,
+                                    sansaKise = forecastResponse.list.firstOrNull()?.pop,
+                                    vreme = currentResponse.dt * 1000L,
+                                    sat = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
                                 )
-                                // Grupisanje prognoze po danima (tražimo min/max temp i glavnu ikonu za taj dan)
+
                                 val formatDatum = SimpleDateFormat("dd.MM.", Locale.getDefault())
-                                val daysMap = mutableMapOf<String, MutableList<Int>>()
-                                val iconMap = mutableMapOf<String, String>()
-
                                 val todayDateStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+                                val poDanima = forecastResponse.list
+                                    .groupBy { it.dt_txt.substringBefore(" ") } // npr. "2024-05-20"
+                                    .filterKeys { it != todayDateStr }          // preskačemo današnji dan
+                                    .entries.take(3)
 
-                                forecastResponse.list.forEach { item ->
-                                    val dateStr = item.dt_txt.substringBefore(" ") // dobijamo npr "2024-05-20"
-                                    if (dateStr != todayDateStr) { // Preskačemo današnji dan u prognozi
-                                        val temp = item.main.temp.toInt()
-                                        if (!daysMap.containsKey(dateStr)) {
-                                            daysMap[dateStr] = mutableListOf()
-                                            iconMap[dateStr] = item.weather.firstOrNull()?.icon ?: ""
-                                        }
-                                        daysMap[dateStr]?.add(temp)
-                                    }
-                                }
-
-                                // Uzimamo samo naredna 3 dana
-                                val upcoming = daysMap.entries.take(3).map { (dateStr, temps) ->
+                                var prethodniPritisak = currentResponse.main.pressure
+                                val upcoming = poDanima.map { (dateStr, stavke) ->
+                                    val podne = stavke.minByOrNull { abs(it.dt_txt.substring(11, 13).toInt() - 12) }!!
+                                    val maxKisa = stavke.maxOf { it.pop ?: 0.0 }
                                     val dateParsed = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(dateStr)
-                                    val formattedDate = formatDatum.format(dateParsed ?: Date())
 
-                                    // Pronađi prosečnu šansu za kišu (pop) za taj dan iz API-ja
-                                    // Uzimamo max vrednost 'pop' iz tog dana kao konzervativnu procenu
-                                    val dailyItems = forecastResponse.list.filter { it.dt_txt.startsWith(dateStr) }
-                                    val maxRainChance = ((dailyItems.map { it.pop ?: 0.0 }.maxOrNull() ?: 0.0) * 100).toInt()
-
-                                    // Izračunaj fishing index (koristi tvoju postojeću funkciju)
-                                    // Ovde možeš dodati logiku: npr. koristi pritisak iz prvog zapisa tog dana
-                                    val firstItemPressure = dailyItems.firstOrNull()?.main?.pressure ?: 1013
-                                    val fIndex = calculateFishingIndex(
-                                        pressure = currentResponse.main.pressure,
-                                        timestamp = currentResponse.dt * 1000L, // Koristimo vreme iz API-ja, ne trenutno sistemsko
-                                        temp = currentResponse.main.temp.toInt() // Ovde pretvaramo Double u Int
+                                    val indeksDana = IndeksPecanja.izracunaj(
+                                        pritisak = podne.main.pressure,
+                                        promenaPritiska = podne.main.pressure - prethodniPritisak,
+                                        temperatura = podne.main.temp,
+                                        vetar = podne.wind.speed,
+                                        sifraVremena = podne.weather.firstOrNull()?.icon,
+                                        sansaKise = maxKisa,
+                                        vreme = podne.dt * 1000L,
+                                        sat = null
                                     )
+                                    prethodniPritisak = podne.main.pressure
+
                                     DayForecast(
-                                        date = formattedDate,
-                                        tempMax = (temps.maxOrNull() ?: 0.0).toInt(),
-                                        tempMin = (temps.minOrNull() ?: 0.0).toInt(),
-                                        icon = iconMap[dateStr] ?: "",
-                                        fishingIndex = calculatedIndex, // Koristimo izračunato
-                                        rainChance = maxRainChance // Koristimo API podatak
+                                        date = formatDatum.format(dateParsed ?: Date()),
+                                        tempMax = stavke.maxOf { it.main.temp }.roundToInt(),
+                                        tempMin = stavke.minOf { it.main.temp }.roundToInt(),
+                                        // Dnevna ikonica (u podne), a ne noćna iz ponoćnog merenja
+                                        icon = podne.weather.firstOrNull()?.icon.orEmpty().replace('n', 'd'),
+                                        fishingIndex = indeksDana,
+                                        rainChance = (maxKisa * 100).roundToInt()
                                     )
                                 }
                                 var riverTrendText = "Stabilan"
@@ -1050,65 +1050,6 @@ fun pretvoriStepenUStraneSveta(stepeni: Int): String {
     )
     val indeks = ((stepeni + 22.5) / 45.0).toInt() % 8
     return pravci[indeks]
-}
-
-fun calculateFishingIndex(pressure: Int, timestamp: Long,temp: Int): Int {
-    var score = 20 // Početna baza
-
-    // 1. Atmosferski pritisak (tvoja postojeća logika)
-    when {
-        pressure in 1010..1020 -> score += 20
-        pressure in 1005..1009 -> score += 10
-        pressure > 1020 -> score -= 10
-        pressure < 1000 -> score -= 20
-    }
-
-    // 2. Mesec (Lunarna faza - tvoja postojeća logika)
-    val knownNewMoon = 1704974220000L
-    val lunarCycle = 29.530588853 * 24 * 60 * 60 * 1000
-    val diff = timestamp - knownNewMoon
-    val currentPhase = (diff % lunarCycle) / lunarCycle
-    when {
-        currentPhase < 0.1 || currentPhase > 0.9 -> score += 10 // Mlad mesec
-        currentPhase in 0.45..0.55 -> score += 5 // Pun mesec
-    }
-
-    // --- NOVA LOGIKA ---
-
-    val cal = Calendar.getInstance().apply { timeInMillis = timestamp }
-    val month = cal.get(Calendar.MONTH) // 0 = Jan, 1 = Feb, ... 11 = Dec
-    val hour = cal.get(Calendar.HOUR_OF_DAY) // 0 - 23
-
-    // 3. Sezonski faktor (Mesec)
-    // Jan(0), Feb(1), Dec(11) -> Zima, metabolizam usporen
-    // Mar(2), Apr(3) -> Mrest/oporavak
-    when (month) {
-        0, 1,10, 11 -> score -= 20 // Duboka zima, slaba aktivnost
-        2 -> score -= 10
-        3, 4,5 -> score += 5
-        // Prolećno buđenje
-        8, 9 -> score += 5 // Jesen, aktivna priprema za zimu
-        else -> score += 10     // Leto/periodi aktivnosti
-    }
-
-    // 4. Doba dana (Sat)
-    // Zlatni sati (zora i sumrak) su najbolji
-    when (hour) {
-        in 5..9 -> score += 10   // Jutarnje svitanje
-        in 18..22 -> score += 10 // Večernji sumrak
-        in 12..15 -> score -= 10 // Podne (često letargija, pretoplo)
-        in 23..4 -> score -= 5  // Duboka noć (zavisi od vrste, ali generalno slabije)
-    }
-    when {
-        temp in 15..25 -> score += 5
-        temp > 30 || temp < 10 -> score -= 10
-
-    }
-    if (pressure < 990 || temp < 3) {
-        score -= 30 // To je "udarac" na score koji teško može da se nadoknadi
-    }
-
-    return score.coerceIn(0, 100)
 }
 
 // Vektorski pin iz res/drawable pretvoren u ikonu za marker na mapi
