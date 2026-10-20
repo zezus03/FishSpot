@@ -109,9 +109,9 @@ fun AddSpotScreen(
     var isSaving by remember { mutableStateOf(false) }
     var duzinaRibe by remember { mutableStateOf("") }
     var tezinaRibe by remember { mutableStateOf("") }
-    val mamci = listOf("Crv", "Glista", "Šećerac", "Pop-up", "Keder", "Varalica")
+    val mamci = listOf("Crv", "Glista", "Šećerac", "Pop-up", "Keder", "Varalica", "Mušica")
     var odabranMamac by remember { mutableStateOf(mamci[0]) }
-    val tehnike = listOf("Plovak", "Dubinac", "Varalica", "Feeder")
+    val tehnike = listOf("Plovak", "Dubinac", "Varalica", "Feeder", "Mušičarenje")
     var odabranaTehnika by remember { mutableStateOf(tehnike[0]) }
     var temperatura by remember { mutableStateOf("Nepoznato") }
     var pritisak by remember { mutableStateOf("Nepoznato") }
