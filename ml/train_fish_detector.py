@@ -35,6 +35,7 @@ DRIVE_DATASET = f"{DRIVE}/fishspot_dataset"
 DRIVE_DODATNO = f"{DRIVE}/fishspot_dodatno"
 DRIVE_TEST = f"{DRIVE}/fishspot_test"
 DRIVE_IZLAZ = f"{DRIVE}/fishspot_model"
+DRIVE_CHECKPOINT = f"{DRIVE_IZLAZ}/trening"   # faza1.keras i najbolji.keras (za nastavak posle prekida)
 
 RADNI = "/content/fish_trening"
 TRENING = f"{RADNI}/train"          # Fish/ i NoFish/ (imena foldera određuju redosled klasa!)
@@ -82,9 +83,13 @@ from PIL import Image, ImageOps  # noqa: E402
 
 print(f"   TensorFlow {tf.__version__}, GPU: {tf.config.list_physical_devices('GPU')}")
 
-shutil.rmtree(RADNI, ignore_errors=True)
-for klasa in ("Fish", "NoFish"):
-    os.makedirs(f"{TRENING}/{klasa}", exist_ok=True)
+# Ako je Colab prekinuo trening, a runtime je i dalje isti, slike su već na disku: ne preuzimamo ih ponovo
+POSTOJE_PODACI = all(os.path.isdir(f"{TRENING}/{k}") and len(os.listdir(f"{TRENING}/{k}")) > 200
+                     for k in ("Fish", "NoFish"))
+if not POSTOJE_PODACI:
+    shutil.rmtree(RADNI, ignore_errors=True)
+    for klasa in ("Fish", "NoFish"):
+        os.makedirs(f"{TRENING}/{klasa}", exist_ok=True)
 
 vidjeni_hashovi = set()
 brojac = {"Fish": 0, "NoFish": 0, "duplikati": 0, "lose": 0}
@@ -115,65 +120,68 @@ def je_slika(ime):
     return ime.lower().endswith((".jpg", ".jpeg", ".png", ".webp", ".bmp"))
 
 
-# ════════════════════════════════════════════════════════════
-# 2. TVOJE SLIKE SA DRIVE-A
-# ════════════════════════════════════════════════════════════
-print("\n[2/8] Tvoje slike sa Drive-a...")
-for koren in (DRIVE_DATASET, DRIVE_DODATNO):
-    if not os.path.exists(koren):
-        print(f"   (nema foldera {koren}, preskačem)")
-        continue
-    for folder, _, fajlovi in os.walk(koren):
-        ime = os.path.basename(folder).lower().replace("-", "").replace("_", "")
-        klasa = "NoFish" if any(x in ime for x in ("nofish", "negative", "noriba", "nijeriba")) else "Fish"
-        if folder == koren:
+if not POSTOJE_PODACI:
+    # ════════════════════════════════════════════════════════════
+    # 2. TVOJE SLIKE SA DRIVE-A
+    # ════════════════════════════════════════════════════════════
+    print("\n[2/8] Tvoje slike sa Drive-a...")
+    for koren in (DRIVE_DATASET, DRIVE_DODATNO):
+        if not os.path.exists(koren):
+            print(f"   (nema foldera {koren}, preskačem)")
             continue
-        for fajl in fajlovi:
-            if je_slika(fajl):
-                dodaj_sliku(os.path.join(folder, fajl), klasa, "moje")
-print(f"   Fish: {brojac['Fish']}, NoFish: {brojac['NoFish']}")
+        for folder, _, fajlovi in os.walk(koren):
+            ime = os.path.basename(folder).lower().replace("-", "").replace("_", "")
+            klasa = "NoFish" if any(x in ime for x in ("nofish", "negative", "noriba", "nijeriba")) else "Fish"
+            if folder == koren:
+                continue
+            for fajl in fajlovi:
+                if je_slika(fajl):
+                    dodaj_sliku(os.path.join(folder, fajl), klasa, "moje")
+    print(f"   Fish: {brojac['Fish']}, NoFish: {brojac['NoFish']}")
 
-# ════════════════════════════════════════════════════════════
-# 3. OPEN IMAGES V7 (prave fotografije)
-# ════════════════════════════════════════════════════════════
-print("\n[3/8] Preuzimanje Open Images V7 (traje 10-20 min)...")
-import fiftyone.utils.openimages as fouo  # noqa: E402
-import fiftyone.zoo as foz  # noqa: E402
+    # ════════════════════════════════════════════════════════════
+    # 3. OPEN IMAGES V7 (prave fotografije)
+    # ════════════════════════════════════════════════════════════
+    print("\n[3/8] Preuzimanje Open Images V7 (traje 10-20 min)...")
+    import fiftyone.utils.openimages as fouo  # noqa: E402
+    import fiftyone.zoo as foz  # noqa: E402
 
-# Zadržavamo samo klase koje zaista postoje u Open Images (nepostojeća klasa obara preuzimanje)
-dostupne_klase = set(fouo.get_classes(version="v7"))
-preskocene = [k for k in KLASE_BEZ_RIBE if k not in dostupne_klase]
-KLASE_BEZ_RIBE = [k for k in KLASE_BEZ_RIBE if k in dostupne_klase]
-if preskocene:
-    print(f"   Preskačem klase koje ne postoje u Open Images: {preskocene}")
-assert "Fish" in dostupne_klase
-
-
-def oznake(uzorak):
-    pozitivne = uzorak["positive_labels"]
-    return {c.label for c in pozitivne.classifications} if pozitivne else set()
+    # Zadržavamo samo klase koje zaista postoje u Open Images (nepostojeća klasa obara preuzimanje)
+    dostupne_klase = set(fouo.get_classes(version="v7"))
+    preskocene = [k for k in KLASE_BEZ_RIBE if k not in dostupne_klase]
+    KLASE_BEZ_RIBE = [k for k in KLASE_BEZ_RIBE if k in dostupne_klase]
+    if preskocene:
+        print(f"   Preskačem klase koje ne postoje u Open Images: {preskocene}")
+    assert "Fish" in dostupne_klase
 
 
-ribe = foz.load_zoo_dataset(
-    "open-images-v7", split="train", label_types=["classifications"],
-    classes=["Fish"], max_samples=BROJ_OI_RIBA, shuffle=True, seed=SEED,
-    dataset_name="oi_ribe",
-)
-for uzorak in ribe:
-    if "Fish" in oznake(uzorak):
-        dodaj_sliku(uzorak.filepath, "Fish", "oi")
+    def oznake(uzorak):
+        pozitivne = uzorak["positive_labels"]
+        return {c.label for c in pozitivne.classifications} if pozitivne else set()
 
-bez_ribe = foz.load_zoo_dataset(
-    "open-images-v7", split="train", label_types=["classifications"],
-    classes=KLASE_BEZ_RIBE, max_samples=BROJ_OI_BEZ_RIBE, shuffle=True, seed=SEED,
-    dataset_name="oi_bez_ribe",
-)
-for uzorak in bez_ribe:
-    if not (oznake(uzorak) & RIBLJE_OZNAKE):
-        dodaj_sliku(uzorak.filepath, "NoFish", "oi")
 
-print(f"   Ukupno -> Fish: {brojac['Fish']}, NoFish: {brojac['NoFish']}, "
-      f"duplikata: {brojac['duplikati']}, loših: {brojac['lose']}")
+    ribe = foz.load_zoo_dataset(
+        "open-images-v7", split="train", label_types=["classifications"],
+        classes=["Fish"], max_samples=BROJ_OI_RIBA, shuffle=True, seed=SEED,
+        dataset_name="oi_ribe",
+    )
+    for uzorak in ribe:
+        if "Fish" in oznake(uzorak):
+            dodaj_sliku(uzorak.filepath, "Fish", "oi")
+
+    bez_ribe = foz.load_zoo_dataset(
+        "open-images-v7", split="train", label_types=["classifications"],
+        classes=KLASE_BEZ_RIBE, max_samples=BROJ_OI_BEZ_RIBE, shuffle=True, seed=SEED,
+        dataset_name="oi_bez_ribe",
+    )
+    for uzorak in bez_ribe:
+        if not (oznake(uzorak) & RIBLJE_OZNAKE):
+            dodaj_sliku(uzorak.filepath, "NoFish", "oi")
+
+    print(f"   Ukupno -> Fish: {brojac['Fish']}, NoFish: {brojac['NoFish']}, "
+          f"duplikata: {brojac['duplikati']}, loših: {brojac['lose']}")
+else:
+    print("\n[2-3/8] Slike su već pripremljene na disku, preskačem preuzimanje.")
 
 # ════════════════════════════════════════════════════════════
 # 4. DATASET + AUGMENTACIJA
@@ -196,13 +204,29 @@ augmentacija = tf.keras.Sequential([
 ], name="augmentacija")
 
 AUTOTUNE = tf.data.AUTOTUNE
-train_ds = (train_ds.cache().shuffle(1000, seed=SEED)
-            .map(lambda x, y: (augmentacija(x, training=True), y), num_parallel_calls=AUTOTUNE)
-            .prefetch(AUTOTUNE))
-val_ds = val_ds.cache().prefetch(AUTOTUNE)
 
-# Težine klasa, da veća klasa ne preovlada
-n_fish, n_nofish = brojac["Fish"], brojac["NoFish"]
+
+def u_uint8(x, y):
+    return tf.cast(tf.clip_by_value(tf.round(x), 0, 255), tf.uint8), y
+
+
+def u_float(x, y):
+    return tf.cast(x, tf.float32), y
+
+
+# Keš u memoriji čuva slike kao uint8 (4x manje RAM-a nego float32: ~1.5 GB umesto ~6 GB).
+# Shuffle bafer je mali (u serijama), da ne pravi još jednu kopiju celog skupa u memoriji.
+train_ds = (train_ds.map(u_uint8, num_parallel_calls=AUTOTUNE).cache()
+            .shuffle(48, seed=SEED)
+            .map(lambda x, y: (augmentacija(tf.cast(x, tf.float32), training=True), y),
+                 num_parallel_calls=AUTOTUNE)
+            .prefetch(AUTOTUNE))
+val_ds = (val_ds.map(u_uint8, num_parallel_calls=AUTOTUNE).cache()
+          .map(u_float, num_parallel_calls=AUTOTUNE).prefetch(AUTOTUNE))
+
+# Težine klasa, da veća klasa ne preovlada (broj slika čitamo iz foldera, radi i pri nastavku)
+n_fish = len(os.listdir(f"{TRENING}/Fish"))
+n_nofish = len(os.listdir(f"{TRENING}/NoFish"))
 tezine_klasa = {0: (n_fish + n_nofish) / (2 * n_fish), 1: (n_fish + n_nofish) / (2 * n_nofish)}
 print(f"   Težine klasa: {tezine_klasa}")
 
@@ -210,30 +234,46 @@ print(f"   Težine klasa: {tezine_klasa}")
 # 5. MODEL (EfficientNetV2B0, ima ugrađeno skaliranje piksela 0-255)
 # ════════════════════════════════════════════════════════════
 print("\n[5/8] Trening...")
-osnova = tf.keras.applications.EfficientNetV2B0(
-    input_shape=(VELICINA, VELICINA, 3), include_top=False, weights="imagenet", include_preprocessing=True)
-osnova.trainable = False
 
-ulaz = tf.keras.Input(shape=(VELICINA, VELICINA, 3))
-x = osnova(ulaz, training=False)
-x = tf.keras.layers.GlobalAveragePooling2D()(x)
-x = tf.keras.layers.Dropout(0.3)(x)
-izlaz = tf.keras.layers.Dense(1, activation="sigmoid", name="nofish")(x)
-model = tf.keras.Model(ulaz, izlaz)
+# Modeli se čuvaju na Drive-u, da trening može da se nastavi ako Colab prekine sesiju
+os.makedirs(DRIVE_CHECKPOINT, exist_ok=True)
+faza1_putanja = f"{DRIVE_CHECKPOINT}/faza1.keras"
+najbolji = f"{DRIVE_CHECKPOINT}/najbolji.keras"
 
 metrike = [tf.keras.metrics.BinaryAccuracy(name="acc"), tf.keras.metrics.AUC(name="auc")]
-najbolji = f"{RADNI}/najbolji.keras"
-callbacks = [
-    tf.keras.callbacks.ModelCheckpoint(najbolji, monitor="val_auc", mode="max", save_best_only=True),
-    tf.keras.callbacks.EarlyStopping(monitor="val_auc", mode="max", patience=5, restore_best_weights=True),
-    tf.keras.callbacks.ReduceLROnPlateau(monitor="val_loss", factor=0.3, patience=2, min_lr=1e-7),
-]
 gubitak = tf.keras.losses.BinaryCrossentropy(label_smoothing=0.05)
 
-# Faza 1: uči se samo nova "glava"
-# Argumenti po imenu: u Keras 3 je treći pozicioni argument loss_weights, a ne metrics
-model.compile(optimizer=tf.keras.optimizers.Adam(1e-3), loss=gubitak, metrics=metrike)
-model.fit(train_ds, validation_data=val_ds, epochs=10, class_weight=tezine_klasa, callbacks=callbacks)
+
+def napravi_callbacks():
+    return [
+        tf.keras.callbacks.ModelCheckpoint(najbolji, monitor="val_auc", mode="max", save_best_only=True),
+        tf.keras.callbacks.EarlyStopping(monitor="val_auc", mode="max", patience=5, restore_best_weights=True),
+        tf.keras.callbacks.ReduceLROnPlateau(monitor="val_loss", factor=0.3, patience=2, min_lr=1e-7),
+    ]
+
+
+if os.path.exists(faza1_putanja):
+    print(f"   Faza 1 je već završena, nastavljam od {faza1_putanja}")
+    model = tf.keras.models.load_model(faza1_putanja)
+    osnova = next(sloj for sloj in model.layers if isinstance(sloj, tf.keras.Model))
+else:
+    osnova = tf.keras.applications.EfficientNetV2B0(
+        input_shape=(VELICINA, VELICINA, 3), include_top=False, weights="imagenet", include_preprocessing=True)
+    osnova.trainable = False
+
+    ulaz = tf.keras.Input(shape=(VELICINA, VELICINA, 3))
+    x = osnova(ulaz, training=False)
+    x = tf.keras.layers.GlobalAveragePooling2D()(x)
+    x = tf.keras.layers.Dropout(0.3)(x)
+    izlaz = tf.keras.layers.Dense(1, activation="sigmoid", name="nofish")(x)
+    model = tf.keras.Model(ulaz, izlaz)
+
+    # Faza 1: uči se samo nova "glava"
+    # Argumenti po imenu: u Keras 3 je treći pozicioni argument loss_weights, a ne metrics
+    model.compile(optimizer=tf.keras.optimizers.Adam(1e-3), loss=gubitak, metrics=metrike)
+    model.fit(train_ds, validation_data=val_ds, epochs=10, class_weight=tezine_klasa, callbacks=napravi_callbacks())
+    model.save(faza1_putanja)
+    print(f"   Faza 1 sačuvana: {faza1_putanja}")
 
 # Faza 2: fino podešavanje gornjih slojeva osnove (BatchNorm ostaje zamrznut)
 osnova.trainable = True
@@ -243,7 +283,7 @@ for sloj in osnova.layers:
     if isinstance(sloj, tf.keras.layers.BatchNormalization):
         sloj.trainable = False
 model.compile(optimizer=tf.keras.optimizers.Adam(2e-5), loss=gubitak, metrics=metrike)
-model.fit(train_ds, validation_data=val_ds, epochs=20, class_weight=tezine_klasa, callbacks=callbacks)
+model.fit(train_ds, validation_data=val_ds, epochs=20, class_weight=tezine_klasa, callbacks=napravi_callbacks())
 
 model = tf.keras.models.load_model(najbolji)
 
