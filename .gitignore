@@ -26,3 +26,6 @@ replay_pid*.log
 # Ključevi za potpisivanje
 *.jks
 *.keystore
+
+# Kes Firebase Hosting-a
+.firebase/
