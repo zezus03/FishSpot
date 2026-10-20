@@ -170,7 +170,7 @@ fun MainNavigation(navController: NavHostController, auth: FirebaseAuth) {
             )
         }
         composable("bot_chat_screen") {
-            BotChatScreen()
+            BotChatScreen(onNavigateBack = { navController.popBackStack() })
         }
     }
 }
