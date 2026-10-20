@@ -141,10 +141,8 @@ fun AddSpotScreen(
 
     // --- PROVERA LOKALNIM MODELOM: DA LI JE RIBA NA SLICI ---
     // Rezultat se vidi kao oznaka na fotografiji; bez prepoznate ribe ulov ne može da se sačuva
-    var verovatnocaRibe by remember { mutableStateOf<Float?>(null) }
     LaunchedEffect(slikaUri) {
         ribaPronadjena = false
-        verovatnocaRibe = null
         val uri = slikaUri
         if (uri == null) {
             isValidatingFish = false
@@ -157,9 +155,15 @@ fun AddSpotScreen(
                 fishDetector.analiziraj(ucitajSlikuUspravno(context, uri))
             }
             ribaPronadjena = rezultat.jeRiba
-            verovatnocaRibe = rezultat.verovatnocaRibe
-            rezultat.greska?.let {
-                Toast.makeText(context, "Greška pri proveri slike: $it", Toast.LENGTH_LONG).show()
+            when {
+                rezultat.greska != null ->
+                    Toast.makeText(context, "Greška pri proveri slike: ${rezultat.greska}", Toast.LENGTH_LONG).show()
+                !rezultat.jeRiba ->
+                    Toast.makeText(
+                        context,
+                        "⚠️ Riba nije prepoznata!\nMolimo Vas da slikate ribu iz blizine, jasnije ili pod boljim uglom kako bi je model uspešno detektovao. 🎣",
+                        Toast.LENGTH_LONG
+                    ).show()
             }
         } catch (e: Exception) {
             Log.e("AddSpotScreen", "Greška pri analizi slike", e)
@@ -402,7 +406,6 @@ fun AddSpotScreen(
                 slikaUri = slikaUri,
                 proveravam = isValidatingFish,
                 ribaPronadjena = ribaPronadjena,
-                verovatnocaRibe = verovatnocaRibe,
                 onSlikaj = {
                     val imaDozvolu = androidx.core.content.ContextCompat.checkSelfPermission(
                         context, android.Manifest.permission.CAMERA
@@ -648,7 +651,6 @@ private fun FotografijaUlova(
     slikaUri: Uri?,
     proveravam: Boolean,
     ribaPronadjena: Boolean,
-    verovatnocaRibe: Float?,
     onSlikaj: () -> Unit,
     onGalerija: () -> Unit
 ) {
@@ -712,8 +714,8 @@ private fun FotografijaUlova(
             // Status prepoznavanja ribe
             val (tekst, boja) = when {
                 proveravam -> "Proveravam fotografiju…" to FishBoje.Kartica
-                ribaPronadjena -> "Riba prepoznata${procenat(verovatnocaRibe)}" to FishBoje.AkcenatTamni
-                else -> "Riba nije prepoznata${procenat(verovatnocaRibe)}" to FishBoje.Greska
+                ribaPronadjena -> "Riba prepoznata" to FishBoje.AkcenatTamni
+                else -> "Riba nije prepoznata" to FishBoje.Greska
             }
             Row(
                 modifier = Modifier
@@ -759,10 +761,6 @@ private fun FotografijaUlova(
         }
     }
 }
-
-// " · 87%" iza statusa prepoznavanja
-private fun procenat(verovatnoca: Float?): String =
-    verovatnoca?.let { " · ${(it * 100).toInt()}%" } ?: ""
 
 // Kartica sekcije forme sa ikonom i naslovom (tamna kartica sa ivicom, kao u prognozi)
 @Composable
