@@ -160,6 +160,8 @@ dependencies {
 // Gemini ključ se koristi samo u Cloud Function i ne sme da završi u aplikaciji.
 secrets {
     ignoreList.add("GEMINI_API_KEY")
+    // Geoapify ključ je samo na serveru (funkcija vodeUBlizini, tajna GEOAPIFY_KEY)
+    ignoreList.add("GeoApiFy")
 }
 
 // KLJUČNI DEO: Čišćenje dupliranih API klasa i održavanje AR-a

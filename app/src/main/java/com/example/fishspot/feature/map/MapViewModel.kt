@@ -33,6 +33,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.tasks.await
 import java.net.HttpURLConnection
 import java.net.URL
 import com.example.fishspot.BuildConfig
@@ -318,86 +319,34 @@ class MapViewModel : ViewModel() {
         }
     }
 
+    // Vode van Srbije daje naša Cloud Function vodeUBlizini (Geoapify ključ je samo na serveru)
     private suspend fun fetchNearbyWatersFromApi(lat: Double, lng: Double, radiusInMeters: Float): List<OsmElement> {
-        return withContext(Dispatchers.IO) {
-            try {
-                val apiKey = BuildConfig.GeoApiFy
-
-                // OVO JE JEDINI ISPRAVAN FORMAT ZA JEZERA I REKE: natural.water,waterway
-                val urlString = "https://api.geoapify.com/v2/places" +
-                        "?categories=natural.water,waterway" +
-                        "&filter=circle:$lng,$lat,$radiusInMeters" +
-                        "&bias=proximity:$lng,$lat" +
-                        "&limit=50" +
-                        "&apiKey=$apiKey"
-
-                Log.d("MapViewModel-Geoapify", "Pozivam URL: $urlString")
-
-                val url = URL(urlString)
-                val conn = url.openConnection() as HttpURLConnection
-                conn.requestMethod = "GET"
-                conn.setRequestProperty("Accept", "application/json")
-
-                if (conn.responseCode == 200) {
-                    val jsonString = conn.inputStream.bufferedReader().use { it.readText() }
-
-                    // DODAJEMO OVO DA VIDIMO ŠTA TAČNO SERVER VRAĆA
-                    Log.d("MapViewModel-Geoapify", "Sirovi JSON odgovor: $jsonString")
-
-                    val responseType = object : TypeToken<MapViewModel.GeoapifyResponse>() {}.type
-                    val geoapifyData: MapViewModel.GeoapifyResponse = Gson().fromJson(jsonString, responseType)
-
-                    val premapiraneVode = mutableListOf<OsmElement>()
-
-                    geoapifyData.features?.forEach { feature ->
-                        val props = feature.properties
-
-                        val lonVode = props?.lon
-                        val latVode = props?.lat
-                        val nazivVode = props?.name ?: "Nepoznata voda"
-
-                        // 1. Proveravamo kategorije koje nam je Geoapify vratio u JSON-u
-                        val categories = props?.categories ?: emptyList()
-                        val isRiver = categories.any { it.contains("river") }
-                        val isStream = categories.any { it.contains("stream") }
-                        val isCanal = categories.any { it.contains("canal") }
-
-                        // 2. Dinamički pravimo tagove koje funkcija obradiVodeINotifikacije savršeno razume
-                        val izgenerisaniTagovi = mutableMapOf("name" to nazivVode)
-
-                        if (isRiver) {
-                            izgenerisaniTagovi["waterway"] = "river"
-                        } else if (isStream) {
-                            izgenerisaniTagovi["waterway"] = "stream"
-                        } else if (isCanal) {
-                            izgenerisaniTagovi["waterway"] = "canal"
-                        } else {
-                            izgenerisaniTagovi["water"] = "lake" // Ako nije tekuća voda, onda je jezero
-                        }
-
-                        if (latVode != null && lonVode != null) {
-                            premapiraneVode.add(
-                                OsmElement(
-                                    id = props?.place_id?.hashCode()?.toLong() ?: System.currentTimeMillis(),
-                                    tags = izgenerisaniTagovi, // ← Prosleđujemo ispravne tagove
-                                    lat = latVode,
-                                    lon = lonVode,
-                                    center = Center(latVode, lonVode)
-                                )
-                            )
-                        }
-                    }
-
-                    Log.d("MapViewModel-Geoapify", "Uspešno povučeno ${premapiraneVode.size} voda van Srbije.")
-                    premapiraneVode
-                } else {
-                    Log.e("MapViewModel-Geoapify", "Geoapify API vratio grešku: Kod ${conn.responseCode}")
-                    emptyList()
+        return try {
+            val rezultat = com.google.firebase.functions.FirebaseFunctions.getInstance()
+                .getHttpsCallable("vodeUBlizini")
+                .call(mapOf("lat" to lat, "lng" to lng))
+                .await()
+            @Suppress("UNCHECKED_CAST")
+            val vode = (rezultat.data as? Map<String, Any?>)?.get("vode") as? List<Map<String, Any?>> ?: emptyList()
+            vode.mapNotNull { v ->
+                val latVode = (v["lat"] as? Number)?.toDouble() ?: return@mapNotNull null
+                val lonVode = (v["lon"] as? Number)?.toDouble() ?: return@mapNotNull null
+                val naziv = v["naziv"] as? String ?: "Nepoznata voda"
+                val tagovi = when (val tip = v["tip"] as? String) {
+                    "river", "stream", "canal" -> mapOf("name" to naziv, "waterway" to tip)
+                    else -> mapOf("name" to naziv, "water" to "lake")
                 }
-            } catch (e: Exception) {
-                Log.e("MapViewModel-Geoapify", "Izuzetak pri komunikaciji sa Geoapify API-jem", e)
-                emptyList()
+                OsmElement(
+                    id = (v["id"] as? String)?.hashCode()?.toLong() ?: latVode.hashCode().toLong(),
+                    tags = tagovi,
+                    lat = latVode,
+                    lon = lonVode,
+                    center = Center(latVode, lonVode)
+                )
             }
+        } catch (e: Exception) {
+            Log.e("MapViewModel-Vode", "Vode u blizini nisu dostupne", e)
+            emptyList()
         }
     }
     private fun prikaziNotifikaciju(poruka: String, context: Context, lat: Double? = null, lng: Double? = null) {
@@ -532,25 +481,4 @@ class MapViewModel : ViewModel() {
             emptyList()
         }
     }
-    data class GeoapifyResponse(
-        val features: List<GeoapifyFeature>?
-    )
-
-    data class GeoapifyFeature(
-        val properties: GeoapifyProperties?,
-        val geometry: GeoapifyGeometry?
-    )
-
-    data class GeoapifyProperties(
-        val place_id: String?,
-        val name: String?,
-        val lat: Double?,         // ← Dodato
-        val lon: Double?,         // ← Dodato
-        val categories: List<String>? // ← Dodato
-    )
-
-    data class GeoapifyGeometry(
-        val type: String?,
-        val coordinates: com.google.gson.JsonElement? // Koristimo JsonElement da se ne sruši zbog poligona
-    )
 }

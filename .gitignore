@@ -29,3 +29,6 @@ replay_pid*.log
 
 # Kes Firebase Hosting-a
 .firebase/
+
+# Tajne za lokalni emulator funkcija
+functions/.secret.local

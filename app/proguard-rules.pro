@@ -35,3 +35,10 @@
 -keepattributes *Annotation*
 -keepattributes Signature
 -keepattributes Exceptions
+
+# 8. Retrofit 2.9 + suspend funkcije: R8 inače briše generičke tipove (Continuation, Response, Call),
+# pa poziv API-ja pukne sa "Class cannot be cast to ParameterizedType" (npr. vremenska prognoza)
+-keep,allowobfuscation,allowshrinking interface retrofit2.Call
+-keep,allowobfuscation,allowshrinking class retrofit2.Response
+-keep,allowobfuscation,allowshrinking class kotlin.coroutines.Continuation
+-keepattributes InnerClasses,EnclosingMethod

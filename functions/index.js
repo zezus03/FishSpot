@@ -224,3 +224,6 @@ const ulovi = require("./ulovi");
 exports.obrisanUlov = ulovi.obrisanUlov;
 exports.izmenjenUlov = ulovi.izmenjenUlov;
 exports.obrisiNalog = ulovi.obrisiNalog;
+
+// Vode u blizini van Srbije, Geoapify ključ je samo na serveru (functions/vode.js)
+exports.vodeUBlizini = require("./vode").vodeUBlizini;

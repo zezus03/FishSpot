@@ -111,6 +111,15 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // ─── VODE VAN SRBIJE ───
+    // Kes i dnevne granice funkcije vodeUBlizini; aplikacija ih ne cita direktno
+    match /VodeKes/{kljuc} {
+      allow read, write: if false;
+    }
+    match /VodeLimit/{uid} {
+      allow read, write: if false;
+    }
+
     // ─── AKTIVNI KORISNICI (lokacija uzivo) ───
     match /ActiveUsers/{uid} {
       allow read: if prijavljen();
