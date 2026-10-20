@@ -87,19 +87,11 @@ fun LoginScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // 1. POZADINSKA SLIKA
-        Image(
-            painter = painterResource(id = R.drawable.pp),
-            contentDescription = "Pozadina",
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.matchParentSize()
-        )
-
-        // 2. ZATAMNJENJE
+        // Crna pozadina, kao na logou
         Box(
             modifier = Modifier
                 .matchParentSize()
-                .background(Color.Black.copy(alpha = 0.5f))
+                .background(Color.Black)
         )
 
         // 3. GLAVNI SADRŽAJ
@@ -110,11 +102,10 @@ fun LoginScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text(
-                text = "FishSpot",
-                fontSize = 42.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = Color.White
+            Image(
+                painter = painterResource(id = R.drawable.logo_fishspot),
+                contentDescription = "FishSpot",
+                modifier = Modifier.width(280.dp)
             )
             Text(
                 text = "Tvoja digitalna čuvarka",

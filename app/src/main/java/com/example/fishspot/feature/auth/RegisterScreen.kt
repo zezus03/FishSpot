@@ -129,19 +129,11 @@ fun RegisterScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // 1. POZADINSKA SLIKA
-        Image(
-            painter = painterResource(id = R.drawable.pp),
-            contentDescription = "Pozadina",
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.matchParentSize()
-        )
-
-        // 2. ZATAMNJENJE (Crni filter)
+        // Crna pozadina, kao na logou
         Box(
             modifier = Modifier
                 .matchParentSize()
-                .background(Color.Black.copy(alpha = 0.6f))
+                .background(Color.Black)
         )
 
         // 3. GLAVNI SADRŽAJ (Skrolabilna kolona)
@@ -153,7 +145,13 @@ fun RegisterScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Image(
+                painter = painterResource(id = R.drawable.logo_fishspot),
+                contentDescription = "FishSpot",
+                modifier = Modifier.width(200.dp)
+            )
 
             Text(
                 text = "Novi Pecaroš",
@@ -423,7 +421,13 @@ fun RegisterScreen(
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Image(
+                painter = painterResource(id = R.drawable.logo_fishspot),
+                contentDescription = "FishSpot",
+                modifier = Modifier.width(200.dp)
+            )
         }
     }
 }
