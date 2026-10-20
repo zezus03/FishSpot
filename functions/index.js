@@ -81,6 +81,7 @@ function poeniZaUlov(tezinaKg) {
     if (tezinaKg > 2.0) return 20;
     if (tezinaKg > 1.0) return 10;
     if (tezinaKg > 0.5) return 5;
+    if (tezinaKg > 0) return 2; // i mala riba donosi poene
     return 0;
 }
 

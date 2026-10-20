@@ -3,7 +3,6 @@
 // a ove funkcije srede sve ostalo: poene, spisak ulova po vrsti, komentare i slike.
 const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
-const { FieldValue } = require("firebase-admin/firestore");
 
 // Isti pragovi kao u aplikaciji (SpotsViewModel.addSpot)
 function poeniZaUlov(tezinaKg) {
@@ -11,6 +10,7 @@ function poeniZaUlov(tezinaKg) {
     if (tezinaKg > 2.0) return 20;
     if (tezinaKg > 1.0) return 10;
     if (tezinaKg > 0.5) return 5;
+    if (tezinaKg > 0) return 2; // i mala riba donosi poene
     return 0;
 }
 
@@ -28,14 +28,17 @@ function ulovPoVrsti(ulov) {
 }
 
 // Menja poene korisniku; ako je nalog u međuvremenu obrisan, ne pravi ga ponovo
+// Poeni nikad ne idu ispod nule (npr. brisanje starog ulova za koji pravilo tada nije davalo poene)
 async function promeniPoene(uid, razlika) {
     if (!uid || !razlika) return;
-    try {
-        await admin.firestore().collection("Korisnici").doc(uid)
-            .update({ poeni: FieldValue.increment(razlika) });
-    } catch (e) {
-        if (e.code !== 5) throw e; // 5 = NOT_FOUND
-    }
+    const db = admin.firestore();
+    const ref = db.collection("Korisnici").doc(uid);
+    await db.runTransaction(async (tx) => {
+        const snap = await tx.get(ref);
+        if (!snap.exists) return;
+        const novi = Math.max(0, (snap.data().poeni ?? 0) + razlika);
+        tx.update(ref, { poeni: novi });
+    });
 }
 
 // Putanja fajla u Storage-u iz download linka (.../o/spot_slike%2Fabc.jpg?alt=media...)

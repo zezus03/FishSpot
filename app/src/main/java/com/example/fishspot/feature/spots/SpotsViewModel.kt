@@ -220,6 +220,7 @@ class SpotsViewModel : ViewModel() {
                     tezinaRibe > 2.0 -> 20L
                     tezinaRibe > 1.0 -> 10L
                     tezinaRibe > 0.5 -> 5L
+                    tezinaRibe > 0.0 -> 2L // i mala riba donosi poene
                     else -> 0L
                 }
 
