@@ -100,6 +100,8 @@ class SpotsViewModel : ViewModel() {
     private fun fetchSpots() {
         firestore.collection("MestaZaPecanje")
             .orderBy("timestamp", Query.Direction.DESCENDING)
+            // Gornja granica čitanja pri svakom otvaranju aplikacije (najnoviji ulovi)
+            .limit(1000)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) { return@addSnapshotListener }
                 if (snapshot != null) {

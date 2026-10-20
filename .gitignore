@@ -22,3 +22,7 @@ replay_pid*.log
 
 # Logovi Firebase emulatora
 *-debug.log
+
+# Ključevi za potpisivanje
+*.jks
+*.keystore

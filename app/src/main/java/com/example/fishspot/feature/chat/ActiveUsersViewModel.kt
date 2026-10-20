@@ -62,26 +62,44 @@ class ActiveUsersViewModel : ViewModel() {
                     ?: "Pecaroš"
     }
 
-    fun updateMyLocationIfSharing(lat: Double, lng: Double) {
+    // Poslednji upis lokacije, da se ne upisuje pri svakom malom pomeranju
+    private var poslednjiUpis: Triple<Double, Double, Long>? = null
+
+    fun updateMyLocationIfSharing(lat: Double, lng: Double, deli: Boolean) {
         val currentUser = auth.currentUser ?: return
+        if (!deli) {
+            if (poslednjiUpis != null) removeMyLocation()
+            return
+        }
+        val sada = System.currentTimeMillis()
+        poslednjiUpis?.let { (staraLat, staraLng, vreme) ->
+            val pomeraj = FloatArray(1)
+            android.location.Location.distanceBetween(staraLat, staraLng, lat, lng, pomeraj)
+            // Upis samo kad se pomeri 30 m ili prođe minut (da ostane "aktivan")
+            if (pomeraj[0] < 30f && sada - vreme < 60_000L) return
+        }
+        poslednjiUpis = Triple(lat, lng, sada)
         val activeUser = ActiveUser(
             userId = currentUser.uid,
             username = myUsername,
             slikaUrl = mySlikaUrl ?: "",
             lat = lat,
             lng = lng,
-            lastActive = System.currentTimeMillis()
+            lastActive = sada
         )
         firestore.collection("ActiveUsers").document(currentUser.uid).set(activeUser)
     }
 
     fun removeMyLocation() {
+        poslednjiUpis = null
         val currentUser = auth.currentUser ?: return
         firestore.collection("ActiveUsers").document(currentUser.uid).delete()
     }
 
     private fun listenToActiveUsers() {
+        // Samo korisnici aktivni u poslednjih 5 minuta (stari zapisi se ne čitaju)
         firestore.collection("ActiveUsers")
+            .whereGreaterThan("lastActive", System.currentTimeMillis() - 5 * 60 * 1000)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) return@addSnapshotListener
                 if (snapshot != null) {

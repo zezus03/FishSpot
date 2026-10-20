@@ -10,8 +10,25 @@ plugins {
 android {
     namespace = "com.example.fishspot"
     compileSdk = 35
+
+    // Upload ključ za Google Play; putanja i lozinke su u local.properties (nije u gitu)
+    val potpis = Properties().apply {
+        val fajl = rootProject.file("local.properties")
+        if (fajl.exists()) fajl.inputStream().use { load(it) }
+    }
+    signingConfigs {
+        if (potpis.getProperty("UPLOAD_KEYSTORE") != null) {
+            create("upload") {
+                storeFile = file(potpis.getProperty("UPLOAD_KEYSTORE"))
+                storePassword = potpis.getProperty("UPLOAD_KEYSTORE_PASSWORD")
+                keyAlias = potpis.getProperty("UPLOAD_KEY_ALIAS")
+                keyPassword = potpis.getProperty("UPLOAD_KEY_PASSWORD")
+            }
+        }
+    }
     buildTypes {
         release {
+            signingConfigs.findByName("upload")?.let { signingConfig = it }
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(

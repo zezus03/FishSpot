@@ -90,14 +90,14 @@ fun RegisterScreen(
                         },
                         onFailure = { e ->
                             android.util.Log.e("GoogleAuth", "Firebase prijava neuspešna", e)
-                            Toast.makeText(context, "Firebase greška: ${e.message}", Toast.LENGTH_LONG).show()
+                            Toast.makeText(context, "Prijava nije uspela. Proveri internet i pokušaj ponovo.", Toast.LENGTH_LONG).show()
                         }
                     )
                 }
             } catch (e: ApiException) {
                 Log.e("GoogleAuth", "Google prijava neuspešna. Kod: ${e.statusCode}", e)
                 // SADA ĆEŠ VIDETI TAČAN KOD GREŠKE (Ako piše 10, fali ti SHA-1 ili je loš Client ID)
-                Toast.makeText(context, "Google Greška! Kod: ${e.statusCode}. Proveri SHA-1 u Firebase konzoli.", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, "Prijava preko Google naloga nije uspela. Pokušaj ponovo.", Toast.LENGTH_LONG).show()
             }
         } else {
             Toast.makeText(context, "Prozor za prijavu zatvoren.", Toast.LENGTH_SHORT).show()

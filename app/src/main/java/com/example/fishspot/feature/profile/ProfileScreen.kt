@@ -287,6 +287,32 @@ fun ProfileScreen(
                 }
             }
 
+            // ────── PRIVATNOST ──────
+            val deliLokaciju by mapViewModel.deliLokaciju.collectAsState()
+            Sekcija("Privatnost") {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IkonaUKrugu(Icons.Default.MyLocation)
+                    Spacer(Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Prikaži me na mapi", color = FishBoje.TekstPrimarni, fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold)
+                        Text("Drugi pecaroši vide gde si dok je aplikacija otvorena i mogu da ti pišu",
+                            color = FishBoje.TekstPriguseni, fontSize = 12.sp)
+                    }
+                    Switch(
+                        checked = deliLokaciju,
+                        onCheckedChange = { upaljeno -> mapViewModel.setDeliLokaciju(context, upaljeno) },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = FishBoje.Pozadina,
+                            checkedTrackColor = FishBoje.Akcenat,
+                            uncheckedThumbColor = FishBoje.TekstPriguseni,
+                            uncheckedTrackColor = FishBoje.Polje,
+                            uncheckedBorderColor = FishBoje.IvicaKartice
+                        )
+                    )
+                }
+            }
+
             // ────── BEZBEDNOST ──────
             Sekcija("Bezbednost") {
                 Row(

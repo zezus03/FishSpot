@@ -168,7 +168,7 @@ fun AddSpotScreen(
         } catch (e: Exception) {
             Log.e("AddSpotScreen", "Greška pri analizi slike", e)
             ribaPronadjena = false
-            Toast.makeText(context, "Greška pri učitavanju slike: ${e.message}", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, "Slika nije mogla da se učita. Pokušaj sa drugom slikom.", Toast.LENGTH_LONG).show()
         } finally {
             isValidatingFish = false
         }

@@ -76,6 +76,10 @@ class MapViewModel : ViewModel() {
     private val _vodeNotificationsEnabled = MutableStateFlow(true)
     val vodeNotificationsEnabled = _vodeNotificationsEnabled.asStateFlow()
 
+    // Da li korisnik prikazuje svoju lokaciju drugima na mapi (podrazumevano NE)
+    private val _deliLokaciju = MutableStateFlow(false)
+    val deliLokaciju = _deliLokaciju.asStateFlow()
+
     private var lastOsmCheckLocation: Location? = null
 
     init {
@@ -96,19 +100,30 @@ class MapViewModel : ViewModel() {
     fun ucitajPreferences(context: Context) {
         val sharedPref = context.getSharedPreferences("fishspot_prefs", Context.MODE_PRIVATE)
         _vodeNotificationsEnabled.value = sharedPref.getBoolean("vode_notifications_enabled", true)
+        _deliLokaciju.value = sharedPref.getBoolean("deli_lokaciju", false)
+    }
+
+    fun setDeliLokaciju(context: Context, deli: Boolean) {
+        _deliLokaciju.value = deli
+        context.getSharedPreferences("fishspot_prefs", Context.MODE_PRIVATE)
+            .edit().putBoolean("deli_lokaciju", deli).apply()
+        // Kad isključi, odmah nestaje sa mape drugih korisnika
+        if (!deli) auth.currentUser?.uid?.let { firestore.collection("ActiveUsers").document(it).delete() }
     }
 
     fun startLocationUpdates(context: Context) {
         ucitajPreferences(context)
         val fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
-        val locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 5000L).build()
+        val locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 15_000L)
+            .setMinUpdateIntervalMillis(10_000L)
+            .setMinUpdateDistanceMeters(15f)
+            .build()
 
         val locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
                 locationResult.lastLocation?.let { loc ->
                     Log.d("MapViewModel", "Nova lokacija: ${loc.latitude}, ${loc.longitude}")
                     _userLocation.value = loc
-                    sacuvajLokaciju(loc)
                     proveriBlizinu(loc, context)
 
                     if (_trenutniKorisnik.value == null) {
@@ -124,7 +139,6 @@ class MapViewModel : ViewModel() {
                 if (loc != null && _userLocation.value == null) {
                     Log.d("MapViewModel", "Uzeta keširana lokacija: ${loc.latitude}")
                     _userLocation.value = loc
-                    sacuvajLokaciju(loc)
                     proveriBlizinu(loc, context)
                 }
             }
@@ -179,6 +193,8 @@ class MapViewModel : ViewModel() {
             }
         }
         if (document.contains("fotoUrl")) izmene["fotoUrl"] = FieldValue.delete()
+        // Lokacija se više ne čuva u profilu (profil vide svi prijavljeni korisnici)
+        listOf("lat", "lng", "timestamp").forEach { if (document.contains(it)) izmene[it] = FieldValue.delete() }
 
         val staroIme = document.getString("username")
         if (document.getString("userName").isNullOrBlank() && !staroIme.isNullOrBlank()) {
@@ -200,52 +216,24 @@ class MapViewModel : ViewModel() {
         Log.d("MapViewModel", "Profilna slika ažurirana na mapi: $urlSaCacheBusting")
     }
 
-    private fun sacuvajLokaciju(location: Location) {
-        val trenchesVreme = System.currentTimeMillis()
-        val uid = auth.currentUser?.uid ?: return
-
-        val dataKorisnik = mapOf(
-            "lat" to location.latitude,
-            "lng" to location.longitude,
-            "timestamp" to trenchesVreme
-        )
-        firestore.collection("Korisnici").document(uid).set(dataKorisnik, SetOptions.merge())
-
-        val dataAktivni = mapOf(
-            "lat" to location.latitude,
-            "lng" to location.longitude,
-            "lastActive" to trenchesVreme,
-            "username" to (_trenutniKorisnik.value?.userName ?: auth.currentUser?.displayName ?: "Pecaroš")
-        )
-        firestore.collection("ActiveUsers").document(uid).set(dataAktivni, SetOptions.merge())
+    // Obaveštenje kad je blizu neko ko deli lokaciju (lista dolazi iz ActiveUsersViewModel-a)
+    fun proveriBliskeKorisnike(korisnici: List<com.example.fishspot.feature.chat.ActiveUser>, context: Context) {
+        val myLoc = _userLocation.value ?: return
+        val mojUid = auth.currentUser?.uid
+        val sada = System.currentTimeMillis()
+        for (k in korisnici) {
+            if (k.userId == mojUid) continue
+            val udaljenost = myLoc.distanceTo(Location("").apply { latitude = k.lat; longitude = k.lng })
+            val poslednje = vremeObavestenjaKorisnika[k.userId] ?: 0L
+            if (udaljenost < 300 && sada - poslednje > LIMIT_ZATISJA_MS) {
+                prikaziNotifikaciju("Korisnik ${k.username} je u tvojoj blizini!", context, k.lat, k.lng)
+                vremeObavestenjaKorisnika[k.userId] = sada
+            }
+        }
     }
 
     private fun proveriBlizinu(myLoc: Location, context: Context) {
         val trenutnoVreme = System.currentTimeMillis()
-
-        // 1. PROVERA AKTIVNIH KORISNIKA UŽIVO
-        firestore.collection("ActiveUsers").get().addOnSuccessListener { result ->
-            for (doc in result) {
-                val userId = doc.id
-                if (userId == auth.currentUser?.uid) continue
-
-                val lat = doc.getDouble("lat") ?: continue
-                val lng = doc.getDouble("lng") ?: continue
-                val username = doc.getString("username") ?: "Pecaroš"
-                val lastActive = doc.getLong("lastActive") ?: 0L
-
-                if (trenutnoVreme - lastActive > 60 * 60 * 1000L) continue
-
-                val locUser = Location("").apply { latitude = lat; longitude = lng }
-                val distance = myLoc.distanceTo(locUser)
-                val poslednjeObavestenje = vremeObavestenjaKorisnika[userId] ?: 0L
-
-                if (distance < 300 && (trenutnoVreme - poslednjeObavestenje > LIMIT_ZATISJA_MS)) {
-                    prikaziNotifikaciju("Korisnik $username je u tvojoj blizini!", context, lat, lng)
-                    vremeObavestenjaKorisnika[userId] = trenutnoVreme
-                }
-            }
-        }
 
         // 2. PROVERA SVIH VODA U RADIJUSU OD 5KM
         if (lastOsmCheckLocation == null || myLoc.distanceTo(lastOsmCheckLocation!!) >= 1500) {

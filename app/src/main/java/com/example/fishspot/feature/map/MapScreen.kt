@@ -107,6 +107,9 @@ fun MapScreen(
     val currentFilterState by spotsViewModel.filterState.collectAsState()
     val comments by spotsViewModel.comments.collectAsState()
     val activeUsers by activeUsersViewModel.activeUsers.collectAsState()
+    val deliLokaciju by mapViewModel.deliLokaciju.collectAsState()
+    // Obaveštenje kad je neko blizu (bez posebnog čitanja baze)
+    LaunchedEffect(activeUsers) { mapViewModel.proveriBliskeKorisnike(activeUsers, context) }
 
     var isAddMode by remember { mutableStateOf(false) }
     var showFilterDialog by remember { mutableStateOf(false) }
@@ -148,6 +151,8 @@ fun MapScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
+            // Podešavanje sa profila (npr. deljenje lokacije) važi čim se korisnik vrati na mapu
+            if (event == Lifecycle.Event.ON_RESUME) mapViewModel.ucitajPreferences(context)
             if (event == Lifecycle.Event.ON_STOP || event == Lifecycle.Event.ON_DESTROY) {
                 activeUsersViewModel.removeMyLocation()
             }
@@ -201,10 +206,10 @@ fun MapScreen(
         spotsViewModel.sacuvajFcmToken()
     }
 
-    LaunchedEffect(userLocation) {
+    LaunchedEffect(userLocation, deliLokaciju) {
         userLocation?.let {
             spotsViewModel.updateUserLocation(it)
-            activeUsersViewModel.updateMyLocationIfSharing(it.latitude, it.longitude)
+            activeUsersViewModel.updateMyLocationIfSharing(it.latitude, it.longitude, deliLokaciju)
 
             if (!isAddMode && !hasCenteredOnUser && focusOnSpotId == null && focusOnUserCatch == null) {
                 val latLng = LatLng(it.latitude, it.longitude)
