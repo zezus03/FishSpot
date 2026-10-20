@@ -1,5 +1,6 @@
 package com.example.fishspot.feature.weather
 
+import com.example.fishspot.core.theme.FishBoje
 import com.example.fishspot.feature.map.DayForecast
 import com.example.fishspot.feature.map.ForecastDisplayData
 
@@ -39,16 +40,16 @@ import java.util.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-// ─── Boje teme ────────────────────────────────────────────────────────────────
-private val BgDark        = Color(0xFF0B1612)
-private val BgCard        = Color(0xFF132218)
-private val BgCardBorder  = Color(0xFF1E3328)
-private val BgParamRow    = Color(0xFF0F1E18)
-private val AccentGreen   = Color(0xFF2ECC71)
-private val AccentGreenDim= Color(0xFF1A7A44)
-private val TextMuted     = Color(0xFF6B8078)
-private val TextSecondary = Color(0xFFB0BDB9)
-private val TextPrimary   = Color.White
+// ─── Boje teme (zajednička paleta u core/theme/FishBoje.kt) ──────────────────
+private val BgDark        = FishBoje.Pozadina
+private val BgCard        = FishBoje.Kartica
+private val BgCardBorder  = FishBoje.IvicaKartice
+private val BgParamRow    = FishBoje.Polje
+private val AccentGreen   = FishBoje.Akcenat
+private val AccentGreenDim= FishBoje.AkcenatTamni
+private val TextMuted     = FishBoje.TekstPriguseni
+private val TextSecondary = FishBoje.TekstSekundarni
+private val TextPrimary   = FishBoje.TekstPrimarni
 
 // ─── Entry point ──────────────────────────────────────────────────────────────
 @Composable

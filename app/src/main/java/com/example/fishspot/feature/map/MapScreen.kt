@@ -745,8 +745,8 @@ fun MapScreen(
                 },
                 sheetState = sheetState,
                 modifier = Modifier.fillMaxHeight(0.85f),
-                containerColor = MaterialTheme.colorScheme.surface,
-                dragHandle = { BottomSheetDefaults.DragHandle() }
+                containerColor = com.example.fishspot.core.theme.FishBoje.Pozadina,
+                dragHandle = { BottomSheetDefaults.DragHandle(color = com.example.fishspot.core.theme.FishBoje.TekstPriguseni) }
             ) {
                 val autorUlova by spotsViewModel.autorUlova.collectAsState()
                 val ulovPrijavljen by spotsViewModel.ulovPrijavljen.collectAsState()
