@@ -213,3 +213,8 @@ exports.vratiPrijavljeniUlov = functions.firestore
         console.log(`Ulov ${spotId} vraćen od strane admina`);
         return null;
     });
+
+// Vodostaji reka (functions/vodostaji.js)
+const vodostaji = require("./vodostaji");
+exports.osveziVodostaje = vodostaji.osveziVodostaje;
+exports.detaljiStanice = vodostaji.detaljiStanice;

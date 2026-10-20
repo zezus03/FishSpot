@@ -100,6 +100,17 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // ─── VODOSTAJI (RHMZ) ───
+    // Upisuje ih Cloud Function osveziVodostaje; aplikacija ih samo cita.
+    // VodostajiDetalji su kes funkcije detaljiStanice i aplikacija ih ne cita direktno.
+    match /Vodostaji/{dokument} {
+      allow read: if prijavljen();
+      allow write: if false;
+    }
+    match /VodostajiDetalji/{hmId} {
+      allow read, write: if false;
+    }
+
     // ─── AKTIVNI KORISNICI (lokacija uzivo) ───
     match /ActiveUsers/{uid} {
       allow read: if prijavljen();
