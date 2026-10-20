@@ -52,6 +52,7 @@ import java.io.ByteArrayOutputStream
 fun ProfileScreen(
     onNavigateBack: () -> Unit,
     onLogout: () -> Unit,
+    onPrikaziUlove: (uid: String) -> Unit = {},
     mapViewModel: MapViewModel = viewModel()
 ) {
     val context = LocalContext.current
@@ -219,8 +220,10 @@ fun ProfileScreen(
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 PlocicaStatistike(Icons.Default.Star, poeni?.toString() ?: "—", "poena",
                     FishBoje.ZelenaPlocica, Modifier.weight(1f))
-                PlocicaStatistike(Icons.Default.SetMeal, brojUlova?.toString() ?: "—", "ulova",
-                    FishBoje.PlavaPlocica, Modifier.weight(1f))
+                // Dodir otvara listu svih ulova sa brojem ulova po vrstama
+                PlocicaStatistike(Icons.Default.SetMeal, brojUlova?.toString() ?: "—", "ulova ›",
+                    FishBoje.PlavaPlocica, Modifier.weight(1f),
+                    onClick = { currentUser?.uid?.let(onPrikaziUlove) })
                 PlocicaStatistike(Icons.Default.EmojiEvents, mestoNaListi?.let { "$it." } ?: "—", "na listi",
                     FishBoje.NarandzastaPlocica, Modifier.weight(1f))
             }
@@ -460,12 +463,15 @@ private fun PlocicaStatistike(
     vrednost: String,
     oznaka: String,
     boje: Pair<Color, Color>,
-    modifier: Modifier
+    modifier: Modifier,
+    onClick: (() -> Unit)? = null
 ) {
     val (pozadina, bojaIkone) = boje
     Column(
         modifier = modifier
-            .background(pozadina, RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(16.dp))
+            .background(pozadina)
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .padding(12.dp)
     ) {
         Box(

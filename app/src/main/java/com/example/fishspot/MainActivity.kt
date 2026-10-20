@@ -24,6 +24,7 @@ import com.example.fishspot.feature.profile.ProfileScreen
 import com.example.fishspot.feature.ranking.RankingScreen
 import com.example.fishspot.feature.auth.RegisterScreen
 import com.example.fishspot.feature.spots.SpotsListScreen
+import com.example.fishspot.feature.spots.UloviKorisnikaScreen
 import com.example.fishspot.feature.auth.AuthViewModel
 import com.google.firebase.auth.FirebaseAuth
 
@@ -166,7 +167,18 @@ fun MainNavigation(navController: NavHostController, auth: FirebaseAuth) {
                     navController.navigate("login") {
                         popUpTo(0) { inclusive = true }
                     }
-                }
+                },
+                onPrikaziUlove = { uid -> navController.navigate("ulovi_korisnika/$uid") }
+            )
+        }
+        // ─── ULOVI JEDNOG KORISNIKA (iz profila) ───
+        composable(
+            route = "ulovi_korisnika/{uid}",
+            arguments = listOf(navArgument("uid") { type = NavType.StringType })
+        ) { backStackEntry ->
+            UloviKorisnikaScreen(
+                uid = backStackEntry.arguments?.getString("uid").orEmpty(),
+                onNavigateBack = { navController.popBackStack() }
             )
         }
         composable("bot_chat_screen") {

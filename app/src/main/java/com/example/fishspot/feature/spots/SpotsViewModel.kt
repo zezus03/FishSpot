@@ -47,7 +47,8 @@ class SpotsViewModel : ViewModel() {
         combine(_spots, _filterState, _currentUserLocation) { spots, filter, userLocation ->
             spots.filter { spot ->
                 val autorFilterPassed = filter.autor.isBlank() || spot.authorUsername.contains(filter.autor, ignoreCase = true)
-                val vrstaRibeFilterPassed = filter.vrstaRibe.isBlank() || spot.vrstaRibe.equals(filter.vrstaRibe, ignoreCase = true)
+                // Deo naziva je dovoljan ("dever" nalazi Deverika)
+                val vrstaRibeFilterPassed = filter.vrstaRibe.isBlank() || spot.vrstaRibe.contains(filter.vrstaRibe.trim(), ignoreCase = true)
                 val ocenaFilterPassed = spot.ocena >= filter.minimalnaOcena
                 val startDateFilterPassed = filter.startDate == null || spot.timestamp >= filter.startDate
                 val endDateFilterPassed = filter.endDate == null || spot.timestamp <= filter.endDate

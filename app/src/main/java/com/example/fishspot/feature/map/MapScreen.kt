@@ -53,6 +53,8 @@ import com.example.fishspot.feature.chat.ActiveUsersViewModel
 
 import com.example.fishspot.feature.spots.SpotsViewModel
 import com.example.fishspot.feature.spots.UlovDetalji
+import com.example.fishspot.core.theme.FishBoje
+import com.google.android.gms.maps.model.MapStyleOptions
 import com.example.fishspot.feature.weather.VodostajiScreen
 import com.example.fishspot.feature.weather.WaterLevelViewModel
 import com.example.fishspot.feature.chat.ActiveUser
@@ -118,8 +120,12 @@ fun MapScreen(
 
     var isSatelliteView by remember { mutableStateOf(false) }
 
+    // Tamni stil u bojama aplikacije (res/raw/mapa_tamna.json), sa istaknutom vodom;
+    // stil važi samo za NORMAL tip mape, satelitski prikaz ostaje kakav jeste
+    val tamniStil = remember { MapStyleOptions.loadRawResourceStyle(context, R.raw.mapa_tamna) }
     val mapProperties = MapProperties(
-        mapType = if (isSatelliteView) MapType.HYBRID else MapType.TERRAIN
+        mapType = if (isSatelliteView) MapType.HYBRID else MapType.NORMAL,
+        mapStyleOptions = if (isSatelliteView) null else tamniStil
     )
     val activeBubbles = remember { mutableStateListOf<ActiveUser>() }
     val bubbleOffsets = remember { mutableStateMapOf<String, IntOffset>() }
@@ -249,8 +255,13 @@ fun MapScreen(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
             properties = mapProperties,
-            uiSettings = MapUiSettings(myLocationButtonEnabled = !isAddMode)
+            // Bez Google tastera za zum (beli, virio je iza dugmeta "+"); zumira se prstima
+            uiSettings = MapUiSettings(myLocationButtonEnabled = !isAddMode, zoomControlsEnabled = false)
         ) {
+            // Pinovi u stilu aplikacije (pravimo ih tek ovde, kada je mapa inicijalizovana)
+            val pinUlova = remember { vektorUPin(context, R.drawable.ic_pin_ulov) }
+            val pinKorisnika = remember { vektorUPin(context, R.drawable.ic_pin_korisnik) }
+
             if (!isAddMode && !isWeatherMode) {
                 userLocation?.let { location ->
                     val userPosition = LatLng(location.latitude, location.longitude)
@@ -297,7 +308,7 @@ fun MapScreen(
                             state = rememberMarkerState(key = spot.id, position = spotPosition),
                             title = spot.naziv,
                             snippet = "Riba: ${spot.vrstaRibe}, Klikni za komentar",
-                            icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE),
+                            icon = pinUlova,
                             onClick = {
                                 selectedSpotForComments = spot
                                 spotsViewModel.loadComments(spot.id)
@@ -327,13 +338,13 @@ fun MapScreen(
                                     val bitmap = result.drawable.toBitmap(100, 100)
                                     markerIcon = BitmapDescriptorFactory.fromBitmap(bitmap)
                                 } else {
-                                    markerIcon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)
+                                    markerIcon = pinKorisnika
                                 }
                             } catch (e: Exception) {
-                                markerIcon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)
+                                markerIcon = pinKorisnika
                             }
                         } else {
-                            markerIcon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)
+                            markerIcon = pinKorisnika
                         }
                     }
 
@@ -342,7 +353,7 @@ fun MapScreen(
                             state = rememberMarkerState(key = activeUser.userId, position = position),
                             title = activeUser.username,
                             snippet = "Klikni za dopisivanje!",
-                            icon = markerIcon ?: BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE),
+                            icon = markerIcon ?: pinKorisnika,
                             onClick = {
                                 if (!activeBubbles.any { it.userId == activeUser.userId }) {
                                     activeBubbles.add(activeUser)
@@ -369,12 +380,14 @@ fun MapScreen(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                // Tamni krugovi sa zelenim ikonama (paleta FishBoje)
                 val iconModifier = Modifier
                     .size(44.dp)
-                    .shadow(4.dp, CircleShape)
-                    .background(Color.White, CircleShape)
-                    .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f), CircleShape)
+                    .shadow(6.dp, CircleShape)
+                    .background(FishBoje.Kartica, CircleShape)
+                    .border(1.dp, FishBoje.IvicaKartice, CircleShape)
                     .clip(CircleShape)
+                val bojaIkone = FishBoje.Akcenat
 
                 IconButton(
                     onClick = onNavigateToProfile,
@@ -383,7 +396,7 @@ fun MapScreen(
                     Icon(
                         imageVector = Icons.Default.Person,
                         contentDescription = "Profil",
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = bojaIkone
                     )
                 }
 
@@ -394,7 +407,7 @@ fun MapScreen(
                     Icon(
                         imageVector = Icons.Default.Waves,
                         contentDescription = "Vodostaji",
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = bojaIkone
                     )
                 }
 
@@ -419,7 +432,7 @@ fun MapScreen(
                     Icon(
                         imageVector = Icons.Default.FilterList,
                         contentDescription = "Filter",
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = bojaIkone
                     )
                 }
 
@@ -430,7 +443,7 @@ fun MapScreen(
                     Icon(
                         imageVector = Icons.Default.List,
                         contentDescription = "Lista ulova",
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = bojaIkone
                     )
                 }
 
@@ -441,7 +454,7 @@ fun MapScreen(
                     Icon(
                         imageVector = Icons.Default.Leaderboard,
                         contentDescription = "Rang lista",
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = bojaIkone
                     )
                 }
 
@@ -452,7 +465,7 @@ fun MapScreen(
                     Icon(
                         imageVector = Icons.Default.ExitToApp,
                         contentDescription = "Odjavi se",
-                        tint = Color.Red.copy(alpha = 0.8f)
+                        tint = FishBoje.Greska
                     )
                 }
 
@@ -468,8 +481,9 @@ fun MapScreen(
                 FloatingActionButton(
                     onClick = { isSatelliteView = !isSatelliteView },
                     shape = CircleShape,
-                    modifier = Modifier.size(56.dp),
-                    containerColor = MaterialTheme.colorScheme.tertiary
+                    modifier = Modifier.size(56.dp).border(1.dp, FishBoje.IvicaKartice, CircleShape),
+                    containerColor = FishBoje.Kartica,
+                    contentColor = FishBoje.Akcenat
                 ) {
                     Icon(
                         imageVector = if (isSatelliteView) Icons.Default.Terrain else Icons.Default.Satellite,
@@ -500,10 +514,10 @@ fun MapScreen(
 
         if (isAddMode) {
             Icon(
-                imageVector = Icons.Default.LocationOn,
+                painter = painterResource(id = R.drawable.ic_pin_ulov),
                 contentDescription = "Kursor za lokaciju",
-                modifier = Modifier.align(Alignment.Center).size(48.dp).padding(bottom = 24.dp),
-                tint = MaterialTheme.colorScheme.primary
+                modifier = Modifier.align(Alignment.Center).size(44.dp, 54.dp).padding(bottom = 26.dp),
+                tint = Color.Unspecified
             )
 
             Row(
@@ -511,9 +525,9 @@ fun MapScreen(
                     .align(Alignment.BottomCenter)
                     .navigationBarsPadding()
                     .padding(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Button(onClick = { isAddMode = false }) {
+                Button(onClick = { isAddMode = false }, colors = dugmeOtkaziBoje(), modifier = Modifier.height(50.dp)) {
                     Icon(imageVector = Icons.Default.Close, contentDescription = "Otkaži")
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Otkaži")
@@ -523,7 +537,7 @@ fun MapScreen(
                     val selectedLng = cameraPositionState.position.target.longitude
                     onNavigateToAddSpot(selectedLat, selectedLng)
                     isAddMode = false
-                }) {
+                }, colors = dugmePotvrdiBoje(), modifier = Modifier.height(50.dp)) {
                     Icon(imageVector = Icons.Default.Check, contentDescription = "Potvrdi")
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Potvrdi lokaciju")
@@ -542,9 +556,10 @@ fun MapScreen(
                 // 🤖 NOVO DUGME ZA AI ASISTENTA (Iznad plusa, u istom stilu)
                 FloatingActionButton(
                     onClick = onNavigateToBotChat,
-                    containerColor = MaterialTheme.colorScheme.primary, // Može primarna boja za bota da odskoči
+                    shape = CircleShape,
+                    containerColor = FishBoje.Kartica,
                     contentColor = Color.White,
-                    modifier = Modifier.size(56.dp) // Ista standardna veličina kao i plus
+                    modifier = Modifier.size(56.dp).border(2.dp, FishBoje.Akcenat, CircleShape)
                 ) {
                     Image(
                         painter = painterResource(id = R.drawable.ic_deda_pera),
@@ -559,11 +574,15 @@ fun MapScreen(
                 // ➕ TVOJE POSTOJEĆE DUGME ZA DODAVANJE ULOVA
                 FloatingActionButton(
                     onClick = { isAddMode = true },
-                    modifier = Modifier.size(56.dp)
+                    shape = CircleShape,
+                    containerColor = FishBoje.Akcenat,
+                    contentColor = FishBoje.Pozadina,
+                    modifier = Modifier.size(60.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Add,
-                        contentDescription = "Dodaj mesto"
+                        contentDescription = "Dodaj mesto",
+                        modifier = Modifier.size(30.dp)
                     )
                 }
             }
@@ -574,7 +593,7 @@ fun MapScreen(
                 imageVector = Icons.Default.LocationOn,
                 contentDescription = "Izaberi lokaciju za vreme",
                 modifier = Modifier.align(Alignment.Center).size(48.dp).padding(bottom = 24.dp),
-                tint = Color.Blue
+                tint = Color(0xFF4FC3F7)
             )
 
             Row(
@@ -582,9 +601,9 @@ fun MapScreen(
                     .align(Alignment.BottomCenter)
                     .navigationBarsPadding()
                     .padding(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Button(onClick = { isWeatherMode = false }) {
+                Button(onClick = { isWeatherMode = false }, colors = dugmeOtkaziBoje(), modifier = Modifier.height(50.dp)) {
                     Icon(imageVector = Icons.Default.Close, contentDescription = "Otkaži")
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Otkaži")
@@ -714,10 +733,12 @@ fun MapScreen(
                             }
                         }
                     },
-                    enabled = !isFetchingWeather
+                    enabled = !isFetchingWeather,
+                    colors = dugmePotvrdiBoje(),
+                    modifier = Modifier.height(50.dp)
                 ) {
                     if (isFetchingWeather) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = Color.White)
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = FishBoje.Pozadina)
                     } else {
                         Icon(imageVector = Icons.Default.Check, contentDescription = "Potvrdi")
                         Spacer(modifier = Modifier.width(8.dp))
@@ -1089,3 +1110,21 @@ fun calculateFishingIndex(pressure: Int, timestamp: Long,temp: Int): Int {
 
     return score.coerceIn(0, 100)
 }
+
+// Vektorski pin iz res/drawable pretvoren u ikonu za marker na mapi
+fun vektorUPin(context: android.content.Context, resId: Int): BitmapDescriptor {
+    val crtez = androidx.core.content.ContextCompat.getDrawable(context, resId)!!
+    return BitmapDescriptorFactory.fromBitmap(crtez.toBitmap(crtez.intrinsicWidth, crtez.intrinsicHeight))
+}
+
+@Composable
+private fun dugmeOtkaziBoje() = ButtonDefaults.buttonColors(
+    containerColor = FishBoje.Kartica,
+    contentColor = FishBoje.TekstPrimarni
+)
+
+@Composable
+private fun dugmePotvrdiBoje() = ButtonDefaults.buttonColors(
+    containerColor = FishBoje.Akcenat,
+    contentColor = FishBoje.Pozadina
+)
