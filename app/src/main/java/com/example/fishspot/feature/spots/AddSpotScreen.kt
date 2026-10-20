@@ -1,4 +1,5 @@
 package com.example.fishspot.feature.spots
+import com.example.fishspot.core.theme.FishPoruka
 
 import com.example.fishspot.feature.fish.ArMeasureActivity
 import com.example.fishspot.feature.weather.WeatherNetwork
@@ -9,7 +10,6 @@ import android.graphics.BitmapFactory
 import androidx.compose.ui.focus.onFocusChanged
 import android.net.Uri
 import android.util.Log
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
@@ -157,18 +157,14 @@ fun AddSpotScreen(
             ribaPronadjena = rezultat.jeRiba
             when {
                 rezultat.greska != null ->
-                    Toast.makeText(context, "Greška pri proveri slike: ${rezultat.greska}", Toast.LENGTH_LONG).show()
+                    FishPoruka.prikazi("Greška pri proveri slike: ${rezultat.greska}", dugo = true)
                 !rezultat.jeRiba ->
-                    Toast.makeText(
-                        context,
-                        "⚠️ Riba nije prepoznata!\nMolimo Vas da slikate ribu iz blizine, jasnije ili pod boljim uglom kako bi je model uspešno detektovao. 🎣",
-                        Toast.LENGTH_LONG
-                    ).show()
+                    FishPoruka.prikazi("⚠️ Riba nije prepoznata!\nMolimo Vas da slikate ribu iz blizine, jasnije ili pod boljim uglom kako bi je model uspešno detektovao. 🎣", dugo = true)
             }
         } catch (e: Exception) {
             Log.e("AddSpotScreen", "Greška pri analizi slike", e)
             ribaPronadjena = false
-            Toast.makeText(context, "Slika nije mogla da se učita. Pokušaj sa drugom slikom.", Toast.LENGTH_LONG).show()
+            FishPoruka.prikazi("Slika nije mogla da se učita. Pokušaj sa drugom slikom.", dugo = true)
         } finally {
             isValidatingFish = false
         }
@@ -253,7 +249,7 @@ fun AddSpotScreen(
         if (odobreno) {
             otvoriKameru()
         } else {
-            Toast.makeText(context, "Za slikanje je potrebna dozvola za kameru", Toast.LENGTH_LONG).show()
+            FishPoruka.prikazi("Za slikanje je potrebna dozvola za kameru", dugo = true)
         }
     }
 
@@ -363,11 +359,11 @@ fun AddSpotScreen(
                                 vetar = vetar
                             ) { result ->
                                 if (result.isSuccess) {
-                                    Toast.makeText(context, "Ulov uspešno sačuvan!", Toast.LENGTH_SHORT).show()
+                                    FishPoruka.prikazi("Ulov uspešno sačuvan!")
                                     onSpotAdded()
                                 } else {
                                     val errorMessage = result.exceptionOrNull()?.message ?: "Nepoznata greška"
-                                    Toast.makeText(context, "Greška: $errorMessage", Toast.LENGTH_LONG).show()
+                                    FishPoruka.prikazi("Greška: $errorMessage", dugo = true)
                                 }
                                 isSaving = false
                             }

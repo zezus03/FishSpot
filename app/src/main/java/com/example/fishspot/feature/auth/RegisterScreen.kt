@@ -1,11 +1,11 @@
 package com.example.fishspot.feature.auth
+import com.example.fishspot.core.theme.FishPoruka
 
 import android.app.Activity
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.util.Log
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.launch
@@ -85,22 +85,22 @@ fun RegisterScreen(
                     authViewModel.loginSaGoogleom(
                         idToken = idToken,
                         onSuccess = {
-                            Toast.makeText(context, "Uspešna prijava!", Toast.LENGTH_SHORT).show()
+                            FishPoruka.prikazi("Uspešna prijava!")
                             onRegistrationSuccess() // ili onRegistrationSuccess() u RegisterScreen-u
                         },
                         onFailure = { e ->
                             android.util.Log.e("GoogleAuth", "Firebase prijava neuspešna", e)
-                            Toast.makeText(context, "Prijava nije uspela. Proveri internet i pokušaj ponovo.", Toast.LENGTH_LONG).show()
+                            FishPoruka.prikazi("Prijava nije uspela. Proveri internet i pokušaj ponovo.", dugo = true)
                         }
                     )
                 }
             } catch (e: ApiException) {
                 Log.e("GoogleAuth", "Google prijava neuspešna. Kod: ${e.statusCode}", e)
                 // SADA ĆEŠ VIDETI TAČAN KOD GREŠKE (Ako piše 10, fali ti SHA-1 ili je loš Client ID)
-                Toast.makeText(context, "Prijava preko Google naloga nije uspela. Pokušaj ponovo.", Toast.LENGTH_LONG).show()
+                FishPoruka.prikazi("Prijava preko Google naloga nije uspela. Pokušaj ponovo.", dugo = true)
             }
         } else {
-            Toast.makeText(context, "Prozor za prijavu zatvoren.", Toast.LENGTH_SHORT).show()
+            FishPoruka.prikazi("Prozor za prijavu zatvoren.")
         }
     }
 
@@ -349,7 +349,7 @@ fun RegisterScreen(
                                     onRegistrationSuccess()
                                 } else {
                                     val errorMessage = result.exceptionOrNull()?.message ?: "Došlo je do nepoznate greške."
-                                    Toast.makeText(context, "Greška: $errorMessage", Toast.LENGTH_LONG).show()
+                                    FishPoruka.prikazi("Greška: $errorMessage", dugo = true)
                                 }
                             }
                         },

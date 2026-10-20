@@ -1,4 +1,5 @@
 package com.example.fishspot.feature.profile
+import com.example.fishspot.core.theme.FishPoruka
 
 import android.graphics.Bitmap
 import android.graphics.ImageDecoder
@@ -503,7 +504,7 @@ fun ProfileScreen(
                             .addOnSuccessListener {
                                 brisanjeNaloga = false
                                 potvrdaBrisanjaNaloga = false
-                                android.widget.Toast.makeText(context, "Nalog je obrisan", android.widget.Toast.LENGTH_LONG).show()
+                                FishPoruka.prikazi("Nalog je obrisan", dugo = true)
                                 mapViewModel.logout()
                                 onLogout()
                             }

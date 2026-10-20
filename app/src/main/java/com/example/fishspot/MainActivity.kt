@@ -20,6 +20,7 @@ import androidx.navigation.navArgument
 import com.example.fishspot.feature.auth.AuthRepository
 import com.example.fishspot.core.theme.FishSpotTheme
 import com.example.fishspot.core.theme.SplashAnimacija
+import com.example.fishspot.core.theme.FishPorukaHost
 import com.example.fishspot.feature.spots.AddSpotScreen
 import com.example.fishspot.feature.chat.BotChatScreen
 import com.example.fishspot.feature.fish.LovostajScreen
@@ -43,11 +44,15 @@ class MainActivity : ComponentActivity() {
             FishSpotTheme {
                 // Animacija logoa samo pri pokretanju (ne posle okretanja ekrana)
                 var splashGotov by rememberSaveable { mutableStateOf(false) }
-                if (splashGotov) {
-                    val navController = rememberNavController()
-                    MainNavigation(navController, auth)
-                } else {
-                    SplashAnimacija(onGotovo = { splashGotov = true })
+                androidx.compose.foundation.layout.Box {
+                    if (splashGotov) {
+                        val navController = rememberNavController()
+                        MainNavigation(navController, auth)
+                    } else {
+                        SplashAnimacija(onGotovo = { splashGotov = true })
+                    }
+                    // Poruke u stilu aplikacije (umesto sistemskog Toast-a)
+                    FishPorukaHost()
                 }
             }
         }

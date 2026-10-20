@@ -1,11 +1,11 @@
 package com.example.fishspot.feature.map
+import com.example.fishspot.core.theme.FishPoruka
 
 import com.example.fishspot.feature.weather.WeatherNetwork
 import com.example.fishspot.feature.weather.WeatherScreen
 
 import android.Manifest
 import java.util.Calendar
-import android.widget.Toast
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -735,7 +735,7 @@ fun MapScreen(
 
                             } catch (e: Exception) {
                                 e.printStackTrace()
-                                Toast.makeText(context, "Greška pri učitavanju prognoze", Toast.LENGTH_SHORT).show()
+                                FishPoruka.prikazi("Greška pri učitavanju prognoze")
                             } finally {
                                 isFetchingWeather = false
                                 isWeatherMode = false
@@ -795,11 +795,7 @@ fun MapScreen(
                     vecPrijavljen = ulovPrijavljen,
                     onPrijavi = { razlog, opis ->
                         spotsViewModel.prijaviUlov(azuriraniSpot, razlog, opis) { uspeh ->
-                            Toast.makeText(
-                                context,
-                                if (uspeh) "Ulov je prijavljen. Hvala!" else "Greška pri prijavi ulova",
-                                Toast.LENGTH_SHORT
-                            ).show()
+                            FishPoruka.prikazi(if (uspeh) "Ulov je prijavljen. Hvala!" else "Greška pri prijavi ulova")
                         }
                     },
                     onAddComment = { text ->
@@ -808,7 +804,7 @@ fun MapScreen(
                             text
                         ) { success ->
                             if (!success) {
-                                Toast.makeText(context, "Greška pri slanju komentara", Toast.LENGTH_SHORT).show()
+                                FishPoruka.prikazi("Greška pri slanju komentara")
                             }
                         }
                     },
@@ -832,11 +828,7 @@ fun MapScreen(
                                     spotsViewModel.clearComments()
                                 }
                             }
-                            Toast.makeText(
-                                context,
-                                if (uspeh) "Ulov je obrisan" else "Greška pri brisanju ulova",
-                                Toast.LENGTH_SHORT
-                            ).show()
+                            FishPoruka.prikazi(if (uspeh) "Ulov je obrisan" else "Greška pri brisanju ulova")
                         }
                     }
                 )
@@ -850,11 +842,7 @@ fun MapScreen(
                 onSacuvaj = { izmena ->
                     ulovZaIzmenu = null
                     spotsViewModel.izmeniUlov(ulov, izmena) { uspeh ->
-                        Toast.makeText(
-                            context,
-                            if (uspeh) "Izmene su sačuvane" else "Greška pri čuvanju izmena",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        FishPoruka.prikazi(if (uspeh) "Izmene su sačuvane" else "Greška pri čuvanju izmena")
                     }
                 }
             )
@@ -869,7 +857,7 @@ fun MapScreen(
                 if (userMessages.size > oldSize) {
                     val lastMsg = userMessages.last()
                     if (lastMsg.senderId != currentUserId && openedChatUserId != userId) {
-                        Toast.makeText(context, "Nova poruka od: ${lastMsg.senderUsername} 💬", Toast.LENGTH_LONG).show()
+                        FishPoruka.prikazi("Nova poruka od: ${lastMsg.senderUsername} 💬", dugo = true)
 
                         val senderUser = activeUsers.find { it.userId == userId }
                         if (senderUser != null && !activeBubbles.any { it.userId == userId }) {
