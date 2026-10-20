@@ -109,9 +109,9 @@ fun AddSpotScreen(
     var isSaving by remember { mutableStateOf(false) }
     var duzinaRibe by remember { mutableStateOf("") }
     var tezinaRibe by remember { mutableStateOf("") }
-    val mamci = listOf("Crv", "Glista", "Šećerac", "Pop-up", "Keder", "Varalica", "Mušica")
+    val mamci = OpcijeUlova.mamci
     var odabranMamac by remember { mutableStateOf(mamci[0]) }
-    val tehnike = listOf("Plovak", "Dubinac", "Varalica", "Feeder", "Mušičarenje")
+    val tehnike = OpcijeUlova.tehnike
     var odabranaTehnika by remember { mutableStateOf(tehnike[0]) }
     var temperatura by remember { mutableStateOf("Nepoznato") }
     var pritisak by remember { mutableStateOf("Nepoznato") }
@@ -789,7 +789,7 @@ private fun Sekcija(naslov: String, ikona: ImageVector, sadrzaj: @Composable Col
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun IzborCipovima(opcije: List<String>, izabrano: String, onIzbor: (String) -> Unit) {
+internal fun IzborCipovima(opcije: List<String>, izabrano: String, onIzbor: (String) -> Unit) {
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         opcije.forEach { opcija ->
             FilterChip(

@@ -95,6 +95,8 @@ fun MapScreen(
     onFocusDone: () -> Unit,
     onNavigateToProfile: () -> Unit,
     onNavigateToBotChat: () -> Unit,
+    onNavigateToUloviKorisnika: (uid: String) -> Unit = {},
+    onNavigateToLovostaj: () -> Unit = {},
     activeUsersViewModel: ActiveUsersViewModel = viewModel()
 ) {
     val context = LocalContext.current
@@ -113,6 +115,7 @@ fun MapScreen(
 
     val scope = rememberCoroutineScope()
     var selectedSpotForComments by remember { mutableStateOf<FishSpot?>(null) }
+    var ulovZaIzmenu by remember { mutableStateOf<FishSpot?>(null) }
 
     var isWeatherMode by remember { mutableStateOf(false) }
 
@@ -429,6 +432,17 @@ fun MapScreen(
                 }
 
                 IconButton(
+                    onClick = onNavigateToLovostaj,
+                    modifier = iconModifier
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.EventBusy,
+                        contentDescription = "Lovostaj",
+                        tint = bojaIkone
+                    )
+                }
+
+                IconButton(
                     onClick = { showFilterDialog = true },
                     modifier = iconModifier
                 ) {
@@ -461,17 +475,7 @@ fun MapScreen(
                     )
                 }
 
-                IconButton(
-                    onClick = { mapViewModel.logout(); onLogout() },
-                    modifier = iconModifier
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ExitToApp,
-                        contentDescription = "Odjavi se",
-                        tint = FishBoje.Greska
-                    )
-                }
-
+                // Odjava je na ekranu profila
             }
 
             Box(
@@ -805,9 +809,50 @@ fun MapScreen(
                     },
                     onToggleLike = { spotId, isLiked ->
                         spotsViewModel.toggleLike(spotId, isLiked)
+                    },
+                    onAutorKlik = {
+                        val uid = azuriraniSpot.authorId
+                        scope.launch { sheetState.hide() }.invokeOnCompletion {
+                            selectedSpotForComments = null
+                            spotsViewModel.clearComments()
+                            if (uid.isNotBlank()) onNavigateToUloviKorisnika(uid)
+                        }
+                    },
+                    onIzmeni = { ulovZaIzmenu = azuriraniSpot },
+                    onObrisi = {
+                        spotsViewModel.obrisiUlov(azuriraniSpot) { uspeh ->
+                            if (uspeh) {
+                                scope.launch { sheetState.hide() }.invokeOnCompletion {
+                                    selectedSpotForComments = null
+                                    spotsViewModel.clearComments()
+                                }
+                            }
+                            Toast.makeText(
+                                context,
+                                if (uspeh) "Ulov je obrisan" else "Greška pri brisanju ulova",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
                     }
                 )
             }
+        }
+
+        ulovZaIzmenu?.let { ulov ->
+            com.example.fishspot.feature.spots.IzmenaUlovaDialog(
+                spot = ulov,
+                onDismiss = { ulovZaIzmenu = null },
+                onSacuvaj = { izmena ->
+                    ulovZaIzmenu = null
+                    spotsViewModel.izmeniUlov(ulov, izmena) { uspeh ->
+                        Toast.makeText(
+                            context,
+                            if (uspeh) "Izmene su sačuvane" else "Greška pri čuvanju izmena",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            )
         }
 
         val messagesMap by activeUsersViewModel.messagesMap.collectAsState()

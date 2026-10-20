@@ -337,6 +337,38 @@ class SpotsViewModel : ViewModel() {
                 onResult(false)
             }
     }
+    // Autor menja svoj ulov; poene i spisak po vrsti usklađuje Cloud Function izmenjenUlov
+    fun izmeniUlov(spot: FishSpot, izmena: IzmenaUlova, onResult: (Boolean) -> Unit) {
+        val izmene = mapOf(
+            "naziv" to izmena.naziv,
+            "vrstaRibe" to izmena.vrsta.naziv,
+            "vrstaId" to izmena.vrsta.id,
+            "latinskiNaziv" to izmena.vrsta.latinskiNaziv,
+            "duzinaRibe" to izmena.duzinaRibe,
+            "tezinaRibe" to izmena.tezinaRibe,
+            "mamac" to izmena.mamac,
+            "tehnika" to izmena.tehnika,
+            "ocena" to izmena.ocena,
+            "opis" to izmena.opis
+        )
+        firestore.collection("MestaZaPecanje").document(spot.id).update(izmene)
+            .addOnSuccessListener { onResult(true) }
+            .addOnFailureListener {
+                Log.e("SpotsViewModel", "Greška pri izmeni ulova", it)
+                onResult(false)
+            }
+    }
+
+    // Autor briše svoj ulov; komentare, sliku i poene sređuje Cloud Function obrisanUlov
+    fun obrisiUlov(spot: FishSpot, onResult: (Boolean) -> Unit) {
+        firestore.collection("MestaZaPecanje").document(spot.id).delete()
+            .addOnSuccessListener { onResult(true) }
+            .addOnFailureListener {
+                Log.e("SpotsViewModel", "Greška pri brisanju ulova", it)
+                onResult(false)
+            }
+    }
+
     fun sacuvajFcmToken() {
         val user = auth.currentUser ?: return
         com.google.firebase.messaging.FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->

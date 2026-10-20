@@ -16,6 +16,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Air
 import androidx.compose.material.icons.filled.ChatBubbleOutline
+import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.PestControl
@@ -71,10 +73,14 @@ fun UlovDetalji(
     vecPrijavljen: Boolean,
     onAddComment: (String) -> Unit,
     onToggleLike: (String, Boolean) -> Unit,
-    onPrijavi: (razlog: String, opis: String) -> Unit
+    onPrijavi: (razlog: String, opis: String) -> Unit,
+    onAutorKlik: () -> Unit = {},
+    onIzmeni: () -> Unit = {},
+    onObrisi: () -> Unit = {}
 ) {
     var noviKomentar by remember { mutableStateOf("") }
     var prikaziPrijavu by remember { mutableStateOf(false) }
+    var potvrdaBrisanja by remember { mutableStateOf(false) }
     val dateFormat = remember { SimpleDateFormat("dd.MM.yyyy. HH:mm", Locale.getDefault()) }
 
     var isLiked by remember(spot.likedBy) {
@@ -107,11 +113,14 @@ fun UlovDetalji(
 
             item {
                 Spacer(modifier = Modifier.height(16.dp))
-                AutorUlova(
-                    ime = autor?.userName?.takeIf { it.isNotBlank() } ?: spot.authorUsername,
-                    slikaUrl = autor?.slikaURL,
-                    vreme = dateFormat.format(Date(spot.timestamp))
-                )
+                // Dodir na autora otvara njegov profil sa ulovima
+                Box(modifier = Modifier.clip(RoundedCornerShape(12.dp)).clickable(onClick = onAutorKlik)) {
+                    AutorUlova(
+                        ime = autor?.userName?.takeIf { it.isNotBlank() } ?: spot.authorUsername,
+                        slikaUrl = autor?.slikaURL,
+                        vreme = dateFormat.format(Date(spot.timestamp))
+                    )
+                }
 
                 if (spot.naziv.isNotBlank()) {
                     Spacer(modifier = Modifier.height(12.dp))
@@ -191,8 +200,28 @@ fun UlovDetalji(
 
                     Spacer(modifier = Modifier.weight(1f))
 
-                    // Svoj ulov korisnik ne može da prijavi
-                    if (!mojUlov && currentUserId != null) {
+                    // Svoj ulov korisnik menja i briše, a tuđi može da prijavi
+                    if (mojUlov) {
+                        IconButton(
+                            onClick = onIzmeni,
+                            modifier = Modifier
+                                .size(44.dp)
+                                .background(FishBoje.Kartica, CircleShape)
+                                .border(1.dp, FishBoje.IvicaKartice, CircleShape)
+                        ) {
+                            Icon(Icons.Default.Edit, contentDescription = "Izmeni ulov", tint = FishBoje.Akcenat)
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        IconButton(
+                            onClick = { potvrdaBrisanja = true },
+                            modifier = Modifier
+                                .size(44.dp)
+                                .background(FishBoje.Greska.copy(alpha = 0.15f), CircleShape)
+                                .border(1.dp, FishBoje.Greska.copy(alpha = 0.4f), CircleShape)
+                        ) {
+                            Icon(Icons.Default.DeleteOutline, contentDescription = "Obriši ulov", tint = FishBoje.Greska)
+                        }
+                    } else if (currentUserId != null) {
                         IconButton(
                             onClick = { prikaziPrijavu = true },
                             enabled = !vecPrijavljen,
@@ -289,6 +318,30 @@ fun UlovDetalji(
                 }
             }
         }
+    }
+
+    if (potvrdaBrisanja) {
+        AlertDialog(
+            onDismissRequest = { potvrdaBrisanja = false },
+            containerColor = FishBoje.Kartica,
+            titleContentColor = FishBoje.TekstPrimarni,
+            textContentColor = FishBoje.TekstSekundarni,
+            icon = { Icon(Icons.Default.DeleteOutline, contentDescription = null, tint = FishBoje.Greska) },
+            title = { Text("Obriši ulov?", fontWeight = FontWeight.Bold) },
+            text = { Text("Ulov, njegova slika i komentari biće trajno obrisani, a poeni za njega oduzeti.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        potvrdaBrisanja = false
+                        onObrisi()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = FishBoje.Greska, contentColor = Color.White)
+                ) { Text("Obriši", fontWeight = FontWeight.Bold) }
+            },
+            dismissButton = {
+                TextButton(onClick = { potvrdaBrisanja = false }) { Text("Otkaži", color = FishBoje.TekstSekundarni) }
+            }
+        )
     }
 
     if (prikaziPrijavu) {

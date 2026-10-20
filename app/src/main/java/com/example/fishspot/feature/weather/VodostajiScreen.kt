@@ -21,6 +21,8 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material.icons.filled.Thermostat
 import androidx.compose.material.icons.filled.Waves
 import androidx.compose.material3.*
@@ -55,6 +57,7 @@ fun VodostajiScreen(viewModel: WaterLevelViewModel, onDismiss: () -> Unit) {
     val merenje by viewModel.merenje.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val greska by viewModel.greska.collectAsState()
+    val omiljene by viewModel.omiljene.collectAsState()
 
     var pretraga by remember { mutableStateOf("") }
     var izabranaReka by remember { mutableStateOf<String?>(null) }
@@ -72,6 +75,30 @@ fun VodostajiScreen(viewModel: WaterLevelViewModel, onDismiss: () -> Unit) {
                     LovostajChecker.normalizujTekst(s.reka).contains(trazeno) ||
                     LovostajChecker.normalizujTekst(s.stanica).contains(trazeno))
         }.groupBy { it.reka }
+    }
+    val mojeStanice = remember(prikazane, omiljene) {
+        prikazane.values.flatten().filter { it.id in omiljene }
+    }
+
+    // Kartica se otvara po ključu, da ista stanica u "Moje stanice" i u listi reke ne bude otvorena dvaput
+    @Composable
+    fun Kartica(stanica: StanicaVodostaja, kljuc: String) {
+        KarticaStanice(
+            stanica = stanica,
+            otvorena = otvorenaStanica == kljuc,
+            omiljena = stanica.id in omiljene,
+            viewModel = viewModel,
+            onOmiljena = { viewModel.promeniOmiljenu(stanica.id) },
+            onClick = {
+                if (otvorenaStanica == kljuc) {
+                    otvorenaStanica = null
+                    viewModel.zatvoriDetalje()
+                } else {
+                    otvorenaStanica = kljuc
+                    viewModel.ucitajDetalje(stanica.id)
+                }
+            }
+        )
     }
 
     Box(
@@ -139,6 +166,22 @@ fun VodostajiScreen(viewModel: WaterLevelViewModel, onDismiss: () -> Unit) {
                 prikazane.isEmpty() -> item { Poruka("Nema stanica za \"$pretraga\".") }
             }
 
+            if (mojeStanice.isNotEmpty()) {
+                item(key = "moje_stanice") {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 6.dp)
+                    ) {
+                        Icon(Icons.Default.Star, contentDescription = null, tint = FishBoje.Zvezdica, modifier = Modifier.size(14.dp))
+                        Spacer(Modifier.width(6.dp))
+                        NaslovSekcije("Moje stanice")
+                    }
+                }
+                items(mojeStanice, key = { "omiljena_${it.id}" }) { stanica ->
+                    Kartica(stanica, "omiljena_${stanica.id}")
+                }
+            }
+
             prikazane.forEach { (reka, staniceReke) ->
                 item(key = "reka_$reka") {
                     Row(
@@ -151,20 +194,7 @@ fun VodostajiScreen(viewModel: WaterLevelViewModel, onDismiss: () -> Unit) {
                     }
                 }
                 items(staniceReke, key = { it.id }) { stanica ->
-                    KarticaStanice(
-                        stanica = stanica,
-                        otvorena = otvorenaStanica == stanica.id,
-                        viewModel = viewModel,
-                        onClick = {
-                            if (otvorenaStanica == stanica.id) {
-                                otvorenaStanica = null
-                                viewModel.zatvoriDetalje()
-                            } else {
-                                otvorenaStanica = stanica.id
-                                viewModel.ucitajDetalje(stanica.id)
-                            }
-                        }
-                    )
+                    Kartica(stanica, stanica.id)
                 }
             }
 
@@ -302,7 +332,9 @@ private fun FilterReke(tekst: String, izabran: Boolean, onClick: () -> Unit) {
 private fun KarticaStanice(
     stanica: StanicaVodostaja,
     otvorena: Boolean,
+    omiljena: Boolean,
     viewModel: WaterLevelViewModel,
+    onOmiljena: () -> Unit,
     onClick: () -> Unit
 ) {
     Column(
@@ -320,6 +352,13 @@ private fun KarticaStanice(
                 Text(lepNaziv(stanica.stanica), color = FishBoje.TekstPrimarni, fontSize = 16.sp,
                     fontWeight = FontWeight.Bold)
                 Text(lepNaziv(stanica.reka), color = FishBoje.TekstPriguseni, fontSize = 12.sp)
+            }
+            IconButton(onClick = onOmiljena, modifier = Modifier.size(40.dp)) {
+                Icon(
+                    if (omiljena) Icons.Default.Star else Icons.Default.StarBorder,
+                    contentDescription = if (omiljena) "Ukloni iz mojih stanica" else "Dodaj u moje stanice",
+                    tint = if (omiljena) FishBoje.Zvezdica else FishBoje.TekstPriguseni
+                )
             }
             Column(horizontalAlignment = Alignment.End) {
                 Row(verticalAlignment = Alignment.Bottom) {

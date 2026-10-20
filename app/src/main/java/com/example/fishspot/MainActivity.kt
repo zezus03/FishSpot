@@ -18,6 +18,7 @@ import com.example.fishspot.feature.auth.AuthRepository
 import com.example.fishspot.core.theme.FishSpotTheme
 import com.example.fishspot.feature.spots.AddSpotScreen
 import com.example.fishspot.feature.chat.BotChatScreen
+import com.example.fishspot.feature.fish.LovostajScreen
 import com.example.fishspot.feature.auth.LoginScreen
 import com.example.fishspot.feature.map.MapScreen
 import com.example.fishspot.feature.profile.ProfileScreen
@@ -107,6 +108,8 @@ fun MainNavigation(navController: NavHostController, auth: FirebaseAuth) {
                     navController.navigate("profile")        // ← DODAJ OVE LINIJE (promeni "profile" u tvoj tačan route za profil ako se zove drugačije)
                 },
                 onNavigateToBotChat = { navController.navigate("bot_chat_screen") },
+                onNavigateToUloviKorisnika = { uid -> navController.navigate("ulovi_korisnika/$uid") },
+                onNavigateToLovostaj = { navController.navigate("lovostaj") },
                 onFocusDone = {
                     backStackEntry.savedStateHandle.remove<String>("user_id_to_focus")
                     backStackEntry.savedStateHandle.remove<String>("spot_id_to_focus")
@@ -131,12 +134,8 @@ fun MainNavigation(navController: NavHostController, auth: FirebaseAuth) {
         composable("ranking") {
             RankingScreen(
                 onNavigateBack = { navController.popBackStack() },
-                onUserSelected = { userId ->
-                    navController.previousBackStackEntry
-                        ?.savedStateHandle
-                        ?.set("user_id_to_focus", userId)
-                    navController.popBackStack()
-                }
+                // Dodir na korisnika otvara njegov profil sa ulovima
+                onUserSelected = { userId -> navController.navigate("ulovi_korisnika/$userId") }
             )
         }
 
@@ -180,6 +179,10 @@ fun MainNavigation(navController: NavHostController, auth: FirebaseAuth) {
                 uid = backStackEntry.arguments?.getString("uid").orEmpty(),
                 onNavigateBack = { navController.popBackStack() }
             )
+        }
+        // ─── KALENDAR LOVOSTAJA ───
+        composable("lovostaj") {
+            LovostajScreen(onNavigateBack = { navController.popBackStack() })
         }
         composable("bot_chat_screen") {
             BotChatScreen(onNavigateBack = { navController.popBackStack() })

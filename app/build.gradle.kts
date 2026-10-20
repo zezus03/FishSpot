@@ -3,6 +3,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("com.google.gms.google-services")
+    id("com.google.firebase.crashlytics")
     id("com.google.android.libraries.mapsplatform.secrets-gradle-plugin")
 }
 
@@ -119,6 +120,8 @@ dependencies {
     implementation("com.google.firebase:firebase-storage-ktx")
     implementation("com.google.firebase:firebase-messaging-ktx")
     implementation("com.google.firebase:firebase-functions-ktx")
+    // Izveštaji o padovima aplikacije (Firebase konzola -> Crashlytics)
+    implementation("com.google.firebase:firebase-crashlytics-ktx")
     implementation("com.google.android.gms:play-services-auth:21.2.0")
 
     // Ostalo

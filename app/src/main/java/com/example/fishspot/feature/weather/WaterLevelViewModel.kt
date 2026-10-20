@@ -3,6 +3,8 @@ package com.example.fishspot.feature.weather
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.functions.ktx.functions
@@ -56,8 +58,14 @@ class WaterLevelViewModel : ViewModel() {
     private val _detaljiGreska = MutableStateFlow<String?>(null)
     val detaljiGreska = _detaljiGreska.asStateFlow()
 
+    // ID-jevi stanica koje je korisnik označio zvezdicom (Korisnici/{uid}.omiljeneStanice)
+    private val _omiljene = MutableStateFlow<Set<String>>(emptySet())
+    val omiljene = _omiljene.asStateFlow()
+
     private var slusalac: ListenerRegistration? = null
+    private var slusalacOmiljenih: ListenerRegistration? = null
     private var izabranaStanica: String? = null
+    private val uid = FirebaseAuth.getInstance().currentUser?.uid
 
     init {
         slusalac = FirebaseFirestore.getInstance().collection("Vodostaji").document("sve")
@@ -78,6 +86,28 @@ class WaterLevelViewModel : ViewModel() {
                 val lista = snapshot.get("stanice") as? List<Map<String, Any?>> ?: emptyList()
                 _stanice.value = lista.mapNotNull { it.uStanicu() }
             }
+
+        if (uid != null) {
+            slusalacOmiljenih = FirebaseFirestore.getInstance().collection("Korisnici").document(uid)
+                .addSnapshotListener { snapshot, _ ->
+                    @Suppress("UNCHECKED_CAST")
+                    val lista = snapshot?.get("omiljeneStanice") as? List<String>
+                    _omiljene.value = lista.orEmpty().toSet()
+                }
+        }
+    }
+
+    fun promeniOmiljenu(stanicaId: String) {
+        val uid = uid ?: return
+        val dodaj = stanicaId !in _omiljene.value
+        // Odmah menjamo prikaz, a Firestore listener potvrđuje
+        _omiljene.value = if (dodaj) _omiljene.value + stanicaId else _omiljene.value - stanicaId
+        FirebaseFirestore.getInstance().collection("Korisnici").document(uid)
+            .update(
+                "omiljeneStanice",
+                if (dodaj) FieldValue.arrayUnion(stanicaId) else FieldValue.arrayRemove(stanicaId)
+            )
+            .addOnFailureListener { Log.e("Vodostaji", "Greška pri čuvanju omiljene stanice", it) }
     }
 
     fun ucitajDetalje(hmId: String) {
@@ -118,6 +148,7 @@ class WaterLevelViewModel : ViewModel() {
 
     override fun onCleared() {
         slusalac?.remove()
+        slusalacOmiljenih?.remove()
     }
 
     private fun Map<String, Any?>.uStanicu(): StanicaVodostaja? {

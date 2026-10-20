@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="sr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FishSpot – Politika privatnosti</title>
+<style>
+  :root { --pozadina:#0B1612; --kartica:#132218; --ivica:#1E3328; --akcenat:#2ECC71; --tekst:#FFFFFF; --sekundarni:#B0BDB9; --priguseni:#6B8078; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--pozadina); color:var(--sekundarni); font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  main { max-width:760px; margin:0 auto; padding:32px 16px 48px; }
+  .oznaka { color:var(--priguseni); font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+  h1 { color:var(--tekst); font-size:30px; margin:6px 0 4px; }
+  h2 { color:var(--tekst); font-size:19px; margin:0 0 8px; }
+  section { background:var(--kartica); border:1px solid var(--ivica); border-radius:16px; padding:18px 20px; margin-top:14px; }
+  ul { padding-left:20px; margin:8px 0 0; }
+  li { margin:4px 0; }
+  strong { color:var(--tekst); }
+  a { color:var(--akcenat); }
+  .datum { color:var(--priguseni); font-size:14px; }
+</style>
+</head>
+<body>
+<main>
+  <div class="oznaka">FishSpot</div>
+  <h1>Politika privatnosti</h1>
+  <div class="datum">Poslednja izmena: 20. oktobar 2026.</div>
+
+  <section>
+    <h2>Ukratko</h2>
+    <p>FishSpot je aplikacija za ribolovce: beležiš ulove na mapi, gledaš vremensku prognozu, vodostaje i lovostaj, i dopisuješ se sa drugim ribolovcima. Prikupljamo samo podatke koji su potrebni da bi to radilo. Podatke ne prodajemo i ne koristimo ih za reklame.</p>
+  </section>
+
+  <section>
+    <h2>Koje podatke prikupljamo</h2>
+    <ul>
+      <li><strong>Nalog:</strong> e-adresa, korisničko ime, ime i prezime (ako ga uneseš) i profilna slika. Ako se prijaviš preko Google naloga, od Google-a dobijamo ime, e-adresu i sliku profila.</li>
+      <li><strong>Ulovi:</strong> fotografija, vrsta, dužina i težina ribe, mamac, tehnika, opis, ocena mesta, lokacija ulova i vremenski uslovi u trenutku ulova. Ulove vide svi prijavljeni korisnici.</li>
+      <li><strong>Lokacija:</strong> dok je aplikacija otvorena, tvoja trenutna lokacija se koristi za mapu, prognozu i obaveštenja o obližnjim vodama, i prikazuje se drugim prijavljenim korisnicima na mapi.</li>
+      <li><strong>Poruke i komentari:</strong> komentari na ulovima (vidljivi svima), privatne poruke (vide ih samo dva učesnika razgovora) i pitanja koja postaviš asistentu Deda Peri.</li>
+      <li><strong>Poeni i rang lista:</strong> poeni koje dobijaš za ulove.</li>
+      <li><strong>Prijave ulova:</strong> kada prijaviš neprikladan ulov, čuvamo razlog i ko je prijavio, da bi moderacija mogla da ga pregleda.</li>
+      <li><strong>Tehnički podaci:</strong> token za obaveštenja i izveštaji o padu aplikacije (model telefona, verzija sistema, tok greške) preko Firebase Crashlytics.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Kamera i prepoznavanje ribe</h2>
+    <p>Fotografija ulova se proverava modelom koji radi isključivo na tvom telefonu. Slika se šalje na server tek kada sačuvaš ulov.</p>
+  </section>
+
+  <section>
+    <h2>Sa kim delimo podatke</h2>
+    <p>Podaci se čuvaju na Google Firebase servisima (Authentication, Cloud Firestore, Cloud Storage, Cloud Functions, Cloud Messaging, Crashlytics). Pored toga koristimo:</p>
+    <ul>
+      <li><strong>Google Maps</strong> za prikaz mape,</li>
+      <li><strong>OpenWeather</strong> za vremensku prognozu (šalju se samo koordinate),</li>
+      <li><strong>Google Gemini</strong> za odgovore asistenta Deda Pere (šalje se tekst pitanja),</li>
+      <li><strong>RHMZ Srbije</strong> kao izvor podataka o vodostaju (tvoji podaci se ne šalju).</li>
+    </ul>
+    <p>Podatke ne delimo ni sa kim drugim, osim ako to zahteva zakon.</p>
+  </section>
+
+  <section>
+    <h2>Koliko dugo čuvamo podatke</h2>
+    <p>Podatke čuvamo dok imaš nalog. Ulov koji obrišeš briše se zajedno sa slikom i komentarima. Ulov koji je moderacija uklonila zbog prijava čuva se dok ga admin ne pregleda.</p>
+  </section>
+
+  <section>
+    <h2>Brisanje naloga</h2>
+    <p>Nalog možeš sam da obrišeš u aplikaciji: <strong>Profil → Obriši nalog</strong>. Time se trajno brišu profil, profilna slika, svi ulovi sa slikama, komentari, privatne poruke, razgovor sa Deda Perom, prijave i poeni. Ako ne možeš da pristupiš aplikaciji, piši nam na adresu ispod i obrisaćemo nalog umesto tebe.</p>
+  </section>
+
+  <section>
+    <h2>Tvoja prava</h2>
+    <p>Imaš pravo da tražiš uvid u svoje podatke, njihovu ispravku ili brisanje, u skladu sa Zakonom o zaštiti podataka o ličnosti Republike Srbije. Većinu podataka možeš sam da izmeniš u aplikaciji.</p>
+  </section>
+
+  <section>
+    <h2>Deca</h2>
+    <p>Aplikacija nije namenjena deci mlađoj od 13 godina.</p>
+  </section>
+
+  <section>
+    <h2>Kontakt</h2>
+    <p>Za sva pitanja o privatnosti piši na: <a href="mailto:KONTAKT_EMAIL">KONTAKT_EMAIL</a></p>
+  </section>
+</main>
+</body>
+</html>

@@ -24,3 +24,8 @@ data class FishSpot(
     val vetar: String = "",
     val likedBy: List<String> = emptyList() // <-- OVO DODAJ!
 )
+// Ponuđeni mamci i tehnike (dodavanje i izmena ulova)
+object OpcijeUlova {
+    val mamci = listOf("Crv", "Glista", "Šećerac", "Pop-up", "Keder", "Varalica", "Mušica")
+    val tehnike = listOf("Plovak", "Dubinac", "Varalica", "Feeder", "Mušičarenje")
+}

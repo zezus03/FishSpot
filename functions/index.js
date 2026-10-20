@@ -218,3 +218,9 @@ exports.vratiPrijavljeniUlov = functions.firestore
 const vodostaji = require("./vodostaji");
 exports.osveziVodostaje = vodostaji.osveziVodostaje;
 exports.detaljiStanice = vodostaji.detaljiStanice;
+
+// Izmena i brisanje ulova, brisanje naloga (functions/ulovi.js)
+const ulovi = require("./ulovi");
+exports.obrisanUlov = ulovi.obrisanUlov;
+exports.izmenjenUlov = ulovi.izmenjenUlov;
+exports.obrisiNalog = ulovi.obrisiNalog;

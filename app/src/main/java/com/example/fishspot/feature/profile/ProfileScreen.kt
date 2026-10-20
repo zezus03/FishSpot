@@ -48,6 +48,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.io.ByteArrayOutputStream
 
+// Stranica je u folderu hosting/ i objavljuje se sa "firebase deploy --only hosting"
+const val POLITIKA_PRIVATNOSTI_URL = "https://fishspot-52735.web.app/privatnost.html"
+
 @Composable
 fun ProfileScreen(
     onNavigateBack: () -> Unit,
@@ -69,6 +72,8 @@ fun ProfileScreen(
     var isLoading by remember { mutableStateOf(true) }
     var isSaving by remember { mutableStateOf(false) }
     var showPasswordDialog by remember { mutableStateOf(false) }
+    var potvrdaBrisanjaNaloga by remember { mutableStateOf(false) }
+    var brisanjeNaloga by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var successMessage by remember { mutableStateOf<String?>(null) }
 
@@ -412,8 +417,87 @@ fun ProfileScreen(
                 Text("Odjava", fontWeight = FontWeight.Bold)
             }
 
+            Spacer(Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                TextButton(onClick = {
+                    context.startActivity(
+                        android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(POLITIKA_PRIVATNOSTI_URL))
+                    )
+                }) {
+                    Icon(Icons.Default.PrivacyTip, contentDescription = null, tint = FishBoje.TekstSekundarni, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Politika privatnosti", color = FishBoje.TekstSekundarni)
+                }
+                TextButton(onClick = { potvrdaBrisanjaNaloga = true }, enabled = !brisanjeNaloga) {
+                    Icon(Icons.Default.PersonRemove, contentDescription = null, tint = FishBoje.Greska, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Obriši nalog", color = FishBoje.Greska)
+                }
+            }
+
             Spacer(Modifier.height(24.dp))
         }
+    }
+
+    // ────── BRISANJE NALOGA ──────
+    if (potvrdaBrisanjaNaloga || brisanjeNaloga) {
+        AlertDialog(
+            onDismissRequest = { if (!brisanjeNaloga) potvrdaBrisanjaNaloga = false },
+            containerColor = FishBoje.Kartica,
+            titleContentColor = FishBoje.TekstPrimarni,
+            textContentColor = FishBoje.TekstSekundarni,
+            icon = { Icon(Icons.Default.PersonRemove, contentDescription = null, tint = FishBoje.Greska) },
+            title = { Text("Obriši nalog?", fontWeight = FontWeight.Bold) },
+            text = {
+                if (brisanjeNaloga) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        CircularProgressIndicator(modifier = Modifier.size(22.dp), color = FishBoje.Greska, strokeWidth = 2.dp)
+                        Spacer(Modifier.width(12.dp))
+                        Text("Brisanje u toku...")
+                    }
+                } else {
+                    Text(
+                        "Trajno se brišu tvoj profil, svi ulovi sa slikama, komentari, poruke i poeni. " +
+                            "Ovo ne može da se poništi."
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        brisanjeNaloga = true
+                        com.google.firebase.functions.FirebaseFunctions.getInstance()
+                            .getHttpsCallable("obrisiNalog")
+                            .call()
+                            .addOnSuccessListener {
+                                brisanjeNaloga = false
+                                potvrdaBrisanjaNaloga = false
+                                android.widget.Toast.makeText(context, "Nalog je obrisan", android.widget.Toast.LENGTH_LONG).show()
+                                mapViewModel.logout()
+                                onLogout()
+                            }
+                            .addOnFailureListener { e ->
+                                android.util.Log.e("ProfileScreen", "Brisanje naloga nije uspelo", e)
+                                brisanjeNaloga = false
+                                potvrdaBrisanjaNaloga = false
+                                errorMessage = "Brisanje naloga nije uspelo. Proveri internet i pokušaj ponovo."
+                            }
+                    },
+                    enabled = !brisanjeNaloga,
+                    colors = ButtonDefaults.buttonColors(containerColor = FishBoje.Greska, contentColor = Color.White)
+                ) { Text("Obriši trajno", fontWeight = FontWeight.Bold) }
+            },
+            dismissButton = {
+                TextButton(onClick = { potvrdaBrisanjaNaloga = false }, enabled = !brisanjeNaloga) {
+                    Text("Otkaži", color = FishBoje.TekstSekundarni)
+                }
+            }
+        )
     }
 
     // ────── DIJALOG ZA PROMENU / POSTAVLJANJE LOZINKE ──────

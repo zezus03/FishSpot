@@ -71,6 +71,31 @@ object LovostajChecker {
         "Babuska" to PraviloRibe(null, null, 0.0)
     )
 
+    // Nazivi sa kvačicama za prikaz na ekranu Lovostaj
+    private val naziviZaPrikaz = mapOf(
+        "Saran" to "Šaran", "Stuka" to "Štuka", "Smud" to "Smuđ", "Smud kamenjar" to "Smuđ kamenjar",
+        "Potocna pastrmka" to "Potočna pastrmka", "Duzicasta pastrmka" to "Dužičasta pastrmka",
+        "Jezerska zlatovcica" to "Jezerska zlatovčica", "Potocna zlatovcica" to "Potočna zlatovčica",
+        "Krkusa" to "Krkuša", "Manic" to "Manić", "Sljivar" to "Šljivar", "Potocna mrena" to "Potočna mrena",
+        "Sapaca" to "Sapača", "Recna skoljka" to "Rečna školjka"
+    )
+
+    // Propis za jednu vrstu, za prikaz na ekranu Lovostaj
+    data class Propis(val naziv: String, val pravilo: PraviloRibe)
+
+    // Sve vrste koje imaju lovostaj ili minimalnu meru ("Protfis" je isto što i Jaz)
+    fun sviPropisi(): List<Propis> = lovostaji
+        .filterKeys { it != "Protfis" }
+        .filterValues { it.pocetak != null || it.minimalnaDužina > 0.0 }
+        .map { (kljuc, pravilo) -> Propis(naziviZaPrikaz[kljuc] ?: kljuc, pravilo) }
+
+    // Da li je datum (mesec * 100 + dan) u periodu zabrane
+    fun uPeriodu(pravilo: PraviloRibe, datum: Int): Boolean {
+        val pocetak = pravilo.pocetak ?: return false
+        val kraj = pravilo.kraj ?: return false
+        return if (pocetak <= kraj) datum in pocetak..kraj else datum >= pocetak || datum <= kraj
+    }
+
     fun normalizujTekst(tekst: String): String {
         return tekst
             .lowercase()
