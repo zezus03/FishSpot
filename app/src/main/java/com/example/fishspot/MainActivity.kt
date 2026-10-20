@@ -6,7 +6,10 @@ import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.remember // Uvezen remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.core.view.WindowCompat
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -16,6 +19,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.fishspot.feature.auth.AuthRepository
 import com.example.fishspot.core.theme.FishSpotTheme
+import com.example.fishspot.core.theme.SplashAnimacija
 import com.example.fishspot.feature.spots.AddSpotScreen
 import com.example.fishspot.feature.chat.BotChatScreen
 import com.example.fishspot.feature.fish.LovostajScreen
@@ -37,8 +41,14 @@ class MainActivity : ComponentActivity() {
         WindowCompat.setDecorFitsSystemWindows(window, false)
         setContent {
             FishSpotTheme {
-                val navController = rememberNavController()
-                MainNavigation(navController, auth)
+                // Animacija logoa samo pri pokretanju (ne posle okretanja ekrana)
+                var splashGotov by rememberSaveable { mutableStateOf(false) }
+                if (splashGotov) {
+                    val navController = rememberNavController()
+                    MainNavigation(navController, auth)
+                } else {
+                    SplashAnimacija(onGotovo = { splashGotov = true })
+                }
             }
         }
     }

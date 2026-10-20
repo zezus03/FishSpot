@@ -1,0 +1,8 @@
+<resources>
+    <style name="Theme.FishSpot" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@android:color/black</item>
+        <!-- Sistemski splash je samo crn, bez ikonice; logo se animira u aplikaciji -->
+        <item name="android:windowSplashScreenBackground">@android:color/black</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/prazno</item>
+    </style>
+</resources>
