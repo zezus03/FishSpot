@@ -118,6 +118,7 @@ dependencies {
     implementation("com.google.firebase:firebase-firestore-ktx")
     implementation("com.google.firebase:firebase-storage-ktx")
     implementation("com.google.firebase:firebase-messaging-ktx")
+    implementation("com.google.firebase:firebase-functions-ktx")
     implementation("com.google.android.gms:play-services-auth:21.2.0")
 
     // Ostalo
@@ -125,8 +126,6 @@ dependencies {
     implementation("androidx.work:work-runtime-ktx:2.9.0")
     implementation("io.coil-kt:coil-compose:2.6.0")
     implementation("com.google.code.gson:gson:2.10.1")
-    // Parser za veb stranice (npr. za vodostaje ili vesti)
-    implementation("org.jsoup:jsoup:1.17.2")
 
     implementation(libs.androidx.appcompat)
     implementation(libs.core)

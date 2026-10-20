@@ -53,6 +53,7 @@ import com.example.fishspot.feature.chat.ActiveUsersViewModel
 
 import com.example.fishspot.feature.spots.SpotsViewModel
 import com.example.fishspot.feature.spots.UlovDetalji
+import com.example.fishspot.feature.weather.VodostajiScreen
 import com.example.fishspot.feature.weather.WaterLevelViewModel
 import com.example.fishspot.feature.chat.ActiveUser
 import com.google.android.gms.maps.model.BitmapDescriptor
@@ -114,8 +115,6 @@ fun MapScreen(
     var isFetchingWeather by remember { mutableStateOf(false) }
     val mojApiKey = BuildConfig.OPENWEATHER_API_KEY
     var showWaterLevelDialog by remember { mutableStateOf(false) }
-    val vodostaji by waterLevelViewModel.vodostaji.collectAsState()
-    val isWaterLevelLoading by waterLevelViewModel.isLoading.collectAsState()
 
     var isSatelliteView by remember { mutableStateOf(false) }
 
@@ -389,10 +388,7 @@ fun MapScreen(
                 }
 
                 IconButton(
-                    onClick = {
-                        showWaterLevelDialog = true
-                        waterLevelViewModel.fetchVodostaj()
-                    },
+                    onClick = { showWaterLevelDialog = true },
                     modifier = iconModifier
                 ) {
                     Icon(
@@ -485,10 +481,21 @@ fun MapScreen(
         }
 
         if (showWaterLevelDialog && openedChatUserId == null) {
-            WaterLevelDialog(
-                viewModel = waterLevelViewModel,
-                onDismiss = { showWaterLevelDialog = false }
-            )
+            Dialog(
+                onDismissRequest = {
+                    showWaterLevelDialog = false
+                    waterLevelViewModel.zatvoriDetalje()
+                },
+                properties = DialogProperties(usePlatformDefaultWidth = false)
+            ) {
+                VodostajiScreen(
+                    viewModel = waterLevelViewModel,
+                    onDismiss = {
+                        showWaterLevelDialog = false
+                        waterLevelViewModel.zatvoriDetalje()
+                    }
+                )
+            }
         }
 
         if (isAddMode) {
@@ -1081,155 +1088,4 @@ fun calculateFishingIndex(pressure: Int, timestamp: Long,temp: Int): Int {
     }
 
     return score.coerceIn(0, 100)
-}
-
-@Composable
-fun WaterLevelDialog(
-    viewModel: WaterLevelViewModel,
-    onDismiss: () -> Unit
-) {
-    val vodostaji by viewModel.vodostaji.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-
-    val detaljniPodaci by viewModel.detaljniPodaci.collectAsState()
-    val isDetaljniLoading by viewModel.isDetaljniLoading.collectAsState()
-
-    var izabranaStanica by remember { mutableStateOf<String?>(null) }
-
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
-            shape = RoundedCornerShape(16.dp),
-            modifier = Modifier.fillMaxWidth().fillMaxHeight(0.85f),
-            elevation = CardDefaults.cardElevation(8.dp)
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = "Hidrološki podaci (RHMZ)",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(bottom = 12.dp)
-                )
-                Text(
-                    text = "Tapni na reku za merenja na pola sata",
-                    style = MaterialTheme.typography.bodySmall,
-                    fontStyle = FontStyle.Italic,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-
-                if (isLoading) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
-                    }
-                } else if (vodostaji.isEmpty()) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Nema podataka. Pokušajte ponovo.")
-                    }
-                } else {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(MaterialTheme.colorScheme.primaryContainer)
-                            .padding(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("Reka\n(Stanica)", fontWeight = FontWeight.Bold, modifier = Modifier.weight(1.5f), fontSize = 12.sp)
-                        Text("Vodostaj\nPromena", fontWeight = FontWeight.Bold, modifier = Modifier.weight(1.2f), fontSize = 12.sp)
-                        Text("Proticaj\nTemp", fontWeight = FontWeight.Bold, modifier = Modifier.weight(1.3f), fontSize = 12.sp)
-                    }
-                    Divider()
-
-                    LazyColumn(modifier = Modifier.fillMaxSize()) {
-                        items(vodostaji) { podatak ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .pointerInput(Unit) {
-                                        detectTapGestures(onTap = {
-                                            if (podatak.link.isNotBlank()) {
-                                                izabranaStanica = podatak.stanica
-                                                viewModel.fetchDetaljeStanice(podatak.link)
-                                            }
-                                        })
-                                    }
-                                    .padding(vertical = 12.dp, horizontal = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Column(modifier = Modifier.weight(1.5f)) {
-                                    Text(text = podatak.reka, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, fontSize = 14.sp)
-                                    Text(text = "(${podatak.stanica})", style = MaterialTheme.typography.bodySmall)
-                                }
-                                Column(modifier = Modifier.weight(1.2f)) {
-                                    Text(text = "${podatak.vodostaj} cm", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                    val promenaBoja = if (podatak.promena.startsWith("-")) Color.Red else Color(0xFF006400)
-                                    Text(text = "${podatak.promena} cm", style = MaterialTheme.typography.bodySmall, color = promenaBoja)
-                                }
-                                Column(modifier = Modifier.weight(1.3f)) {
-                                    val imaProticaj = podatak.proticaj.isNotBlank() && podatak.proticaj != "*" && podatak.proticaj != "-"
-                                    if (imaProticaj) Text(text = "${podatak.proticaj} m³/s", fontSize = 13.sp)
-                                    val imaTemp = podatak.temperatura.isNotBlank() && podatak.temperatura != "-"
-                                    if (imaTemp) Text(text = "${podatak.temperatura} °C", style = MaterialTheme.typography.bodySmall)
-                                }
-                            }
-                            Divider()
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    if (izabranaStanica != null) {
-        Dialog(onDismissRequest = {
-            izabranaStanica = null
-            viewModel.ocistiDetalje()
-        }) {
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.fillMaxWidth().fillMaxHeight(0.6f),
-                elevation = CardDefaults.cardElevation(12.dp)
-            ) {
-                Column(modifier = Modifier.padding(16.dp).fillMaxSize()) {
-                    Text(
-                        "Istorija: $izabranaStanica",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    if (isDetaljniLoading) {
-                        Box(modifier = Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator()
-                        }
-                    } else if (detaljniPodaci.isEmpty()) {
-                        Text("Detalji trenutno nisu dostupni.", fontStyle = FontStyle.Italic)
-                    } else {
-                        LazyColumn(modifier = Modifier.weight(1f)) {
-                            items(detaljniPodaci) { detalj ->
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Text(text = detalj.vreme, style = MaterialTheme.typography.bodyMedium)
-                                    Text(text = "${detalj.vodostaj} cm", fontWeight = FontWeight.Bold)
-                                }
-                                Divider(thickness = 0.5.dp)
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(
-                        onClick = {
-                            izabranaStanica = null
-                            viewModel.ocistiDetalje()
-                        },
-                        modifier = Modifier.align(Alignment.End)
-                    ) {
-                        Text("Zatvori")
-                    }
-                }
-            }
-        }
-    }
 }

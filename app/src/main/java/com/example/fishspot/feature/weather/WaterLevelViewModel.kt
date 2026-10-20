@@ -3,172 +3,134 @@ package com.example.fishspot.feature.weather
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.Dispatchers
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.functions.ktx.functions
+import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.jsoup.Jsoup
-import javax.net.ssl.SSLContext
-import javax.net.ssl.TrustManager
-import javax.net.ssl.X509TrustManager
-import java.security.SecureRandom
-import java.security.cert.X509Certificate
+import kotlinx.coroutines.tasks.await
 
-// Model za glavnu tabelu
-data class VodostajPodaci(
+// Jedna hidrološka stanica iz Vodostaji/sve (upisuje je Cloud Function osveziVodostaje)
+data class StanicaVodostaja(
+    val id: String,
     val reka: String,
     val stanica: String,
-    val vodostaj: String,
-    val promena: String,
-    val proticaj: String,
-    val temperatura: String,
-    val link: String
+    val vodostaj: Int?,     // cm
+    val promena: Int?,      // cm u odnosu na prethodni dan
+    val proticaj: Double?,  // m³/s
+    val temperatura: Double?, // °C
+    val tendencija: String  // "raste", "opada", "miruje" ili "nepoznato"
 )
 
-// NOVI model za detaljnu istoriju na pola sata
-data class DetaljniVodostaj(
-    val vreme: String,
-    val vodostaj: String
-)
+// Merenje na sat za jednu stanicu (funkcija detaljiStanice), t = "20.10.2026 15:00"
+data class MerenjeVodostaja(val t: String, val v: Int)
 
+/**
+ * Vodostaji se ne preuzimaju sa RHMZ sajta direktno: server ih preuzima jednom na sat
+ * i upisuje u Firestore, a aplikacija samo čita (radi i bez interneta, iz keša).
+ */
 class WaterLevelViewModel : ViewModel() {
 
-    private val _vodostaji = MutableStateFlow<List<VodostajPodaci>>(emptyList())
-    val vodostaji = _vodostaji.asStateFlow()
+    private val _stanice = MutableStateFlow<List<StanicaVodostaja>>(emptyList())
+    val stanice = _stanice.asStateFlow()
 
-    private val _isLoading = MutableStateFlow(false)
+    // Vreme merenja RHMZ-a, npr. "20.10.2026. u 8:00"
+    private val _merenje = MutableStateFlow<String?>(null)
+    val merenje = _merenje.asStateFlow()
+
+    private val _isLoading = MutableStateFlow(true)
     val isLoading = _isLoading.asStateFlow()
 
-    private val _detaljniPodaci = MutableStateFlow<List<DetaljniVodostaj>>(emptyList())
-    val detaljniPodaci = _detaljniPodaci.asStateFlow()
+    private val _greska = MutableStateFlow<String?>(null)
+    val greska = _greska.asStateFlow()
 
-    private val _isDetaljniLoading = MutableStateFlow(false)
-    val isDetaljniLoading = _isDetaljniLoading.asStateFlow()
+    // Detalji izabrane stanice (merenja na sat za 7 dana)
+    private val _merenja = MutableStateFlow<List<MerenjeVodostaja>>(emptyList())
+    val merenja = _merenja.asStateFlow()
 
-    private val _errorMessage = MutableStateFlow<String?>(null)
-    val errorMessage = _errorMessage.asStateFlow()
+    private val _isDetaljiLoading = MutableStateFlow(false)
+    val isDetaljiLoading = _isDetaljiLoading.asStateFlow()
 
-    // POMOĆNA FUNKCIJA: Kreira fabriku koja dozvoljava Androidu da prihvati RHMZ sertifikat
-    private fun sslSocketFactory(): javax.net.ssl.SSLSocketFactory {
-        val trustAllCerts = arrayOf<TrustManager>(object : X509TrustManager {
-            override fun checkClientTrusted(certs: Array<X509Certificate>, authType: String) {}
-            override fun checkServerTrusted(certs: Array<X509Certificate>, authType: String) {}
-            override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
-        })
-        val sslContext = SSLContext.getInstance("TLS")
-        sslContext.init(null, trustAllCerts, SecureRandom())
-        return sslContext.socketFactory
-    }
+    private val _detaljiGreska = MutableStateFlow<String?>(null)
+    val detaljiGreska = _detaljiGreska.asStateFlow()
 
-    fun fetchVodostaj() {
-        _isLoading.value = true
-        _errorMessage.value = null
+    private var slusalac: ListenerRegistration? = null
+    private var izabranaStanica: String? = null
 
-        viewModelScope.launch(Dispatchers.IO) {
-            try {
-                val doc = Jsoup.connect("https://www.hidmet.gov.rs/latin/osmotreni/stanje_voda.php")
-                    .sslSocketFactory(sslSocketFactory()) // ISPRAVLJENO: Koristi univerzalni SSL bypass
-                    .userAgent("Mozilla/5.0")
-                    .timeout(10000)
-                    .get()
-
-                val rows = doc.select("table tr")
-                val privremenaLista = mutableListOf<VodostajPodaci>()
-                var trenutnaReka = ""
-
-                for (row in rows) {
-                    val polja = row.select("td")
-                    if (polja.isEmpty()) continue
-
-                    val link = row.select("a[href]").firstOrNull()?.attr("href") ?: ""
-                    val tekstovi = polja.map { it.text().trim() }.filter { it.isNotBlank() }
-
-                    if (tekstovi.size == 6) {
-                        trenutnaReka = tekstovi[0]
-                        if (trenutnaReka.lowercase() == "reka") continue
-
-                        privremenaLista.add(VodostajPodaci(
-                            trenutnaReka, tekstovi[1], tekstovi[2], tekstovi[3], tekstovi[4], tekstovi[5], link
-                        ))
-                    } else if (tekstovi.size == 5 && trenutnaReka.isNotBlank()) {
-                        privremenaLista.add(VodostajPodaci(
-                            trenutnaReka, tekstovi[0], tekstovi[1], tekstovi[2], tekstovi[3], tekstovi[4], link
-                        ))
-                    }
-                }
-                _vodostaji.value = privremenaLista
-            } catch (e: Exception) {
-                Log.e("WaterLevel", "Greška pri skidanju vodostaja", e)
-                _errorMessage.value = "Nije moguće preuzeti podatke. Proverite internet vezu."
-            } finally {
+    init {
+        slusalac = FirebaseFirestore.getInstance().collection("Vodostaji").document("sve")
+            .addSnapshotListener { snapshot, error ->
                 _isLoading.value = false
+                if (error != null) {
+                    Log.e("Vodostaji", "Greška pri čitanju vodostaja", error)
+                    _greska.value = "Vodostaji trenutno nisu dostupni."
+                    return@addSnapshotListener
+                }
+                if (snapshot == null || !snapshot.exists()) {
+                    _greska.value = "Podaci o vodostaju se pripremaju, pokušaj ponovo za koji minut."
+                    return@addSnapshotListener
+                }
+                _greska.value = null
+                _merenje.value = snapshot.getString("merenje")
+                @Suppress("UNCHECKED_CAST")
+                val lista = snapshot.get("stanice") as? List<Map<String, Any?>> ?: emptyList()
+                _stanice.value = lista.mapNotNull { it.uStanicu() }
             }
-        }
     }
 
-    fun fetchDetaljeStanice(link: String) {
-        if (link.isBlank()) return
-        _isDetaljniLoading.value = true
-        _detaljniPodaci.value = emptyList()
+    fun ucitajDetalje(hmId: String) {
+        izabranaStanica = hmId
+        _merenja.value = emptyList()
+        _detaljiGreska.value = null
+        _isDetaljiLoading.value = true
 
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
             try {
-                val stanicaId = link.substringAfter("id=").substringBefore("&").filter { it.isDigit() }
-                if (stanicaId.isBlank()) return@launch
-
-                val nrtUrl = "https://www.hidmet.gov.rs/latin/osmotreni/nrt_tabela_grafik.php?hm_id=$stanicaId&period=7"
-
-                val doc = Jsoup.connect(nrtUrl)
-                    .sslSocketFactory(sslSocketFactory()) // ISPRAVLJENO: Koristi univerzalni SSL bypass i za detalje
-                    .userAgent("Mozilla/5.0")
-                    .timeout(15000)
-                    .get()
-
-                val rows = doc.select("tr")
-                val privremenaLista = mutableListOf<DetaljniVodostaj>()
-
-                val regex = """\d{2}\.\d{2}\.\d{4}\s+(\d{2}:\d{2})\s+(-?\d+)""".toRegex()
-
-                for (row in rows) {
-                    val rowText = row.text().replace('\u00A0', ' ').replace("\\s+".toRegex(), " ").trim()
-
-                    val match = regex.find(rowText)
-                    if (match != null) {
-                        val vreme = match.groupValues[1]
-                        val vodostaj = match.groupValues[2]
-
-                        privremenaLista.add(DetaljniVodostaj(vreme, vodostaj))
+                val rezultat = Firebase.functions.getHttpsCallable("detaljiStanice")
+                    .call(mapOf("hmId" to hmId)).await()
+                @Suppress("UNCHECKED_CAST")
+                val lista = (rezultat.data as? Map<String, Any?>)?.get("merenja") as? List<Map<String, Any?>>
+                // Ako je korisnik u međuvremenu otvorio drugu stanicu, ovaj rezultat ne prikazujemo
+                if (izabranaStanica == hmId) {
+                    _merenja.value = lista.orEmpty().mapNotNull { m ->
+                        val t = m["t"] as? String ?: return@mapNotNull null
+                        val v = (m["v"] as? Number)?.toInt() ?: return@mapNotNull null
+                        MerenjeVodostaja(t, v)
                     }
                 }
-
-                val poslednjaMerenja = privremenaLista.take(9)
-
-                val finalnaLista = poslednjaMerenja.mapIndexed { index, trenutni ->
-                    if (index < poslednjaMerenja.size - 1) {
-                        val stariji = poslednjaMerenja[index + 1]
-                        val razlika = trenutni.vodostaj.toInt() - stariji.vodostaj.toInt()
-                        val trend = when {
-                            razlika > 0 -> " ⬆"
-                            razlika < 0 -> " ⬇"
-                            else -> " ⏺"
-                        }
-                        trenutni.copy(vodostaj = "${trenutni.vodostaj}$trend")
-                    } else {
-                        trenutni
-                    }
-                }
-
-                _detaljniPodaci.value = finalnaLista.take(8)
-
             } catch (e: Exception) {
-                Log.e("WaterLevel", "Greška pri čitanju detalja: ${e.message}")
+                Log.e("Vodostaji", "Greška pri učitavanju merenja stanice $hmId", e)
+                if (izabranaStanica == hmId) _detaljiGreska.value = "Merenja za ovu stanicu trenutno nisu dostupna."
             } finally {
-                _isDetaljniLoading.value = false
+                if (izabranaStanica == hmId) _isDetaljiLoading.value = false
             }
         }
     }
 
-    fun ocistiDetalje() {
-        _detaljniPodaci.value = emptyList()
+    fun zatvoriDetalje() {
+        izabranaStanica = null
+        _merenja.value = emptyList()
+        _detaljiGreska.value = null
+        _isDetaljiLoading.value = false
+    }
+
+    override fun onCleared() {
+        slusalac?.remove()
+    }
+
+    private fun Map<String, Any?>.uStanicu(): StanicaVodostaja? {
+        val id = this["id"] as? String ?: return null
+        return StanicaVodostaja(
+            id = id,
+            reka = this["reka"] as? String ?: "",
+            stanica = this["stanica"] as? String ?: "",
+            vodostaj = (this["vodostaj"] as? Number)?.toInt(),
+            promena = (this["promena"] as? Number)?.toInt(),
+            proticaj = (this["proticaj"] as? Number)?.toDouble(),
+            temperatura = (this["temperatura"] as? Number)?.toDouble(),
+            tendencija = this["tendencija"] as? String ?: "nepoznato"
+        )
     }
 }
