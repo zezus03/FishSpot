@@ -231,7 +231,8 @@ callbacks = [
 gubitak = tf.keras.losses.BinaryCrossentropy(label_smoothing=0.05)
 
 # Faza 1: uči se samo nova "glava"
-model.compile(tf.keras.optimizers.Adam(1e-3), gubitak, metrike)
+# Argumenti po imenu: u Keras 3 je treći pozicioni argument loss_weights, a ne metrics
+model.compile(optimizer=tf.keras.optimizers.Adam(1e-3), loss=gubitak, metrics=metrike)
 model.fit(train_ds, validation_data=val_ds, epochs=10, class_weight=tezine_klasa, callbacks=callbacks)
 
 # Faza 2: fino podešavanje gornjih slojeva osnove (BatchNorm ostaje zamrznut)
@@ -241,7 +242,7 @@ for sloj in osnova.layers[:-60]:
 for sloj in osnova.layers:
     if isinstance(sloj, tf.keras.layers.BatchNormalization):
         sloj.trainable = False
-model.compile(tf.keras.optimizers.Adam(2e-5), gubitak, metrike)
+model.compile(optimizer=tf.keras.optimizers.Adam(2e-5), loss=gubitak, metrics=metrike)
 model.fit(train_ds, validation_data=val_ds, epochs=20, class_weight=tezine_klasa, callbacks=callbacks)
 
 model = tf.keras.models.load_model(najbolji)
