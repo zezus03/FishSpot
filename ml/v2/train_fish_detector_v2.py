@@ -1,23 +1,3 @@
-"""
-FishSpot - trening modela "da li je riba na slici" (fish_detector.tflite)
-
-Pokreće se u Google Colab-u (Runtime -> Change runtime type -> GPU), ćelija po ćelija
-ili ceo fajl odjednom. Rezultat se snima na Google Drive i preuzima.
-
-USKLAĐENOST SA APLIKACIJOM (FishDetector.kt) - ne menjati bez izmene aplikacije:
-  * ulaz: 256 x 256 RGB, float32, pikseli u opsegu 0-255 (model sam skalira)
-  * izlaz: jedan broj (sigmoid) = verovatnoća klase "NoFish"
-    (image_dataset_from_directory sortira foldere po abecedi: Fish = 0, NoFish = 1)
-
-PODACI (Google Drive, MyDrive/):
-  fishspot_dataset/      tvoje slike po vrstama (Carp, Pike, ...) -> Fish;
-                         folder sa "nofish" u imenu -> NoFish
-  fishspot_dodatno/      (opciono) Fish/ i NoFish/ - dodatne teške slike koje sam ubaciš
-  fishspot_test/         Fish/ i NoFish/ - SLIKE SA TELEFONA, samo za proveru, nikad za trening
-                         (preporuka: bar 50 + 50; ubaci i slike na kojima je stari model grešio)
-  + Open Images V7 (preuzima se automatski): prave fotografije ribe i "teški" primeri bez ribe
-"""
-
 import hashlib
 import json
 import os
@@ -27,37 +7,36 @@ import subprocess
 import sys
 from datetime import datetime
 
-# ════════════════════════════════════════════════════════════
-# 0. PODEŠAVANJA
-# ════════════════════════════════════════════════════════════
+
+# Faza 0: Podešavanja
 DRIVE = "/content/drive/MyDrive"
 DRIVE_DATASET = f"{DRIVE}/fishspot_dataset"
 DRIVE_DODATNO = f"{DRIVE}/fishspot_dodatno"
 DRIVE_TEST = f"{DRIVE}/fishspot_test"
 DRIVE_IZLAZ = f"{DRIVE}/fishspot_model"
-DRIVE_CHECKPOINT = f"{DRIVE_IZLAZ}/trening"   # faza1.keras i najbolji.keras (za nastavak posle prekida)
+DRIVE_CHECKPOINT = f"{DRIVE_IZLAZ}/trening"
 
 RADNI = "/content/fish_trening"
-TRENING = f"{RADNI}/train"          # Fish/ i NoFish/ (imena foldera određuju redosled klasa!)
+TRENING = f"{RADNI}/train"
 
-VELICINA = 256                      # mora da odgovara VELICINA_ULAZA u FishDetector.kt
+VELICINA = 256
 BATCH = 32
 SEED = 42
 
-BROJ_OI_RIBA = 3000                 # Open Images slike sa ribom
-BROJ_OI_BEZ_RIBE = 6000             # Open Images slike bez ribe (teški primeri)
+BROJ_OI_RIBA = 3000
+BROJ_OI_BEZ_RIBE = 6000
 
-# Klase iz Open Images koje NE smeju da budu u "NoFish" (slike sa ribom ili morskim životinjama)
+
 RIBLJE_OZNAKE = {"Fish", "Goldfish", "Shark", "Seafood", "Sushi", "Shellfish", "Oyster",
                  "Shrimp", "Lobster", "Crab", "Squid", "Jellyfish", "Starfish", "Seahorse", "Whale",
                  "Dolphin", "Marine mammal", "Marine invertebrates", "Sea lion", "Harbor seal"}
 
-# Teški primeri za "NoFish": stvari koje model lako pomeša sa ulovom
+
 KLASE_BEZ_RIBE = [
-    "Person", "Human hand", "Man", "Woman", "Boy", "Girl",          # ljudi koji drže nešto
-    "Box", "Bottle", "Handbag", "Book", "Mobile phone", "Toy",       # predmeti u rukama
-    "Boat", "Canoe", "Kayak", "Lake", "River", "Beach", "Swimming pool",  # voda i čamci
-    "Dog", "Cat", "Bird", "Duck", "Frog", "Turtle", "Lizard", "Snake",    # druge životinje
+    "Person", "Human hand", "Man", "Woman", "Boy", "Girl",
+    "Box", "Bottle", "Handbag", "Book", "Mobile phone", "Toy",
+    "Boat", "Canoe", "Kayak", "Lake", "River", "Beach", "Swimming pool",
+    "Dog", "Cat", "Bird", "Duck", "Frog", "Turtle", "Lizard", "Snake",
     "Food", "Vegetable", "Bread", "Tree", "Grass", "Rock", "Shoe",
 ]
 
@@ -68,22 +47,20 @@ def pip(*paketi):
     subprocess.run([sys.executable, "-m", "pip", "install", "-q", *paketi], check=True)
 
 
-# ════════════════════════════════════════════════════════════
-# 1. GOOGLE DRIVE I PAKETI
-# ════════════════════════════════════════════════════════════
+# Faza 1: Google Drive i paketi
 print("[1/8] Povezivanje Google Drive-a i instalacija paketa...")
-from google.colab import drive, files  # noqa: E402
+from google.colab import drive, files
 
 drive.mount("/content/drive", force_remount=True)
 pip("fiftyone")
 
-import numpy as np  # noqa: E402
-import tensorflow as tf  # noqa: E402
-from PIL import Image, ImageOps  # noqa: E402
+import numpy as np
+import tensorflow as tf
+from PIL import Image, ImageOps
 
 print(f"   TensorFlow {tf.__version__}, GPU: {tf.config.list_physical_devices('GPU')}")
 
-# Ako je Colab prekinuo trening, a runtime je i dalje isti, slike su već na disku: ne preuzimamo ih ponovo
+
 POSTOJE_PODACI = all(os.path.isdir(f"{TRENING}/{k}") and len(os.listdir(f"{TRENING}/{k}")) > 200
                      for k in ("Fish", "NoFish"))
 if not POSTOJE_PODACI:
@@ -96,7 +73,6 @@ brojac = {"Fish": 0, "NoFish": 0, "duplikati": 0, "lose": 0}
 
 
 def dodaj_sliku(izvor, klasa, prefiks):
-    """Kopira sliku u trening folder: uspravna (EXIF), RGB, najviše 512 px, bez duplikata."""
     try:
         with open(izvor, "rb") as f:
             h = hashlib.md5(f.read()).hexdigest()
@@ -121,9 +97,9 @@ def je_slika(ime):
 
 
 if not POSTOJE_PODACI:
-    # ════════════════════════════════════════════════════════════
-    # 2. TVOJE SLIKE SA DRIVE-A
-    # ════════════════════════════════════════════════════════════
+
+
+    # Faza 2: Priprema tvojih slika sa Drive-a
     print("\n[2/8] Tvoje slike sa Drive-a...")
     for koren in (DRIVE_DATASET, DRIVE_DODATNO):
         if not os.path.exists(koren):
@@ -139,14 +115,13 @@ if not POSTOJE_PODACI:
                     dodaj_sliku(os.path.join(folder, fajl), klasa, "moje")
     print(f"   Fish: {brojac['Fish']}, NoFish: {brojac['NoFish']}")
 
-    # ════════════════════════════════════════════════════════════
-    # 3. OPEN IMAGES V7 (prave fotografije)
-    # ════════════════════════════════════════════════════════════
-    print("\n[3/8] Preuzimanje Open Images V7 (traje 10-20 min)...")
-    import fiftyone.utils.openimages as fouo  # noqa: E402
-    import fiftyone.zoo as foz  # noqa: E402
 
-    # Zadržavamo samo klase koje zaista postoje u Open Images (nepostojeća klasa obara preuzimanje)
+    # Faza 3: Preuzimanje Open Images V7
+    print("\n[3/8] Preuzimanje Open Images V7 (traje 10-20 min)...")
+    import fiftyone.utils.openimages as fouo
+    import fiftyone.zoo as foz
+
+
     dostupne_klase = set(fouo.get_classes(version="v7"))
     preskocene = [k for k in KLASE_BEZ_RIBE if k not in dostupne_klase]
     KLASE_BEZ_RIBE = [k for k in KLASE_BEZ_RIBE if k in dostupne_klase]
@@ -183,9 +158,8 @@ if not POSTOJE_PODACI:
 else:
     print("\n[2-3/8] Slike su već pripremljene na disku, preskačem preuzimanje.")
 
-# ════════════════════════════════════════════════════════════
-# 4. DATASET + AUGMENTACIJA
-# ════════════════════════════════════════════════════════════
+
+# Faza 4: Dataset i augmentacija
 print("\n[4/8] Priprema dataset-a...")
 zajednicko = dict(directory=TRENING, validation_split=0.15, seed=SEED,
                   image_size=(VELICINA, VELICINA), batch_size=BATCH, label_mode="binary")
@@ -193,11 +167,11 @@ train_ds = tf.keras.utils.image_dataset_from_directory(subset="training", **zaje
 val_ds = tf.keras.utils.image_dataset_from_directory(subset="validation", **zajednicko)
 assert train_ds.class_names == ["Fish", "NoFish"], train_ds.class_names
 
-# Nova varijacija svake epohe: augmentacija ide POSLE cache() (ranije je bila pre, pa se nije menjala)
+
 augmentacija = tf.keras.Sequential([
     tf.keras.layers.RandomFlip("horizontal_and_vertical"),
-    tf.keras.layers.RandomRotation(0.5, fill_mode="reflect"),        # do ±180° (uspravne i položene slike)
-    tf.keras.layers.RandomZoom((-0.35, 0.15), fill_mode="reflect"),  # i krupni kadar samo dela ribe
+    tf.keras.layers.RandomRotation(0.5, fill_mode="reflect"),
+    tf.keras.layers.RandomZoom((-0.35, 0.15), fill_mode="reflect"),
     tf.keras.layers.RandomTranslation(0.1, 0.1, fill_mode="reflect"),
     tf.keras.layers.RandomContrast(0.3),
     tf.keras.layers.RandomBrightness(0.25, value_range=(0, 255)),
@@ -214,8 +188,6 @@ def u_float(x, y):
     return tf.cast(x, tf.float32), y
 
 
-# Keš u memoriji čuva slike kao uint8 (4x manje RAM-a nego float32: ~1.5 GB umesto ~6 GB).
-# Shuffle bafer je mali (u serijama), da ne pravi još jednu kopiju celog skupa u memoriji.
 train_ds = (train_ds.map(u_uint8, num_parallel_calls=AUTOTUNE).cache()
             .shuffle(48, seed=SEED)
             .map(lambda x, y: (augmentacija(tf.cast(x, tf.float32), training=True), y),
@@ -224,18 +196,17 @@ train_ds = (train_ds.map(u_uint8, num_parallel_calls=AUTOTUNE).cache()
 val_ds = (val_ds.map(u_uint8, num_parallel_calls=AUTOTUNE).cache()
           .map(u_float, num_parallel_calls=AUTOTUNE).prefetch(AUTOTUNE))
 
-# Težine klasa, da veća klasa ne preovlada (broj slika čitamo iz foldera, radi i pri nastavku)
+
 n_fish = len(os.listdir(f"{TRENING}/Fish"))
 n_nofish = len(os.listdir(f"{TRENING}/NoFish"))
 tezine_klasa = {0: (n_fish + n_nofish) / (2 * n_fish), 1: (n_fish + n_nofish) / (2 * n_nofish)}
 print(f"   Težine klasa: {tezine_klasa}")
 
-# ════════════════════════════════════════════════════════════
-# 5. MODEL (EfficientNetV2B0, ima ugrađeno skaliranje piksela 0-255)
-# ════════════════════════════════════════════════════════════
+
+# Faza 5: Trening modela (EfficientNetV2B0)
 print("\n[5/8] Trening...")
 
-# Modeli se čuvaju na Drive-u, da trening može da se nastavi ako Colab prekine sesiju
+
 os.makedirs(DRIVE_CHECKPOINT, exist_ok=True)
 faza1_putanja = f"{DRIVE_CHECKPOINT}/faza1.keras"
 najbolji = f"{DRIVE_CHECKPOINT}/najbolji.keras"
@@ -268,14 +239,13 @@ else:
     izlaz = tf.keras.layers.Dense(1, activation="sigmoid", name="nofish")(x)
     model = tf.keras.Model(ulaz, izlaz)
 
-    # Faza 1: uči se samo nova "glava"
-    # Argumenti po imenu: u Keras 3 je treći pozicioni argument loss_weights, a ne metrics
+
     model.compile(optimizer=tf.keras.optimizers.Adam(1e-3), loss=gubitak, metrics=metrike)
     model.fit(train_ds, validation_data=val_ds, epochs=10, class_weight=tezine_klasa, callbacks=napravi_callbacks())
     model.save(faza1_putanja)
     print(f"   Faza 1 sačuvana: {faza1_putanja}")
 
-# Faza 2: fino podešavanje gornjih slojeva osnove (BatchNorm ostaje zamrznut)
+
 osnova.trainable = True
 for sloj in osnova.layers[:-60]:
     sloj.trainable = False
@@ -287,14 +257,12 @@ model.fit(train_ds, validation_data=val_ds, epochs=20, class_weight=tezine_klasa
 
 model = tf.keras.models.load_model(najbolji)
 
-# ════════════════════════════════════════════════════════════
-# 6. PROVERA NA TVOJIM SLIKAMA SA TELEFONA + IZBOR PRAGA
-# ════════════════════════════════════════════════════════════
+
+# Faza 6: Provera na slikama sa telefona i izbor praga
 print("\n[6/8] Provera na test slikama (fishspot_test)...")
 
 
 def ucitaj_za_model(putanja):
-    """Ista priprema kao u aplikaciji: uspravno, RGB, 256x256, pikseli 0-255."""
     with Image.open(putanja) as img:
         img = ImageOps.exif_transpose(img).convert("RGB").resize((VELICINA, VELICINA), Image.BILINEAR)
         return np.asarray(img, dtype=np.float32)
@@ -309,14 +277,14 @@ for klasa, oznaka in (("Fish", 1), ("NoFish", 0)):
                 test_putanje.append(f"{folder}/{fajl}")
                 test_oznake.append(oznaka)
 
-prag = 0.55  # podrazumevano, isto kao trenutno u aplikaciji
+prag = 0.55
 izvestaj = {}
 if test_putanje:
     slike = np.stack([ucitaj_za_model(p) for p in test_putanje])
     p_ribe = 1.0 - model.predict(slike, batch_size=BATCH, verbose=0).ravel()
     y = np.array(test_oznake)
 
-    # Prag biramo tako da odbijemo što manje pravih ulova (recall), uz što manje lažnih (preciznost)
+
     najbolji_f1 = -1
     print(f"\n   {'prag':>5} {'preciznost':>11} {'odziv':>7} {'F1':>6}")
     for t in np.arange(0.30, 0.91, 0.05):
@@ -340,16 +308,15 @@ if test_putanje:
 else:
     print("   ⚠️  Nema foldera fishspot_test - prava tačnost nije izmerena! Prag ostaje 0.55.")
 
-# ════════════════════════════════════════════════════════════
-# 7. KONVERZIJA U TFLITE (float16) + PROVERA DA DAJE ISTO KAO KERAS
-# ════════════════════════════════════════════════════════════
+
+# Faza 7: Konverzija u TFLite
 print("\n[7/8] Konverzija u TFLite...")
-# Preko SavedModel-a: direktna konverzija iz Keras 3 modela zna da zakaže
+
 saved_model_dir = f"{RADNI}/saved_model"
 model.export(saved_model_dir)
 konverter = tf.lite.TFLiteConverter.from_saved_model(saved_model_dir)
 konverter.optimizations = [tf.lite.Optimize.DEFAULT]
-konverter.target_spec.supported_types = [tf.float16]   # manji model, bez gubitka tačnosti
+konverter.target_spec.supported_types = [tf.float16]
 tflite_model = konverter.convert()
 
 interpreter = tf.lite.Interpreter(model_content=tflite_model)
@@ -367,9 +334,8 @@ for putanja in provera:
     razlike.append(abs(float(interpreter.get_tensor(iz["index"])[0, 0]) - float(model.predict(slika, verbose=0)[0, 0])))
 print(f"   Najveća razlika TFLite/Keras: {max(razlike):.4f} (treba da bude ispod 0.02)")
 
-# ════════════════════════════════════════════════════════════
-# 8. ČUVANJE NA DRIVE I PREUZIMANJE
-# ════════════════════════════════════════════════════════════
+
+# Faza 8: Čuvanje i preuzimanje
 print("\n[8/8] Čuvanje...")
 os.makedirs(DRIVE_IZLAZ, exist_ok=True)
 oznaka_verzije = datetime.now().strftime("%Y%m%d_%H%M")

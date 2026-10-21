@@ -15,7 +15,7 @@ import org.tensorflow.lite.support.tensorbuffer.TensorBuffer
 /**
  * Proverava da li je na slici riba (model fish_detector.tflite, EfficientNetV2B0, float16).
  *
- * Model je treniran skriptom ml/train_fish_detector.py sa image_dataset_from_directory,
+ * Model je treniran skriptom ml/v2/train_fish_detector_v2.py sa image_dataset_from_directory,
  * koji klase sortira po abecedi: Fish = 0, NoFish = 1. Sigmoid izlaz modela je zato
  * verovatnoća klase 1, tj. da riba NIJE na slici.
  */
