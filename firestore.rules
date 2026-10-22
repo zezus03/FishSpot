@@ -13,6 +13,12 @@ service cloud.firestore {
       return prijavljen() && request.auth.uid == uid;
     }
 
+    // Tekstualno polje (ako postoji) nije duže od max znakova
+    function tekstDo(polje, max) {
+      return !(polje in request.resource.data)
+        || (request.resource.data[polje] is string && request.resource.data[polje].size() <= max);
+    }
+
     // Menjaju se samo navedena polja
     function menjaSamo(polja) {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(polja);
@@ -24,8 +30,12 @@ service cloud.firestore {
     // (najveca nagrada za jedan ulov).
     match /Korisnici/{uid} {
       allow read: if prijavljen();
-      allow create: if jaSam(uid) && request.resource.data.get('poeni', 0) == 0;
-      allow update: if jaSam(uid) && poeniIspravni();
+      allow create: if jaSam(uid) && request.resource.data.get('poeni', 0) == 0 && profilIspravan();
+      allow update: if jaSam(uid) && poeniIspravni() && profilIspravan();
+
+      function profilIspravan() {
+        return tekstDo('userName', 60) && tekstDo('imePrezime', 100) && tekstDo('telefon', 30);
+      }
       allow delete: if false;
 
       function poeniIspravni() {
@@ -38,15 +48,21 @@ service cloud.firestore {
     // ─── ULOVI / MESTA ZA PECANJE ───
     match /MestaZaPecanje/{spotId} {
       allow read: if prijavljen();
-      allow create: if prijavljen() && request.resource.data.authorId == request.auth.uid;
+      allow create: if prijavljen() && request.resource.data.authorId == request.auth.uid && ulovIspravan();
       // Autor menja svoj ulov (npr. UploadWorker dodaje slikaUrl), ali ne sme da promeni autora.
       // Ostali smeju samo da dodaju ili uklone svoj lajk.
       allow update: if prijavljen() && (
         (resource.data.authorId == request.auth.uid
-          && request.resource.data.authorId == resource.data.authorId)
+          && request.resource.data.authorId == resource.data.authorId
+          && ulovIspravan())
         || (menjaSamo(['likedBy']) && menjaSamoSvojLajk())
       );
       allow delete: if prijavljen() && resource.data.authorId == request.auth.uid;
+
+      function ulovIspravan() {
+        return tekstDo('naziv', 100) && tekstDo('opis', 1000)
+          && tekstDo('mamac', 40) && tekstDo('tehnika', 40);
+      }
 
       function menjaSamoSvojLajk() {
         let stari = resource.data.get('likedBy', []).toSet();
@@ -57,7 +73,10 @@ service cloud.firestore {
 
       match /komentari/{commentId} {
         allow read: if prijavljen();
-        allow create: if prijavljen() && request.resource.data.authorId == request.auth.uid;
+        allow create: if prijavljen() && request.resource.data.authorId == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 500;
         allow update: if false;
         allow delete: if prijavljen() && resource.data.authorId == request.auth.uid;
       }
@@ -132,17 +151,51 @@ service cloud.firestore {
       allow read: if prijavljen() && request.auth.uid in roomId.split('_');
       allow create: if prijavljen()
         && request.auth.uid in roomId.split('_')
-        && request.resource.data.senderId == request.auth.uid;
+        && request.resource.data.senderId == request.auth.uid
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0
+        && request.resource.data.text.size() <= 1000;
       allow update, delete: if false;
     }
 
     // ─── CHAT BOT (Deda Pera) ───
     // Korisnik vidi samo svoj razgovor i salje samo pitanja; odgovor upisuje Gemini ekstenzija
+    // Svako pitanje mora da ide zajedno sa uvećanjem brojača BotLimit/{uid} (isti upis),
+    // a brojač dozvoljava najviše 30 pitanja u 24 sata, jer se svaki odgovor plaća.
     match /bot_chats/{uid}/messages/{messageId} {
       allow read: if jaSam(uid);
       allow create: if jaSam(uid)
-        && request.resource.data.keys().hasOnly(['prompt', 'timestamp']);
+        && request.resource.data.keys().hasOnly(['prompt', 'timestamp'])
+        && request.resource.data.prompt is string
+        && request.resource.data.prompt.size() > 0
+        && request.resource.data.prompt.size() <= 500
+        && getAfter(/databases/$(database)/documents/BotLimit/$(uid)).data.poslednja == messageId;
       allow update, delete: if false;
+    }
+
+    match /BotLimit/{uid} {
+      allow read: if jaSam(uid);
+      allow create, update: if jaSam(uid)
+        && request.resource.data.keys().hasOnly(['broj', 'pocetak', 'poslednja'])
+        && request.resource.data.poslednja is string
+        && !exists(/databases/$(database)/documents/bot_chats/$(uid)/messages/$(request.resource.data.poslednja))
+        && existsAfter(/databases/$(database)/documents/bot_chats/$(uid)/messages/$(request.resource.data.poslednja))
+        && (novoRazdoblje() || isteRazdoblje());
+      allow delete: if false;
+
+      function novoRazdoblje() {
+        return (resource == null || request.time > resource.data.pocetak + duration.value(1, 'd'))
+          && request.resource.data.broj == 1
+          && request.resource.data.pocetak == request.time;
+      }
+
+      function isteRazdoblje() {
+        return resource != null
+          && request.time <= resource.data.pocetak + duration.value(1, 'd')
+          && request.resource.data.pocetak == resource.data.pocetak
+          && request.resource.data.broj == resource.data.broj + 1
+          && request.resource.data.broj <= 30;
+      }
     }
   }
 }

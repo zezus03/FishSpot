@@ -287,7 +287,7 @@ fun UlovDetalji(
             ) {
                 OutlinedTextField(
                     value = noviKomentar,
-                    onValueChange = { noviKomentar = it },
+                    onValueChange = { noviKomentar = it.take(500) },
                     placeholder = { Text("Dodaj komentar...") },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(28.dp),

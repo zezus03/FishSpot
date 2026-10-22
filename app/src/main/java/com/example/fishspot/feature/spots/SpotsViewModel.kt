@@ -29,6 +29,9 @@ data class FilterState(
     val radiusKm: Float? = null
 )
 
+// Najveća strana slike ulova koja se šalje na server
+private const val MAKS_STRANA_SLIKE = 1600
+
 class SpotsViewModel : ViewModel() {
 
     private val auth = FirebaseAuth.getInstance()
@@ -185,12 +188,23 @@ class SpotsViewModel : ViewModel() {
                 // Ako ima slike, predajemo je WorkManager-u
                 if (slikaUri != null) {
                     try {
-                        val inputStream = context.contentResolver.openInputStream(slikaUri)
+                        // Slika se smanjuje pre slanja (duža strana najviše 1600 px, JPEG 82%):
+                        // umesto 3-8 MB sa kamere šalje se oko 300 KB, pa se brže učitava i manje košta
                         val localFile = java.io.File(context.filesDir, "upload_${spotId}.jpg")
-                        val outputStream = java.io.FileOutputStream(localFile)
-                        inputStream?.copyTo(outputStream)
-                        inputStream?.close()
-                        outputStream.close()
+                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                            val slika = com.example.fishspot.feature.fish.ucitajSlikuUspravno(context, slikaUri, MAKS_STRANA_SLIKE)
+                            val razmera = MAKS_STRANA_SLIKE.toFloat() / maxOf(slika.width, slika.height)
+                            val smanjena = if (razmera < 1f) {
+                                android.graphics.Bitmap.createScaledBitmap(
+                                    slika, (slika.width * razmera).toInt(), (slika.height * razmera).toInt(), true
+                                )
+                            } else slika
+                            java.io.FileOutputStream(localFile).use {
+                                smanjena.compress(android.graphics.Bitmap.CompressFormat.JPEG, 82, it)
+                            }
+                            if (smanjena != slika) slika.recycle()
+                            smanjena.recycle()
+                        }
 
                         val inputData = androidx.work.Data.Builder()
                             .putString("FILE_PATH", localFile.absolutePath)

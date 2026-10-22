@@ -1025,7 +1025,7 @@ fun MapScreen(
                         ) {
                             OutlinedTextField(
                                 value = novaPoruka,
-                                onValueChange = { novaPoruka = it },
+                                onValueChange = { novaPoruka = it.take(1000) },
                                 placeholder = { Text("Poruka...") },
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(24.dp),

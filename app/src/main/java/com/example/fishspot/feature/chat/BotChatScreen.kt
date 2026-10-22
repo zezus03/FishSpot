@@ -173,7 +173,7 @@ fun BotChatScreen(
             ) {
                 OutlinedTextField(
                     value = inputText,
-                    onValueChange = { inputText = it },
+                    onValueChange = { inputText = it.take(BotChatViewModel.MAKS_DUZINA_PITANJA) },
                     placeholder = { Text("Pitaj dedu Peru...") },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(28.dp),

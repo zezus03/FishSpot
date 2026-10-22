@@ -3,6 +3,8 @@ package com.example.fishspot.feature.chat
 import androidx.lifecycle.ViewModel
 
 import com.google.firebase.auth.FirebaseAuth
+import com.example.fishspot.core.theme.FishPoruka
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -97,18 +99,48 @@ class BotChatViewModel : ViewModel() {
             }
     }
 
+    // Pitanje i brojač pitanja (BotLimit/{uid}) se upisuju zajedno; pravila baze dozvoljavaju
+    // najviše PITANJA_DNEVNO pitanja u 24 sata, jer se svaki Gemini odgovor plaća
     fun sendQuestionToBot(text: String) {
         val userId = auth.currentUser?.uid ?: return
-        if (text.isBlank()) return
+        val pitanje = text.trim().take(MAKS_DUZINA_PITANJA)
+        if (pitanje.isBlank()) return
         _isThinking.value = true
-        val newMessage = mapOf(
-            "prompt" to text,
-            "timestamp" to System.currentTimeMillis()
-        )
 
-        db.collection("bot_chats")
-            .document(userId)
-            .collection("messages")
-            .add(newMessage)
+        val porukaRef = db.collection("bot_chats").document(userId).collection("messages").document()
+        val limitRef = db.collection("BotLimit").document(userId)
+
+        db.runTransaction { tx ->
+            val limit = tx.get(limitRef)
+            val pocetak = limit.getTimestamp("pocetak")?.toDate()?.time
+            val broj = limit.getLong("broj") ?: 0L
+            val novoRazdoblje = pocetak == null || System.currentTimeMillis() - pocetak > DAN_MS
+
+            if (!novoRazdoblje && broj >= PITANJA_DNEVNO) {
+                throw IllegalStateException("limit")
+            }
+            tx.set(porukaRef, mapOf("prompt" to pitanje, "timestamp" to System.currentTimeMillis()))
+            tx.set(
+                limitRef,
+                if (novoRazdoblje) {
+                    mapOf("broj" to 1L, "pocetak" to FieldValue.serverTimestamp(), "poslednja" to porukaRef.id)
+                } else {
+                    mapOf("broj" to broj + 1, "pocetak" to limit.getTimestamp("pocetak"), "poslednja" to porukaRef.id)
+                }
+            )
+        }.addOnFailureListener { e ->
+            _isThinking.value = false
+            FishPoruka.prikazi(
+                if (e.message == "limit" || e.cause?.message == "limit") "Deda Pera se umorio: danas si postavio $PITANJA_DNEVNO pitanja. Vrati se sutra!"
+                else "Pitanje nije poslato. Proveri internet i pokušaj ponovo.",
+                dugo = true
+            )
+        }
+    }
+
+    companion object {
+        const val PITANJA_DNEVNO = 30
+        const val MAKS_DUZINA_PITANJA = 500
+        private const val DAN_MS = 24 * 60 * 60 * 1000L
     }
 }

@@ -169,6 +169,7 @@ exports.obrisiNalog = functions.https.onCall(async (data, context) => {
     }
     await db.recursiveDelete(db.collection("bot_chats").doc(uid));
     await db.collection("ActiveUsers").doc(uid).delete();
+    await Promise.all(["BotLimit", "VodeLimit"].map((k) => db.collection(k).doc(uid).delete()));
 
     // 6. Profil i profilna slika
     await db.recursiveDelete(db.collection("Korisnici").doc(uid));

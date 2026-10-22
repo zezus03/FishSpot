@@ -13,11 +13,12 @@ service firebase.storage {
         && request.resource.size < 5 * 1024 * 1024;
     }
 
-    // Slike ulova: ime fajla je nasumicno (UUID), pa samo ogranicavamo velicinu i zabranjujemo menjanje
+    // Slike ulova: ime fajla je nasumicno (UUID), pa samo ogranicavamo velicinu i zabranjujemo menjanje.
+    // Aplikacija salje smanjene slike (oko 300 KB), pa je 5 MB dovoljna granica
     match /spot_slike/{fileName} {
       allow read: if request.auth != null;
       allow create: if request.auth != null
-        && request.resource.size < 10 * 1024 * 1024;
+        && request.resource.size < 5 * 1024 * 1024;
       allow update, delete: if false;
     }
   }
