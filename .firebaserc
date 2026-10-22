@@ -1,5 +1,14 @@
 {
   "projects": {
     "default": "fishspot-52735"
+  },
+  "targets": {},
+  "etags": {
+    "fishspot-52735": {
+      "extensionInstances": {
+        "firestore-genai-chatbot": "6504ad6d23e1e4df469ff0cd216843f68de25d86c0e2e3e8fe67b89eee8ce0e7",
+        "storage-resize-images": "9f78664c96a56472f5197b4de4e461ae5ff944464849a8a174cc286a6ba28a04"
+      }
+    }
   }
 }
