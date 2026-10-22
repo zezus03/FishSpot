@@ -20,6 +20,9 @@ import androidx.navigation.navArgument
 import com.example.fishspot.feature.auth.AuthRepository
 import com.example.fishspot.core.theme.FishSpotTheme
 import com.example.fishspot.core.theme.SplashAnimacija
+import com.example.fishspot.feature.uvod.UvodScreen
+import com.example.fishspot.feature.uvod.oznaciUvodVidjen
+import com.example.fishspot.feature.uvod.uvodVidjen
 import com.example.fishspot.core.theme.FishPorukaHost
 import com.example.fishspot.feature.spots.AddSpotScreen
 import com.example.fishspot.feature.chat.BotChatScreen
@@ -44,12 +47,20 @@ class MainActivity : ComponentActivity() {
             FishSpotTheme {
                 // Animacija logoa samo pri pokretanju (ne posle okretanja ekrana)
                 var splashGotov by rememberSaveable { mutableStateOf(false) }
+                // Uvod sa deda Perom se prikazuje samo pri prvom ulasku u aplikaciju
+                val kontekst = androidx.compose.ui.platform.LocalContext.current
+                var uvodGotov by rememberSaveable { mutableStateOf(uvodVidjen(kontekst)) }
                 androidx.compose.foundation.layout.Box {
-                    if (splashGotov) {
-                        val navController = rememberNavController()
-                        MainNavigation(navController, auth)
-                    } else {
-                        SplashAnimacija(onGotovo = { splashGotov = true })
+                    when {
+                        !splashGotov -> SplashAnimacija(onGotovo = { splashGotov = true })
+                        !uvodGotov -> UvodScreen(onGotovo = {
+                            oznaciUvodVidjen(kontekst)
+                            uvodGotov = true
+                        })
+                        else -> {
+                            val navController = rememberNavController()
+                            MainNavigation(navController, auth)
+                        }
                     }
                     // Poruke u stilu aplikacije (umesto sistemskog Toast-a)
                     FishPorukaHost()
@@ -182,7 +193,8 @@ fun MainNavigation(navController: NavHostController, auth: FirebaseAuth) {
                         popUpTo(0) { inclusive = true }
                     }
                 },
-                onPrikaziUlove = { uid -> navController.navigate("ulovi_korisnika/$uid") }
+                onPrikaziUlove = { uid -> navController.navigate("ulovi_korisnika/$uid") },
+                onPogledajUvod = { navController.navigate("uvod") }
             )
         }
         // ─── ULOVI JEDNOG KORISNIKA (iz profila) ───
@@ -194,6 +206,10 @@ fun MainNavigation(navController: NavHostController, auth: FirebaseAuth) {
                 uid = backStackEntry.arguments?.getString("uid").orEmpty(),
                 onNavigateBack = { navController.popBackStack() }
             )
+        }
+        // ─── UVOD SA DEDA PEROM (ponovo, iz profila) ───
+        composable("uvod") {
+            UvodScreen(onGotovo = { navController.popBackStack() })
         }
         // ─── KALENDAR LOVOSTAJA ───
         composable("lovostaj") {

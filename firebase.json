@@ -5,17 +5,30 @@
   },
   "hosting": {
     "public": "hosting",
-    "ignore": ["firebase.json", "**/.*"]
+    "ignore": [
+      "firebase.json",
+      "**/.*"
+    ]
   },
   "storage": {
     "rules": "storage.rules"
   },
   "emulators": {
-    "functions": { "port": 5001 },
-    "firestore": { "port": 8085 },
-    "auth": { "port": 9099 },
-    "storage": { "port": 9199 },
-    "ui": { "enabled": false },
+    "functions": {
+      "port": 5001
+    },
+    "firestore": {
+      "port": 8085
+    },
+    "auth": {
+      "port": 9099
+    },
+    "storage": {
+      "port": 9199
+    },
+    "ui": {
+      "enabled": false
+    },
     "singleProjectMode": true
   },
   "functions": [
@@ -31,5 +44,9 @@
         "*.local"
       ]
     }
-  ]
+  ],
+  "extensions": {
+    "firestore-genai-chatbot": "googlecloud/firestore-genai-chatbot@0.0.19",
+    "storage-resize-images": "firebase/storage-resize-images@0.3.5"
+  }
 }

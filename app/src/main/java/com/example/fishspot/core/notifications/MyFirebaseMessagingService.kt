@@ -1,5 +1,6 @@
 package com.example.fishspot.core.notifications
 
+import android.app.ActivityManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -10,6 +11,7 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.example.fishspot.MainActivity
 import com.example.fishspot.R
+import com.example.fishspot.core.theme.FishPoruka
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
@@ -24,7 +26,12 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         val title = remoteMessage.notification?.title ?: "Novi komentar!"
         val body = remoteMessage.notification?.body ?: "Neko je komentarisao tvoj ulov."
 
-        prikaziNotifikaciju(title, body)
+        // Dok je aplikacija otvorena, obaveštenje se prikazuje kao poruka u aplikaciji
+        if (aplikacijaNaEkranu()) {
+            FishPoruka.prikazi("$title\n$body", dugo = true)
+            return
+        }
+        prikaziNotifikaciju(title, body, remoteMessage.data)
     }
 
     // Ako se token promeni (npr. korisnik reinstalira app), ažuriraj ga
@@ -37,18 +44,27 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             .addOnFailureListener { Log.e("FCM", "Greška pri čuvanju novog tokena", it) }
     }
 
-    private fun prikaziNotifikaciju(title: String, messageBody: String) {
+    private fun aplikacijaNaEkranu(): Boolean {
+        val stanje = ActivityManager.RunningAppProcessInfo()
+        ActivityManager.getMyMemoryState(stanje)
+        return stanje.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+    }
+
+    private fun prikaziNotifikaciju(title: String, messageBody: String, podaci: Map<String, String>) {
+        // Otvara postojeći ekran (bez ponovnog pokretanja aplikacije) i zumira na ulov
         val intent = Intent(this, MainActivity::class.java).apply {
-            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            podaci["ZUMIRAJ_LAT"]?.let { putExtra("ZUMIRAJ_LAT", it) }
+            podaci["ZUMIRAJ_LNG"]?.let { putExtra("ZUMIRAJ_LNG", it) }
         }
         val pendingIntent = PendingIntent.getActivity(
-            this, 0, intent,
+            this, System.currentTimeMillis().toInt(), intent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
         val channelId = "fishspot_obavestenja"
         val notificationBuilder = NotificationCompat.Builder(this, channelId)
-            .setSmallIcon(R.mipmap.ic_launcher) // Obavezno stavi tvoju ikonicu
+            .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle(title)
             .setContentText(messageBody)
             .setAutoCancel(true)
@@ -57,7 +73,6 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
         val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-        // Za Android 8.0+ (Oreo) moramo da napravimo kanal
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 channelId,

@@ -169,6 +169,10 @@ service cloud.firestore {
         && request.resource.data.prompt is string
         && request.resource.data.prompt.size() > 0
         && request.resource.data.prompt.size() <= 500
+        // Vreme pitanja mora biti tačno (aplikacija prikazuje samo proverene odgovore novih pitanja)
+        && request.resource.data.timestamp is int
+        && request.resource.data.timestamp > request.time.toMillis() - 600000
+        && request.resource.data.timestamp < request.time.toMillis() + 600000
         && getAfter(/databases/$(database)/documents/BotLimit/$(uid)).data.poslednja == messageId;
       allow update, delete: if false;
     }

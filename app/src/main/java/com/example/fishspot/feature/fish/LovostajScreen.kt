@@ -9,7 +9,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.EventBusy
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -83,7 +83,7 @@ fun LovostajScreen(onNavigateBack: () -> Unit) {
             oznaka = "Propisi o ribolovu",
             naslov = "Lovostaj",
             onNazad = onNavigateBack,
-            ikona = Icons.Default.EventBusy,
+            ikona = Icons.Default.CalendarMonth,
             podnaslov = {
                 Text(
                     "Danas je ${danas.get(Calendar.DAY_OF_MONTH)}. ${NAZIVI_MESECI[tekuciMesec - 1]}",

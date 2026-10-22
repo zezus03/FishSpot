@@ -50,6 +50,12 @@ exports.posaljiNotifikacijuZaKomentar = functions.firestore
                 title: `Novi komentar na tvoj ulov! 🎣`,
                 body: `${imeKomentatora}: ${tekstKomentara}`
             },
+            // Lokacija ulova: dodir na obaveštenje zumira mapu na komentarisani ulov
+            data: {
+                ZUMIRAJ_LAT: String(spotDoc.data().lat ?? ""),
+                ZUMIRAJ_LNG: String(spotDoc.data().lng ?? ""),
+            },
+            android: { notification: { channelId: "fishspot_obavestenja" } },
             token: fcmToken
         };
 
@@ -228,3 +234,6 @@ exports.obrisiNalog = ulovi.obrisiNalog;
 
 // Vode u blizini van Srbije, Geoapify ključ je samo na serveru (functions/vode.js)
 exports.vodeUBlizini = require("./vode").vodeUBlizini;
+
+// Zaštita Deda Pere od zloupotrebe (functions/deda.js)
+exports.proveriOdgovorDedePere = require("./deda").proveriOdgovorDedePere;

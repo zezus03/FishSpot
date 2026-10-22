@@ -57,6 +57,7 @@ fun ProfileScreen(
     onNavigateBack: () -> Unit,
     onLogout: () -> Unit,
     onPrikaziUlove: (uid: String) -> Unit = {},
+    onPogledajUvod: () -> Unit = {},
     mapViewModel: MapViewModel = viewModel()
 ) {
     val context = LocalContext.current
@@ -285,6 +286,26 @@ fun ProfileScreen(
                             uncheckedBorderColor = FishBoje.IvicaKartice
                         )
                     )
+                }
+            }
+
+            // ────── UVOD ──────
+            Sekcija("Pomoć") {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable(onClick = onPogledajUvod)
+                ) {
+                    IkonaUKrugu(Icons.Default.School)
+                    Spacer(Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Uvod sa deda Perom", color = FishBoje.TekstPrimarni, fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold)
+                        Text("Ponovo pogledaj šta sve aplikacija ume", color = FishBoje.TekstPriguseni, fontSize = 12.sp)
+                    }
+                    Icon(Icons.Default.ChevronRight, contentDescription = null, tint = FishBoje.TekstPriguseni)
                 }
             }
 

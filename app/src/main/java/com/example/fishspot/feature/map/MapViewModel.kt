@@ -74,7 +74,7 @@ class MapViewModel : ViewModel() {
     private val _userProfileImage = MutableStateFlow<String?>(null)
     val userProfileImage = _userProfileImage.asStateFlow()
 
-    private val _vodeNotificationsEnabled = MutableStateFlow(true)
+    private val _vodeNotificationsEnabled = MutableStateFlow(false)
     val vodeNotificationsEnabled = _vodeNotificationsEnabled.asStateFlow()
 
     // Da li korisnik prikazuje svoju lokaciju drugima na mapi (podrazumevano NE)
@@ -100,7 +100,7 @@ class MapViewModel : ViewModel() {
 
     fun ucitajPreferences(context: Context) {
         val sharedPref = context.getSharedPreferences("fishspot_prefs", Context.MODE_PRIVATE)
-        _vodeNotificationsEnabled.value = sharedPref.getBoolean("vode_notifications_enabled", true)
+        _vodeNotificationsEnabled.value = sharedPref.getBoolean("vode_notifications_enabled", false) // podrazumevano isključeno
         _deliLokaciju.value = sharedPref.getBoolean("deli_lokaciju", false)
     }
 

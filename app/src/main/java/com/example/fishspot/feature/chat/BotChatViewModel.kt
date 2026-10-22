@@ -38,7 +38,7 @@ class BotChatViewModel : ViewModel() {
 
                     for (doc in snapshot.documents) {
                         val promptText = doc.getString("prompt") ?: ""
-                        val responseText = doc.getString("response")
+                        val responseText = bezbedanOdgovor(doc)
                         val timestamp = doc.getLong("timestamp") ?: 0L
 
                         if (promptText.isNotBlank()) {
@@ -80,7 +80,7 @@ class BotChatViewModel : ViewModel() {
                    // PROVERAVAMO DA LI DEDA JOŠ RAZMIŠLJA:
                     if (!snapshot.isEmpty) {
                         val lastDoc = snapshot.documents.last()
-                        val resp = lastDoc.getString("response")
+                        val resp = bezbedanOdgovor(lastDoc)
                         val status = lastDoc.get("status") as? Map<*, *>
                         val stateStr = status?.get("state") as? String
 
@@ -138,7 +138,21 @@ class BotChatViewModel : ViewModel() {
         }
     }
 
+    // Odgovor se prikazuje tek kad ga server proveri (funkcija proveriOdgovorDedePere).
+    // Stari odgovori (pre uvođenja provere) se prikazuju, osim onih koji otkrivaju uputstva.
+    private fun bezbedanOdgovor(doc: com.google.firebase.firestore.DocumentSnapshot): String? {
+        val odgovor = doc.getString("response") ?: return null
+        if (doc.getBoolean("provereno") == true) return odgovor
+        val vreme = doc.getLong("timestamp") ?: 0L
+        if (vreme >= POCETAK_PROVERE) return null
+        val t = odgovor.lowercase()
+        return if ("pravila tvog karaktera" in t || "ti si deda pera, stari" in t) ODBIJANJE else odgovor
+    }
+
     companion object {
+        private const val POCETAK_PROVERE = 1792684800000L // 22.10.2026. 18:00
+        private const val ODBIJANJE = "Bistro, sinko! Deda Pera priča samo o pecanju: pribor, mamci, mesta, riba i lovostaj. " +
+            "Te druge stvari ostavi nekom drugom, a mene pitaj nešto o ribolovu pa da ti pomognem!"
         const val PITANJA_DNEVNO = 30
         const val MAKS_DUZINA_PITANJA = 500
         private const val DAN_MS = 24 * 60 * 60 * 1000L

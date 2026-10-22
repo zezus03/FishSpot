@@ -166,8 +166,10 @@ fun MapScreen(
 
     DisposableEffect(context) {
         val listener = androidx.core.util.Consumer<android.content.Intent> { noviIntent ->
-            val lat = noviIntent.getDoubleExtra("ZUMIRAJ_LAT", 0.0)
-            val lng = noviIntent.getDoubleExtra("ZUMIRAJ_LNG", 0.0)
+            fun koordinata(kljuc: String): Double =
+                noviIntent.getStringExtra(kljuc)?.toDoubleOrNull() ?: noviIntent.getDoubleExtra(kljuc, 0.0)
+            val lat = koordinata("ZUMIRAJ_LAT")
+            val lng = koordinata("ZUMIRAJ_LNG")
 
             if (lat != 0.0 && lng != 0.0) {
                 scope.launch {
@@ -441,7 +443,7 @@ fun MapScreen(
                     modifier = iconModifier
                 ) {
                     Icon(
-                        imageVector = Icons.Default.EventBusy,
+                        imageVector = Icons.Default.CalendarMonth,
                         contentDescription = "Lovostaj",
                         tint = bojaIkone
                     )
@@ -931,16 +933,8 @@ fun MapScreen(
         if (openedChatUserId != null) {
             val openedUser = activeBubbles.find { it.userId == openedChatUserId }
             if (openedUser != null) {
-                var novaPoruka by remember { mutableStateOf("") }
                 val currentMessages = messagesMap[openedUser.userId] ?: emptyList()
-                val listState = rememberLazyListState()
                 val chatSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-
-                LaunchedEffect(currentMessages.size) {
-                    if (currentMessages.isNotEmpty()) {
-                        listState.scrollToItem(currentMessages.size - 1)
-                    }
-                }
 
                 androidx.activity.compose.BackHandler {
                     focusManager.clearFocus()
@@ -953,107 +947,25 @@ fun MapScreen(
                         openedChatUserId = null
                     },
                     sheetState = chatSheetState,
-                    modifier = Modifier.fillMaxHeight(0.85f),
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    dragHandle = { BottomSheetDefaults.DragHandle() }
+                    modifier = Modifier.fillMaxHeight(0.9f),
+                    containerColor = FishBoje.Pozadina,
+                    dragHandle = { BottomSheetDefaults.DragHandle(color = FishBoje.TekstPriguseni) }
                 ) {
-                    Column(
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(MaterialTheme.colorScheme.primary)
-                                .padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            IconButton(onClick = {
-                                focusManager.clearFocus()
-                                openedChatUserId = null
-                            }) {
-                                Icon(Icons.Default.ArrowBack, contentDescription = "Nazad", tint = Color.White)
-                            }
-                            Text(
-                                text = openedUser.username,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White,
-                                fontSize = 18.sp
-                            )
+                    com.example.fishspot.feature.chat.PrivatniChat(
+                        sagovornik = openedUser,
+                        poruke = currentMessages,
+                        mojId = currentUserId,
+                        onPosalji = { tekst ->
+                            val mojeIme = activeUsersViewModel.auth.currentUser?.displayName?.takeIf { it.isNotBlank() }
+                                ?: activeUsersViewModel.auth.currentUser?.email?.substringBefore("@")
+                                ?: "Pecaroš"
+                            activeUsersViewModel.sendPrivateMessage(openedUser.userId, tekst, mojeIme)
+                        },
+                        onZatvori = {
+                            focusManager.clearFocus()
+                            openedChatUserId = null
                         }
-
-                        LazyColumn(
-                            state = listState,
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(horizontal = 16.dp, vertical = 8.dp)
-                        ) {
-                            items(currentMessages) { poruka ->
-                                val isMojaPoruka = poruka.senderId == currentUserId
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 4.dp),
-                                    horizontalArrangement = if (isMojaPoruka) Arrangement.End else Arrangement.Start
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .background(
-                                                if (isMojaPoruka) MaterialTheme.colorScheme.primary else Color(0xFFE0E0E0),
-                                                shape = RoundedCornerShape(12.dp)
-                                            )
-                                            .padding(12.dp)
-                                    ) {
-                                        Text(
-                                            text = poruka.text,
-                                            color = if (isMojaPoruka) Color.White else Color.Black
-                                        )
-                                    }
-                                }
-                            }
-                        }
-
-                        Divider()
-
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(MaterialTheme.colorScheme.surface)
-                                .imePadding()
-                                .navigationBarsPadding()
-                                .padding(horizontal = 16.dp, vertical = 8.dp)
-                        ) {
-                            OutlinedTextField(
-                                value = novaPoruka,
-                                onValueChange = { novaPoruka = it.take(1000) },
-                                placeholder = { Text("Poruka...") },
-                                modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(24.dp),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                    unfocusedBorderColor = Color.LightGray
-                                )
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            FloatingActionButton(
-                                onClick = {
-                                    if (novaPoruka.isNotBlank()) {
-                                        val mojeIme = activeUsersViewModel.auth.currentUser?.displayName?.takeIf { it.isNotBlank() }
-                                            ?: activeUsersViewModel.auth.currentUser?.email?.substringBefore("@")
-                                            ?: "Pecaroš"
-
-                                        activeUsersViewModel.sendPrivateMessage(openedUser.userId, novaPoruka, mojeIme)
-                                        novaPoruka = ""
-                                    }
-                                },
-                                modifier = Modifier.size(52.dp),
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                shape = CircleShape
-                            ) {
-                                Icon(Icons.Default.Send, contentDescription = "Pošalji", tint = Color.White)
-                            }
-                        }
-                    }
+                    )
                 }
             } else {
                 openedChatUserId = null
