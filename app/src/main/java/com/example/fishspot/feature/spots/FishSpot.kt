@@ -26,6 +26,6 @@ data class FishSpot(
 )
 // Ponuđeni mamci i tehnike (dodavanje i izmena ulova)
 object OpcijeUlova {
-    val mamci = listOf("Crv", "Glista", "Šećerac", "Pop-up", "Keder", "Varalica", "Mušica")
+    val mamci = listOf("Crv", "Glista", "Šećerac", "Boila", "Pop-up", "Keder", "Varalica", "Mušica")
     val tehnike = listOf("Plovak", "Dubinac", "Varalica", "Feeder", "Mušičarenje")
 }
