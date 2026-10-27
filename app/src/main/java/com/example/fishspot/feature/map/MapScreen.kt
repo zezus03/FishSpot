@@ -145,7 +145,8 @@ fun MapScreen(
     var hasCenteredOnUser by rememberSaveable { mutableStateOf(false) }
     val activity = context as? android.app.Activity
     val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(LatLng(43.3209, 21.8958), 12f)
+        // Na početku cela Srbija; kad se nađe lokacija korisnika, mapa se zumira na njega
+        position = CameraPosition.fromLatLngZoom(LatLng(44.05, 20.9), 6.6f)
     }
 
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -215,7 +216,7 @@ fun MapScreen(
 
             if (!isAddMode && !hasCenteredOnUser && focusOnSpotId == null && focusOnUserCatch == null) {
                 val latLng = LatLng(it.latitude, it.longitude)
-                cameraPositionState.animate(com.google.android.gms.maps.CameraUpdateFactory.newLatLngZoom(latLng, 15f), 1000)
+                cameraPositionState.animate(com.google.android.gms.maps.CameraUpdateFactory.newLatLngZoom(latLng, 13f), 2000)
                 hasCenteredOnUser = true
             }
         }
