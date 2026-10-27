@@ -858,6 +858,7 @@ fun MapScreen(
 
         // Nova poruka: balončić pošiljaoca se sam pojavi (pošiljalac ne mora da bude na mapi)
         fun dodajBalon(korisnik: ActiveUser) {
+            if (korisnik.userId == currentUserId) return
             val i = activeBubbles.indexOfFirst { it.userId == korisnik.userId }
             if (i >= 0) {
                 activeBubbles[i] = korisnik

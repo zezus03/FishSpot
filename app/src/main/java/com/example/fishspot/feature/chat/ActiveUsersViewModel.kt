@@ -163,8 +163,10 @@ class ActiveUsersViewModel : ViewModel() {
                 if (error != null) return@addSnapshotListener
                 if (snapshot != null) {
                     val currentTime = System.currentTimeMillis()
+                    // Svoj nalog se ne prikazuje kao pecaroš u blizini (inače bi se otvorio chat sa samim sobom)
+                    val mojUid = auth.currentUser?.uid
                     val users = snapshot.documents.mapNotNull { it.toObject(ActiveUser::class.java) }
-                        .filter { currentTime - it.lastActive < 5 * 60 * 1000 }
+                        .filter { currentTime - it.lastActive < 5 * 60 * 1000 && it.userId != mojUid }
 
                     _activeUsers.value = users
 
@@ -213,7 +215,7 @@ class ActiveUsersViewModel : ViewModel() {
 
     fun sendPrivateMessage(targetUserId: String, text: String, senderUsername: String) {
         val myUid = auth.currentUser?.uid ?: return
-        if (text.isBlank()) return
+        if (text.isBlank() || targetUserId == myUid) return
 
         val roomId = getChatRoomId(myUid, targetUserId)
         val newMessage = UserMessage(
