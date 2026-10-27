@@ -59,9 +59,27 @@ service cloud.firestore {
       );
       allow delete: if prijavljen() && resource.data.authorId == request.auth.uid;
 
+      // Dužina i težina moraju imati smisla za vrstu (iste granice kao OgranicenjaRibe.kt u aplikaciji)
+      function ulovUGranicama() {
+        let granice = {'saran': [120, 45], 'babuska': [50, 3], 'karas': [55, 3.5], 'amur': [150, 50], 'beli-tolstolobik': [125, 55], 'sivi-tolstolobik': [160, 60], 'linjak': [70, 7.5], 'deverika': [85, 9], 'krupatica': [45, 1.5], 'crnooka': [50, 2], 'nosara': [55, 3], 'bodorka': [55, 2.5], 'plotica': [60, 3.5], 'crvenperka': [50, 2.2], 'klen': [80, 8], 'jaz': [100, 8], 'bucov': [120, 13], 'skobalj': [55, 2.5], 'mrena': [120, 13], 'potocna-mrena': [35, 0.7], 'ukljeva': [25, 0.25], 'sabljarka': [65, 2.2], 'krkusa': [22, 0.25], 'gavcica': [12, 0.05], 'grgec': [60, 5], 'smud': [130, 20], 'smud-kamenjar': [55, 2.5], 'balavac': [25, 0.4], 'stuka': [150, 30], 'som': [280, 140], 'patuljasti-som': [55, 3], 'crni-patuljasti-som': [65, 4], 'manic': [100, 15], 'jegulja': [150, 9], 'keciga': [125, 16], 'potocna-pastrmka': [100, 20], 'kalifornijska-pastrmka': [100, 25], 'mladica': [160, 60], 'lipljen': [60, 3.5], 'potocna-zlatovcica': [70, 7], 'suncanica': [30, 0.7], 'glavoc': [30, 0.5], 'ostalo': [300, 150]};
+        let d = request.resource.data;
+        let g = granice.get(d.get('vrstaId', 'ostalo'), [300, 150]);
+        return d.get('duzinaRibe', 0) is number && d.get('tezinaRibe', 0) is number
+          && d.get('duzinaRibe', 0) >= 0 && d.get('duzinaRibe', 0) <= g[0]
+          && d.get('tezinaRibe', 0) >= 0 && d.get('tezinaRibe', 0) <= g[1];
+      }
+
+      // Varalica ide samo uz tehniku varalica, mušica samo uz mušičarenje
+      function mamacITehnikaSlazu() {
+        let d = request.resource.data;
+        return (d.get('mamac', '') == 'Varalica') == (d.get('tehnika', '') == 'Varalica')
+          && (d.get('mamac', '') == 'Mušica') == (d.get('tehnika', '') == 'Mušičarenje');
+      }
+
       function ulovIspravan() {
         return tekstDo('naziv', 100) && tekstDo('opis', 1000)
-          && tekstDo('mamac', 40) && tekstDo('tehnika', 40);
+          && tekstDo('mamac', 40) && tekstDo('tehnika', 40)
+          && ulovUGranicama() && mamacITehnikaSlazu();
       }
 
       function menjaSamoSvojLajk() {

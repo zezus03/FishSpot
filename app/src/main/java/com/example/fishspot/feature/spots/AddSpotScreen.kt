@@ -113,6 +113,11 @@ fun AddSpotScreen(
     var odabranMamac by remember { mutableStateOf(mamci[0]) }
     val tehnike = OpcijeUlova.tehnike
     var odabranaTehnika by remember { mutableStateOf(tehnike[0]) }
+    // Promena mamca prebacuje tehniku na prvu koja ima smisla (npr. Varalica -> Varalica)
+    LaunchedEffect(odabranMamac) {
+        val dozvoljene = OpcijeUlova.dozvoljeneTehnike(odabranMamac)
+        if (odabranaTehnika !in dozvoljene) odabranaTehnika = dozvoljene.first()
+    }
     var temperatura by remember { mutableStateOf("Nepoznato") }
     var pritisak by remember { mutableStateOf("Nepoznato") }
     var vetar by remember { mutableStateOf("Nepoznato") }
@@ -288,7 +293,11 @@ fun AddSpotScreen(
         isValidatingFish -> "Proveravam fotografiju…"
         !ribaPronadjena -> "Na fotografiji nije prepoznata riba"
         izabranaVrsta == null -> "Izaberi vrstu ribe sa liste"
-        else -> null
+        else -> com.example.fishspot.feature.fish.OgranicenjaRibe.proveri(
+            izabranaVrsta?.id, izabranaVrsta?.naziv ?: "",
+            duzinaRibe.replace(',', '.').toDoubleOrNull(),
+            tezinaRibe.replace(',', '.').toDoubleOrNull()
+        )
     }
     val backDispatcher = LocalOnBackPressedDispatcherOwner.current?.onBackPressedDispatcher
 
@@ -549,7 +558,10 @@ fun AddSpotScreen(
                 NaslovSekcije("Mamac")
                 IzborCipovima(opcije = mamci, izabrano = odabranMamac, onIzbor = { odabranMamac = it })
                 NaslovSekcije("Tehnika")
-                IzborCipovima(opcije = tehnike, izabrano = odabranaTehnika, onIzbor = { odabranaTehnika = it })
+                IzborCipovima(
+                    opcije = tehnike, izabrano = odabranaTehnika, onIzbor = { odabranaTehnika = it },
+                    dozvoljeno = OpcijeUlova.dozvoljeneTehnike(odabranMamac)
+                )
             }
 
             // ─── MESTO ───
@@ -785,12 +797,18 @@ private fun Sekcija(naslov: String, ikona: ImageVector, sadrzaj: @Composable Col
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-internal fun IzborCipovima(opcije: List<String>, izabrano: String, onIzbor: (String) -> Unit) {
+internal fun IzborCipovima(
+    opcije: List<String>,
+    izabrano: String,
+    onIzbor: (String) -> Unit,
+    dozvoljeno: List<String> = opcije
+) {
     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         opcije.forEach { opcija ->
             FilterChip(
                 selected = opcija == izabrano,
                 onClick = { onIzbor(opcija) },
+                enabled = opcija in dozvoljeno,
                 label = { Text(opcija, fontWeight = if (opcija == izabrano) FontWeight.Bold else FontWeight.Normal) },
                 leadingIcon = if (opcija == izabrano) {
                     { Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
@@ -798,7 +816,7 @@ internal fun IzborCipovima(opcije: List<String>, izabrano: String, onIzbor: (Str
                 shape = RoundedCornerShape(20.dp),
                 colors = fishCipBoje(),
                 border = FilterChipDefaults.filterChipBorder(
-                    enabled = true,
+                    enabled = opcija in dozvoljeno,
                     selected = opcija == izabrano,
                     borderColor = FishBoje.IvicaKartice,
                     selectedBorderColor = FishBoje.Akcenat

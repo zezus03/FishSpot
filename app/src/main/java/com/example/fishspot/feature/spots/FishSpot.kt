@@ -28,4 +28,12 @@ data class FishSpot(
 object OpcijeUlova {
     val mamci = listOf("Crv", "Glista", "Šećerac", "Boila", "Pop-up", "Keder", "Varalica", "Mušica")
     val tehnike = listOf("Plovak", "Dubinac", "Varalica", "Feeder", "Mušičarenje")
+
+    // Koje tehnike imaju smisla uz izabrani mamac (iste parove proveravaju i pravila baze)
+    fun dozvoljeneTehnike(mamac: String): List<String> = when (mamac) {
+        "Varalica" -> listOf("Varalica")
+        "Mušica" -> listOf("Mušičarenje")
+        "Boila", "Pop-up" -> listOf("Dubinac", "Feeder")
+        else -> listOf("Plovak", "Dubinac", "Feeder")
+    }
 }

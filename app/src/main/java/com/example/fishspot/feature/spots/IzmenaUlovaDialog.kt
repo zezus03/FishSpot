@@ -67,6 +67,10 @@ fun IzmenaUlovaDialog(
     var mamac by remember { mutableStateOf(spot.mamac.ifBlank { OpcijeUlova.mamci.first() }) }
     var tehnika by remember { mutableStateOf(spot.tehnika.ifBlank { OpcijeUlova.tehnike.first() }) }
     var ocena by remember { mutableStateOf(spot.ocena.coerceIn(1f, 5f)) }
+    LaunchedEffect(mamac) {
+        val dozvoljene = OpcijeUlova.dozvoljeneTehnike(mamac)
+        if (tehnika !in dozvoljene) tehnika = dozvoljene.first()
+    }
     var opis by remember { mutableStateOf(spot.opis) }
 
     // Kad se promeni vrsta ili dužina, težina se ponovo procenjuje (osim ako je uneta ručno)
@@ -84,9 +88,9 @@ fun IzmenaUlovaDialog(
     val greska = when {
         naziv.isBlank() -> "Unesi naziv mesta"
         izabranaVrsta == null -> "Izaberi vrstu ribe sa liste"
-        duzinaBroj == null || duzinaBroj <= 0 || duzinaBroj > 300 -> "Unesi dužinu ribe (cm)"
-        tezinaBroj == null || tezinaBroj <= 0 || tezinaBroj > 150 -> "Unesi težinu ribe (kg)"
-        else -> null
+        else -> com.example.fishspot.feature.fish.OgranicenjaRibe.proveri(
+            izabranaVrsta?.id, izabranaVrsta?.naziv ?: "", duzinaBroj, tezinaBroj
+        )
     }
 
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
@@ -190,7 +194,10 @@ fun IzmenaUlovaDialog(
                     NaslovSekcije("Mamac")
                     IzborCipovima(opcije = OpcijeUlova.mamci, izabrano = mamac, onIzbor = { mamac = it })
                     NaslovSekcije("Tehnika")
-                    IzborCipovima(opcije = OpcijeUlova.tehnike, izabrano = tehnika, onIzbor = { tehnika = it })
+                    IzborCipovima(
+                        opcije = OpcijeUlova.tehnike, izabrano = tehnika, onIzbor = { tehnika = it },
+                        dozvoljeno = OpcijeUlova.dozvoljeneTehnike(mamac)
+                    )
 
                     NaslovSekcije("Mesto")
                     OutlinedTextField(
