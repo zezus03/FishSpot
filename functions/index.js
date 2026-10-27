@@ -253,3 +253,33 @@ exports.adminObrisiUlov = adminPanel.adminObrisiUlov;
 
 // Vremenska prognoza preko servera, ključ i keš na serveru (functions/vreme.js)
 exports.vremenskaPrognoza = require("./vreme").vremenskaPrognoza;
+
+// ─── PRIVATNE PORUKE: push obaveštenje primaocu ───
+// Dodir na obaveštenje otvara razgovor sa pošiljaocem (OTVORI_CHAT); dok je aplikacija otvorena,
+// poruku prikazuje balončić, pa aplikacija ovo obaveštenje preskače.
+exports.posaljiObavestenjeZaPoruku = functions.firestore
+    .document("PrivateChats/{sobaId}/Messages/{porukaId}")
+    .onCreate(async (snap, context) => {
+        const poruka = snap.data();
+        const ucesnici = context.params.sobaId.split("_");
+        const primalac = poruka.primalacId || ucesnici.find((u) => u !== poruka.senderId);
+        if (!primalac || primalac === poruka.senderId || !ucesnici.includes(primalac)) return null;
+
+        const korisnik = await admin.firestore().collection("Korisnici").doc(primalac).get();
+        const token = korisnik.exists ? korisnik.data().fcmToken : null;
+        if (!token) return null;
+
+        const ime = String(poruka.senderUsername || "Pecaroš").slice(0, 40);
+        const tekst = String(poruka.text || "").slice(0, 120);
+        try {
+            await admin.messaging().send({
+                token,
+                notification: { title: `Nova poruka od ${ime} 💬`, body: tekst },
+                data: { tip: "poruka", OTVORI_CHAT: String(poruka.senderId), IME: ime },
+                android: { notification: { channelId: "fishspot_obavestenja" } },
+            });
+        } catch (e) {
+            console.error("Obaveštenje o poruci nije poslato:", e.message);
+        }
+        return null;
+    });

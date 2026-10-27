@@ -167,6 +167,10 @@ fun MapScreen(
         val listener = androidx.core.util.Consumer<android.content.Intent> { noviIntent ->
             fun koordinata(kljuc: String): Double =
                 noviIntent.getStringExtra(kljuc)?.toDoubleOrNull() ?: noviIntent.getDoubleExtra(kljuc, 0.0)
+            noviIntent.getStringExtra("OTVORI_CHAT")?.takeIf { it.isNotBlank() }?.let { uid ->
+                activeUsersViewModel.otvoriChatSa(uid, noviIntent.getStringExtra("IME") ?: "Pecaroš")
+                noviIntent.removeExtra("OTVORI_CHAT")
+            }
             val lat = koordinata("ZUMIRAJ_LAT")
             val lng = koordinata("ZUMIRAJ_LNG")
 
@@ -852,23 +856,29 @@ fun MapScreen(
         val messagesMap by activeUsersViewModel.messagesMap.collectAsState()
         val focusManager = LocalFocusManager.current
 
-        LaunchedEffect(messagesMap) {
-            messagesMap.forEach { (userId, userMessages) ->
-                val oldSize = lastMessageCounts[userId] ?: userMessages.size
-                if (userMessages.size > oldSize) {
-                    val lastMsg = userMessages.last()
-                    if (lastMsg.senderId != currentUserId && openedChatUserId != userId) {
-                        FishPoruka.prikazi("Nova poruka od: ${lastMsg.senderUsername} 💬", dugo = true)
-
-                        val senderUser = activeUsers.find { it.userId == userId }
-                        if (senderUser != null && !activeBubbles.any { it.userId == userId }) {
-                            activeBubbles.add(senderUser)
-                            bubbleOffsets[userId] = IntOffset(20, 300 + activeBubbles.size * 180)
-                        }
+        // Nova poruka: balončić pošiljaoca se sam pojavi (pošiljalac ne mora da bude na mapi)
+        fun dodajBalon(korisnik: ActiveUser) {
+            val i = activeBubbles.indexOfFirst { it.userId == korisnik.userId }
+            if (i >= 0) {
+                activeBubbles[i] = korisnik
+            } else {
+                activeBubbles.add(korisnik)
+                bubbleOffsets[korisnik.userId] = IntOffset(20, 300 + activeBubbles.size * 180)
+            }
+        }
+        LaunchedEffect(Unit) {
+            launch {
+                activeUsersViewModel.noviSagovornik.collect { korisnik ->
+                    if (openedChatUserId != korisnik.userId) {
+                        FishPoruka.prikazi("Nova poruka od: ${korisnik.username}. Dodirni balončić da odgovoriš.", dugo = true)
+                        dodajBalon(korisnik)
                     }
                 }
             }
-            lastMessageCounts = messagesMap.mapValues { it.value.size }
+            activeUsersViewModel.otvoriChat.collect { korisnik ->
+                dodajBalon(korisnik)
+                openedChatUserId = korisnik.userId
+            }
         }
 
         if (openedChatUserId == null && activeBubbles.isNotEmpty()) {
@@ -933,22 +943,18 @@ fun MapScreen(
             val openedUser = activeBubbles.find { it.userId == openedChatUserId }
             if (openedUser != null) {
                 val currentMessages = messagesMap[openedUser.userId] ?: emptyList()
-                val chatSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-
                 androidx.activity.compose.BackHandler {
                     focusManager.clearFocus()
                     openedChatUserId = null
                 }
 
-                ModalBottomSheet(
-                    onDismissRequest = {
-                        focusManager.clearFocus()
-                        openedChatUserId = null
-                    },
-                    sheetState = chatSheetState,
-                    modifier = Modifier.fillMaxHeight(0.9f),
-                    containerColor = FishBoje.Pozadina,
-                    dragHandle = { BottomSheetDefaults.DragHandle(color = FishBoje.TekstPriguseni) }
+                // Chat preko celog ekrana (ne u donjem listu): polje za unos se tako na svim telefonima
+                // podiže iznad tastature (imePadding u PrivatniChat)
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(FishBoje.Pozadina)
+                        .statusBarsPadding()
                 ) {
                     com.example.fishspot.feature.chat.PrivatniChat(
                         sagovornik = openedUser,

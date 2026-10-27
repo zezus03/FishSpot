@@ -7,6 +7,7 @@ import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 data class ActiveUser(
@@ -22,7 +23,8 @@ data class UserMessage(
     val senderId: String = "",
     val senderUsername: String = "",
     val text: String = "",
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    val primalacId: String = "" // kome je poruka; po ovome primalac dobija poruke i kad pošiljalac nije na mapi
 )
 
 class ActiveUsersViewModel : ViewModel() {
@@ -39,12 +41,69 @@ class ActiveUsersViewModel : ViewModel() {
 
     private val listeners = mutableMapOf<String, ListenerRegistration>()
 
+    // Korisnik koji ti je upravo poslao poruku: mapa za njega otvara balončić
+    private val _noviSagovornik = kotlinx.coroutines.flow.MutableSharedFlow<ActiveUser>(extraBufferCapacity = 8)
+    val noviSagovornik = _noviSagovornik.asSharedFlow()
+
+    // Razgovor koji treba odmah otvoriti (dodir na obaveštenje o poruci)
+    private val _otvoriChat = kotlinx.coroutines.flow.MutableSharedFlow<ActiveUser>(extraBufferCapacity = 2)
+    val otvoriChat = _otvoriChat.asSharedFlow()
+
+    private var dolazneRegistracija: ListenerRegistration? = null
+    private val slikeKorisnika = mutableMapOf<String, String>()
+
     private var mySlikaUrl: String? = null
     private var myUsername: String = "Pecaroš"
 
     init {
         listenToActiveUsers()
         fetchMyProfileData()
+        slusajDolaznePoruke()
+    }
+
+    // Sve nove poruke upućene meni, bez obzira da li je pošiljalac na mapi
+    private fun slusajDolaznePoruke() {
+        val mojUid = auth.currentUser?.uid ?: return
+        val pocetak = System.currentTimeMillis()
+        dolazneRegistracija = firestore.collectionGroup("Messages")
+            .whereEqualTo("primalacId", mojUid)
+            .whereGreaterThan("timestamp", pocetak)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    android.util.Log.e("Poruke", "Slušanje dolaznih poruka", error)
+                    return@addSnapshotListener
+                }
+                snapshot?.documentChanges
+                    ?.filter { it.type == com.google.firebase.firestore.DocumentChange.Type.ADDED }
+                    ?.forEach { promena ->
+                        val posiljalac = promena.document.getString("senderId") ?: return@forEach
+                        val ime = promena.document.getString("senderUsername") ?: "Pecaroš"
+                        loadPrivateMessages(posiljalac)
+                        saSlikom(posiljalac, ime) { _noviSagovornik.tryEmit(it) }
+                    }
+            }
+    }
+
+    // Otvaranje razgovora sa obaveštenja (pošiljalac možda nije na mapi)
+    fun otvoriChatSa(uid: String, ime: String) {
+        loadPrivateMessages(uid)
+        saSlikom(uid, ime) { _otvoriChat.tryEmit(it) }
+    }
+
+    private fun saSlikom(uid: String, ime: String, gotovo: (ActiveUser) -> Unit) {
+        slikeKorisnika[uid]?.let { return gotovo(ActiveUser(userId = uid, username = ime, slikaUrl = it)) }
+        firestore.collection("Korisnici").document(uid).get()
+            .addOnSuccessListener { doc ->
+                val slika = doc.getString("slikaURL").orEmpty()
+                slikeKorisnika[uid] = slika
+                gotovo(ActiveUser(userId = uid, username = doc.getString("userName")?.takeIf { it.isNotBlank() } ?: ime, slikaUrl = slika))
+            }
+            .addOnFailureListener { gotovo(ActiveUser(userId = uid, username = ime)) }
+    }
+
+    override fun onCleared() {
+        dolazneRegistracija?.remove()
+        listeners.values.forEach { it.remove() }
     }
 
     private fun fetchMyProfileData() {
@@ -161,7 +220,8 @@ class ActiveUsersViewModel : ViewModel() {
             senderId = myUid,
             senderUsername = senderUsername,
             text = text,
-            timestamp = System.currentTimeMillis()
+            timestamp = System.currentTimeMillis(),
+            primalacId = targetUserId
         )
 
         firestore.collection("PrivateChats").document(roomId).collection("Messages").add(newMessage)
