@@ -3,9 +3,24 @@
 // ako je pitanje pokušaj zloupotrebe (promena uloge, traženje sistemskog prompta) ili odgovor
 // otkriva uputstva, odgovor se zamenjuje odbijanjem. Aplikacija prikazuje samo odgovore sa provereno: true.
 const functions = require("firebase-functions/v1");
+const admin = require("firebase-admin");
 
 const ODBIJANJE = "Bistro, sinko! Deda Pera priča samo o pecanju: pribor, mamci, mesta, riba i lovostaj. " +
     "Te druge stvari ostavi nekom drugom, a mene pitaj nešto o ribolovu pa da ti pomognem!";
+
+const ZAUZET = "Bistro, sinko! Deda Pera trenutno priča sa mnogo pecaroša odjednom, pa nije stigao da ti odgovori. " +
+    "Pošalji mi pitanje ponovo za minut-dva, ovo ti se ne računa u dnevna pitanja.";
+
+// Vraća jedno pitanje u dnevni limit (BotLimit/{uid}.broj - 1, ne ispod nule)
+async function vratiPitanje(uid) {
+    const db = admin.firestore();
+    const ref = db.collection("BotLimit").doc(uid);
+    await db.runTransaction(async (tx) => {
+        const snap = await tx.get(ref);
+        if (!snap.exists) return;
+        tx.update(ref, { broj: Math.max(0, (snap.data().broj || 0) - 1) });
+    });
+}
 
 function normalizuj(tekst) {
     return String(tekst || "")
@@ -55,6 +70,15 @@ exports.proveriOdgovorDedePere = functions.firestore
         if (!change.after.exists) return null;
         const poruka = change.after.data();
         if (poruka.provereno === true) return null;
+
+        // Gemini nije odgovorio (najčešće prekoračen broj pitanja u minutu na besplatnom planu):
+        // umesto tišine korisnik dobija poruku, a pitanje mu se vraća u dnevni limit
+        if (!poruka.response && poruka.status?.state === "ERROR") {
+            console.warn(`Deda Pera: Gemini greška za ${context.params.uid}: ${poruka.status.error || "nepoznato"}`);
+            await change.after.ref.update({ response: ZAUZET, provereno: true, zauzet: true });
+            await vratiPitanje(context.params.uid);
+            return null;
+        }
         if (!poruka.response) return null; // čeka se odgovor ekstenzije
 
         const blokirano = jeZloupotreba(poruka.prompt) || otkrivaUputstva(poruka.response);
@@ -68,4 +92,4 @@ exports.proveriOdgovorDedePere = functions.firestore
         return null;
     });
 
-exports._interno = { jeZloupotreba, otkrivaUputstva, ODBIJANJE };
+exports._interno = { jeZloupotreba, otkrivaUputstva, ODBIJANJE, ZAUZET };
