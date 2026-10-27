@@ -40,6 +40,7 @@ fun AdminScreen(onNavigateBack: () -> Unit, viewModel: AdminViewModel = viewMode
     val statistika by viewModel.statistika.collectAsState()
     val ucitava by viewModel.ucitava.collectAsState()
     val uToku by viewModel.uToku.collectAsState()
+    val trebaPotvrda by viewModel.trebaPotvrda.collectAsState()
     var filter by remember { mutableStateOf(Filter.SVI) }
     var potvrda by remember { mutableStateOf<Pair<PrijavljenUlov, Boolean>?>(null) } // (ulov, brisanje?)
 
@@ -64,6 +65,9 @@ fun AdminScreen(onNavigateBack: () -> Unit, viewModel: AdminViewModel = viewMode
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            if (trebaPotvrda) item {
+                PotvrdaAdrese(onPosalji = { viewModel.posaljiLinkZaPotvrdu() }, onPotvrdio = { viewModel.proveriPotvrdu() })
+            }
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     Plocica(Icons.Default.People, "${statistika.korisnika}", "korisnika", Modifier.weight(1f))
@@ -223,6 +227,44 @@ private fun KarticaPrijave(ulov: PrijavljenUlov, uToku: Boolean, onURedu: () -> 
                     ) { Icon(Icons.Default.DeleteForever, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Obriši trajno", fontWeight = FontWeight.Bold) }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun PotvrdaAdrese(onPosalji: () -> Unit, onPotvrdio: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(FishBoje.Kartica)
+            .border(1.dp, FishBoje.Upozorenje.copy(alpha = 0.6f), RoundedCornerShape(18.dp))
+            .padding(16.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Default.MarkEmailUnread, null, tint = FishBoje.Upozorenje)
+            Spacer(Modifier.width(10.dp))
+            Text("Potvrdi e-adresu", color = FishBoje.TekstPrimarni, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+        }
+        Spacer(Modifier.height(6.dp))
+        Text(
+            "Radi bezbednosti admin panel radi samo sa potvrđenom e-adresom. Pošalji link, otvori mail, klikni na link, " +
+                "pa se vrati ovde i pritisni \"Potvrdio sam\".",
+            color = FishBoje.TekstSekundarni, fontSize = 14.sp, lineHeight = 20.sp
+        )
+        Spacer(Modifier.height(12.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Button(
+                onClick = onPosalji,
+                colors = ButtonDefaults.buttonColors(containerColor = FishBoje.Akcenat, contentColor = FishBoje.Pozadina),
+                shape = RoundedCornerShape(12.dp), modifier = Modifier.weight(1f)
+            ) { Text("Pošalji link", fontWeight = FontWeight.Bold) }
+            OutlinedButton(
+                onClick = onPotvrdio,
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = FishBoje.Akcenat),
+                border = androidx.compose.foundation.BorderStroke(1.dp, FishBoje.Akcenat),
+                shape = RoundedCornerShape(12.dp), modifier = Modifier.weight(1f)
+            ) { Text("Potvrdio sam", fontWeight = FontWeight.Bold) }
         }
     }
 }

@@ -52,6 +52,36 @@ class AdminViewModel : ViewModel() {
     private val _uToku = MutableStateFlow<String?>(null) // id ulova čija se akcija izvršava
     val uToku = _uToku.asStateFlow()
 
+    // Server pušta samo admine sa potvrđenom e-adresom (nalozi napravljeni lozinkom je nemaju dok se ne potvrdi)
+    private val _trebaPotvrda = MutableStateFlow(false)
+    val trebaPotvrda = _trebaPotvrda.asStateFlow()
+
+    fun posaljiLinkZaPotvrdu() {
+        val korisnik = FirebaseAuth.getInstance().currentUser ?: return
+        korisnik.sendEmailVerification()
+            .addOnSuccessListener { FishPoruka.prikazi("Link za potvrdu je poslat na ${korisnik.email}. Otvori mail i klikni na link.", dugo = true) }
+            .addOnFailureListener { FishPoruka.prikazi("Link nije poslat. Pokušaj ponovo za minut.", dugo = true) }
+    }
+
+    // Posle klika na link: osvežavamo nalog i token (u tokenu je oznaka da je adresa potvrđena)
+    fun proveriPotvrdu() {
+        viewModelScope.launch {
+            try {
+                val korisnik = FirebaseAuth.getInstance().currentUser ?: return@launch
+                korisnik.reload().await()
+                if (korisnik.isEmailVerified) {
+                    korisnik.getIdToken(true).await()
+                    _trebaPotvrda.value = false
+                    osvezi()
+                } else {
+                    FishPoruka.prikazi("Adresa još nije potvrđena. Klikni na link u mailu (proveri i Spam).", dugo = true)
+                }
+            } catch (e: Exception) {
+                FishPoruka.prikazi("Provera nije uspela. Proveri internet.", dugo = true)
+            }
+        }
+    }
+
     init { osvezi() }
 
     fun osvezi() {
@@ -71,7 +101,13 @@ class AdminViewModel : ViewModel() {
                 _prijavljeni.value = (podaci["prijavljeni"] as? List<Map<String, Any?>>).orEmpty().map { it.uPrijavu() }
             } catch (e: Exception) {
                 Log.e("Admin", "Pregled nije učitan", e)
-                FishPoruka.prikazi("Admin pregled nije učitan. Proveri internet.", dugo = true)
+                val odbijen = (e as? com.google.firebase.functions.FirebaseFunctionsException)?.code ==
+                    com.google.firebase.functions.FirebaseFunctionsException.Code.PERMISSION_DENIED
+                if (odbijen && FirebaseAuth.getInstance().currentUser?.isEmailVerified == false) {
+                    _trebaPotvrda.value = true
+                } else {
+                    FishPoruka.prikazi(if (odbijen) "Ovaj nalog nema admin pristup." else "Admin pregled nije učitan. Proveri internet.", dugo = true)
+                }
             } finally {
                 _ucitava.value = false
             }
