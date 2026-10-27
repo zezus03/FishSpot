@@ -194,7 +194,8 @@ fun MainNavigation(navController: NavHostController, auth: FirebaseAuth) {
                     }
                 },
                 onPrikaziUlove = { uid -> navController.navigate("ulovi_korisnika/$uid") },
-                onPogledajUvod = { navController.navigate("uvod") }
+                onPogledajUvod = { navController.navigate("uvod") },
+                onAdminPanel = { navController.navigate("admin") }
             )
         }
         // ─── ULOVI JEDNOG KORISNIKA (iz profila) ───
@@ -206,6 +207,10 @@ fun MainNavigation(navController: NavHostController, auth: FirebaseAuth) {
                 uid = backStackEntry.arguments?.getString("uid").orEmpty(),
                 onNavigateBack = { navController.popBackStack() }
             )
+        }
+        // ─── ADMIN PANEL (samo za admin naloge; proveru radi i server) ───
+        composable("admin") {
+            com.example.fishspot.feature.admin.AdminScreen(onNavigateBack = { navController.popBackStack() })
         }
         // ─── UVOD SA DEDA PEROM (ponovo, iz profila) ───
         composable("uvod") {

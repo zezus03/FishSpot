@@ -58,6 +58,7 @@ fun ProfileScreen(
     onLogout: () -> Unit,
     onPrikaziUlove: (uid: String) -> Unit = {},
     onPogledajUvod: () -> Unit = {},
+    onAdminPanel: () -> Unit = {},
     mapViewModel: MapViewModel = viewModel()
 ) {
     val context = LocalContext.current
@@ -286,6 +287,27 @@ fun ProfileScreen(
                             uncheckedBorderColor = FishBoje.IvicaKartice
                         )
                     )
+                }
+            }
+
+            // ────── ADMIN (vidi se samo admin nalozima) ──────
+            if (com.example.fishspot.feature.admin.Admini.jeAdmin()) {
+                Sekcija("Administracija") {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable(onClick = onAdminPanel)
+                    ) {
+                        IkonaUKrugu(Icons.Default.AdminPanelSettings)
+                        Spacer(Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Admin panel", color = FishBoje.TekstPrimarni, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                            Text("Prijavljeni ulovi: vraćanje i brisanje", color = FishBoje.TekstPriguseni, fontSize = 12.sp)
+                        }
+                        Icon(Icons.Default.ChevronRight, contentDescription = null, tint = FishBoje.TekstPriguseni)
+                    }
                 }
             }
 

@@ -243,3 +243,9 @@ const izvestaji = require("./izvestaji");
 exports.dnevniPregledPrijava = izvestaji.dnevniPregledPrijava;
 exports.nedeljniPregled = izvestaji.nedeljniPregled;
 exports.obavestiUklonjenUlov = izvestaji.obavestiUklonjenUlov;
+
+// Admin panel u aplikaciji (functions/admin.js)
+const adminPanel = require("./admin");
+exports.adminPregled = adminPanel.adminPregled;
+exports.adminUlovURedu = adminPanel.adminUlovURedu;
+exports.adminObrisiUlov = adminPanel.adminObrisiUlov;
