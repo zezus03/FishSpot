@@ -32,3 +32,6 @@ replay_pid*.log
 
 # Tajne za lokalni emulator funkcija
 functions/.secret.local
+
+# Admin adrese za Cloud Functions (ne ide na GitHub)
+functions/.env

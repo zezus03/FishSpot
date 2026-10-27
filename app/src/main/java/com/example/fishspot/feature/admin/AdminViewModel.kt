@@ -11,10 +11,24 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
-// Nalozi koji vide admin panel. Pravu proveru radi server (functions/admin.js), ovo samo skriva ulaz.
+// Da li da se prikaže ulaz u admin panel: odluku donosi server (functions/admin.js, adrese su samo tamo)
 object Admini {
-    private val ADMINI = setOf("djordjejovanovic28@gmail.com", "fishspot.rs@gmail.com")
-    fun jeAdmin(): Boolean = FirebaseAuth.getInstance().currentUser?.email?.lowercase() in ADMINI
+    private var poslednjiUid: String? = null
+    private var rezultat = false
+
+    suspend fun proveri(): Boolean {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return false
+        if (uid == poslednjiUid) return rezultat
+        return try {
+            @Suppress("UNCHECKED_CAST")
+            val odgovor = FirebaseFunctions.getInstance().getHttpsCallable("jesamLiAdmin").call().await().data as Map<String, Any?>
+            rezultat = odgovor["admin"] == true || odgovor["potvrda"] == true
+            poslednjiUid = uid
+            rezultat
+        } catch (e: Exception) {
+            false
+        }
+    }
 }
 
 data class Razlog(val razlog: String, val opis: String, val prijavio: String, val vreme: Long?)

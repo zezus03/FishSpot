@@ -2,7 +2,6 @@ package com.example.fishspot.feature.spots
 import com.example.fishspot.core.theme.FishPoruka
 
 import com.example.fishspot.feature.fish.ArMeasureActivity
-import com.example.fishspot.feature.weather.WeatherNetwork
 
 import android.content.Context
 import android.graphics.Bitmap
@@ -131,7 +130,6 @@ fun AddSpotScreen(
         }
     }
     val coroutineScope = rememberCoroutineScope()
-    val mojApiKey = BuildConfig.VREMENSKA_KEY
 
     // --- 1. INICIJALIZACIJA LOKALNOG MODELA ---
     val fishDetector = remember { FishDetector(context) }
@@ -179,7 +177,7 @@ fun AddSpotScreen(
     LaunchedEffect(Unit) {
         coroutineScope.launch(Dispatchers.IO) {
             try {
-                val response = WeatherNetwork.retrofit.getWeather(lat = latitude, lon = longitude, apiKey = mojApiKey)
+                val response = com.example.fishspot.feature.weather.Prognoza.trenutno(lat = latitude, lng = longitude)
 
                 withContext(Dispatchers.Main) {
                     temperatura = "${response.main.temp.toInt()} °C"

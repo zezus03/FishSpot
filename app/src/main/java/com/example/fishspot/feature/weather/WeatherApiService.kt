@@ -4,7 +4,8 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Query
-import androidx.annotation.Keep // <-- Dodat import
+import androidx.annotation.Keep
+import kotlinx.coroutines.tasks.await
 
 @Keep
 interface WeatherApi {
@@ -29,15 +30,22 @@ interface WeatherApi {
     ): ForecastResponse
 }
 
-// Pravimo glavni objekat koji ćemo pozivati iz aplikacije
-object WeatherNetwork {
-    private const val BASE_URL = "https://api.openweathermap.org/"
+// Prognoza ide preko naše Cloud Function (OpenWeather ključ je samo na serveru, odgovori se keširaju)
+object Prognoza {
+    private val gson = com.google.gson.Gson()
 
-    val retrofit: WeatherApi by lazy {
-        Retrofit.Builder()
-            .baseUrl(BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(WeatherApi::class.java)
+    private suspend fun pozovi(tip: String, lat: Double, lng: Double): String {
+        val rezultat = com.google.firebase.functions.FirebaseFunctions.getInstance()
+            .getHttpsCallable("vremenskaPrognoza")
+            .call(mapOf("tip" to tip, "lat" to lat, "lng" to lng))
+            .await()
+        @Suppress("UNCHECKED_CAST")
+        return (rezultat.data as Map<String, Any?>)["json"] as String
     }
+
+    suspend fun trenutno(lat: Double, lng: Double): WeatherResponse =
+        gson.fromJson(pozovi("weather", lat, lng), WeatherResponse::class.java)
+
+    suspend fun petDana(lat: Double, lng: Double): ForecastResponse =
+        gson.fromJson(pozovi("forecast", lat, lng), ForecastResponse::class.java)
 }

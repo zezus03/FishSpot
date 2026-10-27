@@ -246,6 +246,10 @@ exports.obavestiUklonjenUlov = izvestaji.obavestiUklonjenUlov;
 
 // Admin panel u aplikaciji (functions/admin.js)
 const adminPanel = require("./admin");
+exports.jesamLiAdmin = adminPanel.jesamLiAdmin;
 exports.adminPregled = adminPanel.adminPregled;
 exports.adminUlovURedu = adminPanel.adminUlovURedu;
 exports.adminObrisiUlov = adminPanel.adminObrisiUlov;
+
+// Vremenska prognoza preko servera, ključ i keš na serveru (functions/vreme.js)
+exports.vremenskaPrognoza = require("./vreme").vremenskaPrognoza;

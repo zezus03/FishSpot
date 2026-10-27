@@ -291,7 +291,9 @@ fun ProfileScreen(
             }
 
             // ────── ADMIN (vidi se samo admin nalozima) ──────
-            if (com.example.fishspot.feature.admin.Admini.jeAdmin()) {
+            var prikaziAdmin by remember { mutableStateOf(false) }
+            LaunchedEffect(Unit) { prikaziAdmin = com.example.fishspot.feature.admin.Admini.proveri() }
+            if (prikaziAdmin) {
                 Sekcija("Administracija") {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,

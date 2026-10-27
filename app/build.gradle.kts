@@ -55,7 +55,7 @@ android {
         }
 
 // Zamenjuješ stare linije ovim bezbednim varijantama:
-        buildConfigField("String", "OPENWEATHER_API_KEY", "\"${properties.getProperty("OPENWEATHER_API_KEY")}\"")
+        // OpenWeather ključ je samo na serveru (funkcija vremenskaPrognoza, tajna OPENWEATHER_KEY)
     }
 
     buildFeatures {
@@ -162,6 +162,8 @@ secrets {
     ignoreList.add("GEMINI_API_KEY")
     // Geoapify ključ je samo na serveru (funkcija vodeUBlizini, tajna GEOAPIFY_KEY)
     ignoreList.add("GeoApiFy")
+    ignoreList.add("OPENWEATHER_API_KEY")
+    ignoreList.add("VREMENSKA_KEY")
 }
 
 // KLJUČNI DEO: Čišćenje dupliranih API klasa i održavanje AR-a

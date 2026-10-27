@@ -4,7 +4,8 @@ const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
 const { Timestamp } = require("firebase-admin/firestore");
 
-const ADMINI = ["djordjejovanovic28@gmail.com", "fishspot.rs@gmail.com"];
+// Admin adrese su u functions/.env (ADMIN_EMAILS=adresa1,adresa2); taj fajl se objavljuje, ali nije na GitHub-u
+const ADMINI = (process.env.ADMIN_EMAILS || "").split(",").map((a) => a.trim().toLowerCase()).filter(Boolean);
 
 function proveriAdmina(context) {
     const token = context.auth?.token;
@@ -56,6 +57,15 @@ function trebaOdluka(p) {
     }
     return true;
 }
+
+// Aplikacija pita da li da prikaže ulaz u admin panel (adrese nisu u aplikaciji)
+exports.jesamLiAdmin = functions.https.onCall(async (data, context) => {
+    try { proveriAdmina(context); return { admin: true, potvrda: false }; } catch (e) {
+        const email = (context.auth?.token?.email || "").toLowerCase();
+        // Admin adresa koja još nije potvrđena: ulaz se prikazuje, a panel traži potvrdu
+        return { admin: false, potvrda: !!context.auth && ADMINI.includes(email) };
+    }
+});
 
 exports.adminPregled = functions.https.onCall(async (data, context) => {
     proveriAdmina(context);

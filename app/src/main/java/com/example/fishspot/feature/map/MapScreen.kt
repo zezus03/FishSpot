@@ -1,7 +1,6 @@
 package com.example.fishspot.feature.map
 import com.example.fishspot.core.theme.FishPoruka
 
-import com.example.fishspot.feature.weather.WeatherNetwork
 import com.example.fishspot.feature.weather.WeatherScreen
 
 import android.Manifest
@@ -124,7 +123,6 @@ fun MapScreen(
 
     var fetchedWeather by remember { mutableStateOf<ForecastDisplayData?>(null) }
     var isFetchingWeather by remember { mutableStateOf(false) }
-    val mojApiKey = BuildConfig.OPENWEATHER_API_KEY
     var showWaterLevelDialog by remember { mutableStateOf(false) }
 
     var isSatelliteView by remember { mutableStateOf(false) }
@@ -633,13 +631,13 @@ fun MapScreen(
                         scope.launch {
                             try {
                                 // 1. POZIVAMO TRENUTNO VREME (Za trenutni prikaz)
-                                val currentResponse = WeatherNetwork.retrofit.getWeather(
-                                    lat = selectedLat, lon = selectedLng, apiKey = mojApiKey
+                                val currentResponse = com.example.fishspot.feature.weather.Prognoza.trenutno(
+                                    lat = selectedLat, lng = selectedLng
                                 )
                                 Log.d("API_DEBUG", "Trenutno vreme: $currentResponse")
                                 // 2. POZIVAMO PROGNOZU ZA 5 DANA
-                                val forecastResponse = WeatherNetwork.retrofit.getForecast(
-                                    lat = selectedLat, lon = selectedLng, apiKey = mojApiKey
+                                val forecastResponse = com.example.fishspot.feature.weather.Prognoza.petDana(
+                                    lat = selectedLat, lng = selectedLng
                                 )
                                 Log.d("API_DEBUG", "Prognoza: $forecastResponse")
                                 // Indeks pecanja: za "sada" (sa dobom dana) i posebno za svaki od 3 dana,
