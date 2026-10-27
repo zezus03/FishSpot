@@ -559,8 +559,9 @@ fun AddSpotScreen(
                 IzborCipovima(opcije = mamci, izabrano = odabranMamac, onIzbor = { odabranMamac = it })
                 NaslovSekcije("Tehnika")
                 IzborCipovima(
-                    opcije = tehnike, izabrano = odabranaTehnika, onIzbor = { odabranaTehnika = it },
-                    dozvoljeno = OpcijeUlova.dozvoljeneTehnike(odabranMamac)
+                    // Prikazuju se samo tehnike koje idu uz izabrani mamac
+                    opcije = OpcijeUlova.dozvoljeneTehnike(odabranMamac), izabrano = odabranaTehnika,
+                    onIzbor = { odabranaTehnika = it }
                 )
             }
 

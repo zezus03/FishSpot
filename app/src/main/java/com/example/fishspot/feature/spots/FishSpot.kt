@@ -34,6 +34,7 @@ object OpcijeUlova {
         "Varalica" -> listOf("Varalica")
         "Mušica" -> listOf("Mušičarenje")
         "Boila", "Pop-up" -> listOf("Dubinac", "Feeder")
+        "Keder" -> listOf("Plovak", "Dubinac")
         else -> listOf("Plovak", "Dubinac", "Feeder")
     }
 }

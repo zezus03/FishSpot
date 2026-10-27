@@ -195,8 +195,8 @@ fun IzmenaUlovaDialog(
                     IzborCipovima(opcije = OpcijeUlova.mamci, izabrano = mamac, onIzbor = { mamac = it })
                     NaslovSekcije("Tehnika")
                     IzborCipovima(
-                        opcije = OpcijeUlova.tehnike, izabrano = tehnika, onIzbor = { tehnika = it },
-                        dozvoljeno = OpcijeUlova.dozvoljeneTehnike(mamac)
+                        opcije = OpcijeUlova.dozvoljeneTehnike(mamac), izabrano = tehnika,
+                        onIzbor = { tehnika = it }
                     )
 
                     NaslovSekcije("Mesto")

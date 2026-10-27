@@ -28,6 +28,7 @@ class ArMeasureActivity : AppCompatActivity() {
 
     // Lista u kojoj čuvamo postavljene tačke (max 2)
     private val anchors = mutableListOf<Anchor>()
+    private val markeri = mutableListOf<AnchorNode>()
     private var izmerenaDuzinaCm: Double = 0.0
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,16 +46,21 @@ class ArMeasureActivity : AppCompatActivity() {
             ArFragment::class.java.name
         ) as ArFragment
 
+        // commitNow: AR prikaz se doda odmah, pre dugmadi. Sa commit() bi se dodao kasnije,
+        // preko dugmadi, pa dugme "Poništi" ne bi primalo dodir.
         supportFragmentManager.beginTransaction()
             .replace(rootLayout.id, arFragment)
-            .commit()
+            .commitNow()
 
         // Podesavamo UI elemente preko ekrana
         tvDistance = TextView(this).apply {
             text = "Tapni na glavu ribe"
-            textSize = 24f
+            textSize = 20f
             setTextColor(android.graphics.Color.WHITE)
-            setBackgroundColor(android.graphics.Color.parseColor("#80000000"))
+            background = android.graphics.drawable.GradientDrawable().apply {
+                cornerRadius = 40f
+                setColor(android.graphics.Color.parseColor("#D9132218"))
+            }
             setPadding(32, 32, 32, 32)
             layoutParams = FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.WRAP_CONTENT,
@@ -76,14 +82,14 @@ class ArMeasureActivity : AppCompatActivity() {
             val enabledBg = android.graphics.drawable.GradientDrawable().apply {
                 shape = android.graphics.drawable.GradientDrawable.RECTANGLE
                 cornerRadius = 50f // Zaobljene ivice
-                setColor(android.graphics.Color.parseColor("#4CAF50"))
+                setColor(android.graphics.Color.parseColor("#2ECC71"))
             }
 
             // Pravimo dizajn za ISKLJUČENO dugme (Siva boja)
             val disabledBg = android.graphics.drawable.GradientDrawable().apply {
                 shape = android.graphics.drawable.GradientDrawable.RECTANGLE
                 cornerRadius = 50f
-                setColor(android.graphics.Color.parseColor("#9E9E9E"))
+                setColor(android.graphics.Color.parseColor("#1B3028"))
             }
 
             // Spajamo oba dizajna zavisno od 'isEnabled' stanja
@@ -111,7 +117,7 @@ class ArMeasureActivity : AppCompatActivity() {
 
         btnReset = Button(this).apply {
             text = "Poništi"
-            setTextColor(android.graphics.Color.WHITE)
+            setTextColor(android.graphics.Color.parseColor("#E74C3C"))
             isAllCaps = false
             textSize = 16f
             setPadding(64, 32, 64, 32)
@@ -120,7 +126,8 @@ class ArMeasureActivity : AppCompatActivity() {
             background = android.graphics.drawable.GradientDrawable().apply {
                 shape = android.graphics.drawable.GradientDrawable.RECTANGLE
                 cornerRadius = 50f
-                setColor(android.graphics.Color.parseColor("#F44336"))
+                setColor(android.graphics.Color.parseColor("#E6132218"))
+                setStroke(3, android.graphics.Color.parseColor("#E74C3C"))
             }
             elevation = 8f // Senka
 
@@ -137,9 +144,10 @@ class ArMeasureActivity : AppCompatActivity() {
             }
         }
 
-        rootLayout.addView(tvDistance)
-        rootLayout.addView(btnSave)
-        rootLayout.addView(btnReset)
+        listOf(tvDistance, btnSave, btnReset).forEach {
+            it.translationZ = 16f
+            rootLayout.addView(it)
+        }
 
         postaviArListenere()
     }
@@ -174,6 +182,8 @@ class ArMeasureActivity : AppCompatActivity() {
                 val anchorNode = AnchorNode(anchor)
                 anchorNode.renderable = sphere
                 anchorNode.setParent(arFragment.arSceneView.scene)
+                // Ako je u međuvremenu pritisnuto Poništi, ovaj marker više ne treba
+                if (anchor in anchors) markeri.add(anchorNode) else anchorNode.setParent(null)
             }
     }
 
@@ -197,25 +207,15 @@ class ArMeasureActivity : AppCompatActivity() {
     }
 
     private fun resetujMerenje() {
-        // 1. Prolazimo kroz sve objekte u 3D sceni
-        val scene = arFragment.arSceneView.scene
-        val children = ArrayList(scene.children)
-
-        for (node in children) {
-            if (node is AnchorNode) {
-                // 2. Brišemo materijal loptice
-                node.renderable = null
-                // 3. Uklanjamo vezu sa scenom
-                node.setParent(null)
-                scene.removeChild(node)
-            }
+        // Uklanjamo loptice sa scene i sidra iz ARCore-a
+        markeri.forEach {
+            it.renderable = null
+            it.setParent(null)
         }
-
-        // 4. Skidamo sidra iz ARCore-a
+        markeri.clear()
         anchors.forEach { it.detach() }
         anchors.clear()
 
-        // 5. Resetujemo podatke i tekst
         izmerenaDuzinaCm = 0.0
         tvDistance.text = "Tapni na glavu ribe"
         btnSave.isEnabled = false
