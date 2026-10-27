@@ -25,6 +25,7 @@ class ArMeasureActivity : AppCompatActivity() {
     private lateinit var tvDistance: TextView
     private lateinit var btnSave: Button
     private lateinit var btnReset: Button
+    private lateinit var btnPonovo: Button
 
     // Lista u kojoj čuvamo postavljene tačke (max 2)
     private val anchors = mutableListOf<Anchor>()
@@ -139,12 +140,37 @@ class ArMeasureActivity : AppCompatActivity() {
                 bottomMargin = 64
                 marginStart = 64
             }
+            // Poništi: zatvara kameru i vraća na formu bez merenja
             setOnClickListener {
-                resetujMerenje()
+                setResult(Activity.RESULT_CANCELED)
+                finish()
             }
         }
 
-        listOf(tvDistance, btnSave, btnReset).forEach {
+        // Ponovo izmeri: briše postavljene tačke (vidi se tek kad postoji bar jedna tačka)
+        btnPonovo = Button(this).apply {
+            text = "↺ Ponovo izmeri"
+            setTextColor(android.graphics.Color.WHITE)
+            isAllCaps = false
+            textSize = 15f
+            setPadding(48, 24, 48, 24)
+            background = android.graphics.drawable.GradientDrawable().apply {
+                cornerRadius = 50f
+                setColor(android.graphics.Color.parseColor("#E6132218"))
+                setStroke(3, android.graphics.Color.parseColor("#2ECC71"))
+            }
+            visibility = android.view.View.GONE
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
+                bottomMargin = 220
+            }
+            setOnClickListener { resetujMerenje() }
+        }
+
+        listOf(tvDistance, btnSave, btnReset, btnPonovo).forEach {
             it.translationZ = 16f
             rootLayout.addView(it)
         }
@@ -155,7 +181,7 @@ class ArMeasureActivity : AppCompatActivity() {
     private fun postaviArListenere() {
         arFragment.setOnTapArPlaneListener { hitResult: HitResult, _, _ ->
             if (anchors.size >= 2) {
-                Toast.makeText(this, "Već su postavljene 2 tačke. Idi na Poništi.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Već su postavljene 2 tačke. Pritisni \"Ponovo izmeri\".", Toast.LENGTH_SHORT).show()
                 return@setOnTapArPlaneListener
             }
 
@@ -165,6 +191,7 @@ class ArMeasureActivity : AppCompatActivity() {
 
             // Postavi vizuelnu sferu (lopticu) na to mesto
             postaviMarker(anchor)
+            btnPonovo.visibility = android.view.View.VISIBLE
 
             if (anchors.size == 1) {
                 tvDistance.text = "Sada tapni na rep ribe"
@@ -219,6 +246,7 @@ class ArMeasureActivity : AppCompatActivity() {
         izmerenaDuzinaCm = 0.0
         tvDistance.text = "Tapni na glavu ribe"
         btnSave.isEnabled = false
+        btnPonovo.visibility = android.view.View.GONE
     }
 
     private fun vratiRezultat() {
