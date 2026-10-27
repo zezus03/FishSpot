@@ -32,7 +32,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-private enum class Filter(val naziv: String) { SVI("Svi"), AKTIVNI("Aktivni"), UKLONJENI("Uklonjeni"), RESENI("Rešeni") }
+private enum class Filter(val naziv: String) { SVI("Svi"), AKTIVNI("Aktivni"), UKLONJENI("Uklonjeni") }
 
 @Composable
 fun AdminScreen(onNavigateBack: () -> Unit, viewModel: AdminViewModel = viewModel()) {
@@ -47,9 +47,8 @@ fun AdminScreen(onNavigateBack: () -> Unit, viewModel: AdminViewModel = viewMode
     val prikazani = prijavljeni.filter {
         when (filter) {
             Filter.SVI -> true
-            Filter.AKTIVNI -> it.status == "aktivan"
+            Filter.AKTIVNI -> it.status == "aktivan" || it.status == "ponovo"
             Filter.UKLONJENI -> it.status == "uklonjen"
-            Filter.RESENI -> it.status == "vracen" || it.status == "obrisan" || it.status == "vrati"
         }
     }
 
@@ -110,7 +109,7 @@ fun AdminScreen(onNavigateBack: () -> Unit, viewModel: AdminViewModel = viewMode
                     }
                 }
                 prikazani.isEmpty() -> item {
-                    Text("Nema prijavljenih ulova u ovoj grupi.", color = FishBoje.TekstPriguseni,
+                    Text("Nema prijava koje čekaju odluku.", color = FishBoje.TekstPriguseni,
                         textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(32.dp))
                 }
                 else -> items(prikazani, key = { it.id }) { ulov ->
@@ -159,11 +158,9 @@ fun AdminScreen(onNavigateBack: () -> Unit, viewModel: AdminViewModel = viewMode
 private fun KarticaPrijave(ulov: PrijavljenUlov, uToku: Boolean, onURedu: () -> Unit, onObrisi: () -> Unit) {
     val (boja, oznaka) = when (ulov.status) {
         "uklonjen" -> FishBoje.Greska to "Uklonjen (oduzeto ${ulov.oduzetoPoena} poena)"
-        "vracen", "vrati" -> FishBoje.Akcenat to "Vraćen"
-        "obrisan" -> FishBoje.TekstPriguseni to "Trajno obrisan"
+        "ponovo" -> FishBoje.Upozorenje to "Ponovo prijavljen posle vraćanja"
         else -> FishBoje.Upozorenje to "Aktivan na mapi"
     }
-    val reseno = ulov.status == "vracen" || ulov.status == "vrati" || ulov.status == "obrisan"
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -201,16 +198,13 @@ private fun KarticaPrijave(ulov: PrijavljenUlov, uToku: Boolean, onURedu: () -> 
                 }
             }
         }
-        if (reseno && ulov.resioAdmin.isNotBlank()) {
-            Text("Rešio: ${ulov.resioAdmin}", color = FishBoje.TekstPriguseni, fontSize = 12.sp, modifier = Modifier.padding(top = 6.dp))
-        }
-        if (ulov.status != "obrisan") {
+        run {
             Spacer(Modifier.height(12.dp))
             if (uToku) {
                 LinearProgressIndicator(color = FishBoje.Akcenat, trackColor = FishBoje.Krug, modifier = Modifier.fillMaxWidth())
             } else {
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    if (ulov.status != "vracen" && ulov.status != "vrati") {
+                    run {
                         Button(
                             onClick = onURedu,
                             colors = ButtonDefaults.buttonColors(containerColor = FishBoje.Akcenat, contentColor = FishBoje.Pozadina),

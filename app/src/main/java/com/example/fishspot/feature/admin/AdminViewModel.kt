@@ -122,6 +122,8 @@ class AdminViewModel : ViewModel() {
             _uToku.value = id
             try {
                 functions.getHttpsCallable(funkcija).call(mapOf("spotId" to id)).await()
+                // Rešen ulov odmah nestaje sa liste
+                _prijavljeni.value = _prijavljeni.value.filterNot { it.id == id }
                 FishPoruka.prikazi(poruka)
                 kotlinx.coroutines.delay(1500) // da server završi vraćanje ili brisanje pre osvežavanja
                 osvezi()

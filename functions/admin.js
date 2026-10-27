@@ -26,7 +26,8 @@ function zaAplikaciju(id, p) {
     const u = p.ulov || {};
     return {
         id,
-        status: p.status || "aktivan",
+        // Vraćen ulov sa novim prijavama se prikazuje kao ponovo prijavljen
+        status: (p.status === "vracen" || p.status === "vrati") ? "ponovo" : (p.status || "aktivan"),
         brojPrijava: p.brojPrijava || 0,
         autorUlova: p.autorUlova || u.authorUsername || "",
         autorUlovaId: p.autorUlovaId || u.authorId || "",
@@ -47,6 +48,15 @@ function zaAplikaciju(id, p) {
 
 const DAN_MS = 24 * 3600 * 1000;
 
+function trebaOdluka(p) {
+    if (p.status === "obrisan") return false;
+    if (p.status === "vracen" || p.status === "vrati") {
+        const reseno = Math.max(ms(p.resenoVreme) ?? 0, ms(p.vracen) ?? 0);
+        return (ms(p.poslednjaPrijava) ?? 0) > reseno;
+    }
+    return true;
+}
+
 exports.adminPregled = functions.https.onCall(async (data, context) => {
     proveriAdmina(context);
     const db = admin.firestore();
@@ -63,7 +73,8 @@ exports.adminPregled = functions.https.onCall(async (data, context) => {
             prijavaDanas: prijaveDanas.data().count,
             uklonjenih: prijavljeni.docs.filter((d) => d.data().status === "uklonjen").length,
         },
-        prijavljeni: prijavljeni.docs.map((d) => zaAplikaciju(d.id, d.data())),
+        // Rešeni ulovi se ne prikazuju; vraćen ulov se ponovo pojavi samo ako stignu nove prijave posle odluke
+        prijavljeni: prijavljeni.docs.filter((d) => trebaOdluka(d.data())).map((d) => zaAplikaciju(d.id, d.data())),
     };
 });
 
@@ -113,4 +124,4 @@ exports.adminObrisiUlov = functions.https.onCall(async (data, context) => {
     return { ok: true };
 });
 
-exports._interno = { ADMINI, zaAplikaciju };
+exports._interno = { ADMINI, zaAplikaciju, trebaOdluka };
