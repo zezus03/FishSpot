@@ -237,3 +237,9 @@ exports.vodeUBlizini = require("./vode").vodeUBlizini;
 
 // Zaštita Deda Pere od zloupotrebe (functions/deda.js)
 exports.proveriOdgovorDedePere = require("./deda").proveriOdgovorDedePere;
+
+// Mailovi adminu: dnevni pregled prijava, nedeljni pregled, uklonjen ulov (functions/izvestaji.js)
+const izvestaji = require("./izvestaji");
+exports.dnevniPregledPrijava = izvestaji.dnevniPregledPrijava;
+exports.nedeljniPregled = izvestaji.nedeljniPregled;
+exports.obavestiUklonjenUlov = izvestaji.obavestiUklonjenUlov;
