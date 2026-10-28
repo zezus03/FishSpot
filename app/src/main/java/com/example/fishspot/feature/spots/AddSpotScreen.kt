@@ -58,6 +58,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -89,6 +90,7 @@ fun AddSpotScreen(
     onSpotAdded: () -> Unit
 ) {
     val context = LocalContext.current
+    val focusManager = LocalFocusManager.current
 
     var showArMeasureScreen by remember { mutableStateOf(false) }
 
@@ -220,9 +222,27 @@ fun AddSpotScreen(
         }
     }
 
+    // Izvor slike odlučuje o poenima: kamera u aplikaciji +20%, skinuta slika ili screenshot bez poena
+    var slikaIzKamere by remember { mutableStateOf(false) }
+    var izvorSlike by remember { mutableStateOf<IzvorSlike?>(null) }
+    LaunchedEffect(slikaUri, slikaIzKamere) {
+        val uri = slikaUri
+        izvorSlike = null
+        izvorSlike = when {
+            uri == null -> null
+            slikaIzKamere -> IzvorSlike.APLIKACIJA
+            else -> withContext(Dispatchers.IO) { ProveraSlike.oceni(context, uri) }
+        }
+    }
+
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
-        onResult = { uri -> slikaUri = uri }
+        onResult = { uri ->
+            if (uri != null) {
+                slikaIzKamere = false
+                slikaUri = uri
+            }
+        }
     )
 
     var tempCameraUri by remember { mutableStateOf<Uri?>(null) }
@@ -230,6 +250,7 @@ fun AddSpotScreen(
         contract = ActivityResultContracts.TakePicture(),
         onResult = { success ->
             if (success) {
+                slikaIzKamere = true
                 slikaUri = tempCameraUri
             }
         }
@@ -288,7 +309,7 @@ fun AddSpotScreen(
     // Šta još fali da bi ulov mogao da se sačuva (prikazuje se iznad dugmeta)
     val nedostaje = when {
         slikaUri == null -> "Dodaj fotografiju ulova"
-        isValidatingFish -> "Proveravam fotografiju…"
+        isValidatingFish || izvorSlike == null -> "Proveravam fotografiju…"
         !ribaPronadjena -> "Na fotografiji nije prepoznata riba"
         izabranaVrsta == null -> "Izaberi vrstu ribe sa liste"
         else -> com.example.fishspot.feature.fish.OgranicenjaRibe.proveri(
@@ -363,10 +384,19 @@ fun AddSpotScreen(
                                 tehnika = odabranaTehnika,
                                 temperatura = temperatura,
                                 pritisak = pritisak,
-                                vetar = vetar
+                                vetar = vetar,
+                                izvorSlike = izvorSlike?.kod ?: IzvorSlike.NEPOZNATA.kod
                             ) { result ->
                                 if (result.isSuccess) {
-                                    FishPoruka.prikazi("Ulov uspešno sačuvan!")
+                                    val kg = tezinaRibe.replace(',', '.').toDoubleOrNull() ?: 0.0
+                                    FishPoruka.prikazi(
+                                        when {
+                                            izvorSlike?.donosiPoene != true -> "Ulov sačuvan, ali bez poena zbog izvora slike."
+                                            kg > 5.0 -> "Ulov sačuvan! Riba preko 5 kg dobija poene kad je admin pregleda."
+                                            else -> "Ulov sačuvan! Poeni stižu čim se slika pošalje."
+                                        },
+                                        dugo = kg > 5.0
+                                    )
                                     onSpotAdded()
                                 } else {
                                     val errorMessage = result.exceptionOrNull()?.message ?: "Nepoznata greška"
@@ -418,6 +448,31 @@ fun AddSpotScreen(
                 },
                 onGalerija = { galleryLauncher.launch("image/*") }
             )
+
+            izvorSlike?.let { izvor ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background((if (izvor.donosiPoene) FishBoje.Akcenat else FishBoje.Upozorenje).copy(alpha = 0.12f))
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        if (izvor.donosiPoene) Icons.Default.Star else Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = if (izvor.donosiPoene) FishBoje.Akcenat else FishBoje.Upozorenje,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Column {
+                        Text(izvor.opis, color = FishBoje.TekstPrimarni, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                        if (izvor != IzvorSlike.APLIKACIJA) {
+                            Text("Slikaj u aplikaciji za +20% poena", color = FishBoje.TekstSekundarni, fontSize = 12.sp)
+                        }
+                    }
+                }
+            }
 
             // ─── RIBA ───
             Sekcija(naslov = "Riba", ikona = Icons.Default.SetMeal) {
@@ -486,6 +541,8 @@ fun AddSpotScreen(
                                     izabranaVrsta = vrsta
                                     vrstaRibe = vrsta.prikaz
                                     vrstaMeniOtvoren = false
+                                    // Tastatura se zatvara da ne prekriva dužinu i težinu
+                                    focusManager.clearFocus()
                                 }
                             )
                         }
@@ -554,7 +611,7 @@ fun AddSpotScreen(
             // ─── KAKO JE UPECANA ───
             Sekcija(naslov = "Kako je upecana", ikona = Icons.Default.Phishing) {
                 NaslovSekcije("Mamac")
-                IzborCipovima(opcije = mamci, izabrano = odabranMamac, onIzbor = { odabranMamac = it })
+                IzborMamca(izabrano = odabranMamac, onIzbor = { odabranMamac = it })
                 NaslovSekcije("Tehnika")
                 IzborCipovima(
                     // Prikazuju se samo tehnike koje idu uz izabrani mamac

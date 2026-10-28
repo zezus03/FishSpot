@@ -26,8 +26,7 @@ service cloud.firestore {
 
     // ─── KORISNICI ───
     // Svi prijavljeni vide profile (rang lista, imena kod komentara),
-    // a svako menja samo svoj dokument. Poeni mogu samo da rastu, najvise 50 odjednom
-    // (najveca nagrada za jedan ulov).
+    // a svako menja samo svoj dokument. Poene menja samo server (proveriSlikuUlova i ostale funkcije).
     match /Korisnici/{uid} {
       allow read: if prijavljen();
       allow create: if jaSam(uid) && request.resource.data.get('poeni', 0) == 0 && profilIspravan();
@@ -39,21 +38,24 @@ service cloud.firestore {
       allow delete: if false;
 
       function poeniIspravni() {
-        let stari = resource.data.get('poeni', 0);
-        let novi = request.resource.data.get('poeni', 0);
-        return novi == stari || (novi > stari && novi - stari <= 50);
+        return request.resource.data.get('poeni', 0) == resource.data.get('poeni', 0);
       }
     }
 
     // ─── ULOVI / MESTA ZA PECANJE ───
     match /MestaZaPecanje/{spotId} {
       allow read: if prijavljen();
-      allow create: if prijavljen() && request.resource.data.authorId == request.auth.uid && ulovIspravan();
-      // Autor menja svoj ulov (npr. UploadWorker dodaje slikaUrl), ali ne sme da promeni autora.
-      // Ostali smeju samo da dodaju ili uklone svoj lajk.
+      // Izvor slike određuje aplikacija (ProveraSlike.kt); poene i otisak slike upisuje samo server
+      allow create: if prijavljen() && request.resource.data.authorId == request.auth.uid && ulovIspravan()
+        && request.resource.data.get('izvorSlike', '')
+             in ['aplikacija', 'kamera', 'poslata', 'ai', 'screenshot', 'stara', 'nepoznata']
+        && !request.resource.data.keys().hasAny(['poeni', 'proveraSlike', 'poeniNaCekanju', 'proveraAdmina']);
+      // Autor menja svoj ulov (npr. UploadWorker dodaje slikaUrl), ali ne sme da promeni autora,
+      // izvor slike ni poene. Ostali smeju samo da dodaju ili uklone svoj lajk.
       allow update: if prijavljen() && (
         (resource.data.authorId == request.auth.uid
           && request.resource.data.authorId == resource.data.authorId
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['izvorSlike', 'poeni', 'proveraSlike', 'poeniNaCekanju', 'proveraAdmina'])
           && ulovIspravan())
         || (menjaSamo(['likedBy']) && menjaSamoSvojLajk())
       );
@@ -69,11 +71,11 @@ service cloud.firestore {
           && d.get('tezinaRibe', 0) >= 0 && d.get('tezinaRibe', 0) <= g[1];
       }
 
-      // Varalica ide samo uz tehniku varalica, mušica samo uz mušičarenje
+      // Varalica (i "Varalica Vobler" itd.) ide samo uz tehniku varalica, mušica samo uz mušičarenje
       function mamacITehnikaSlazu() {
         let d = request.resource.data;
-        return (d.get('mamac', '') == 'Varalica') == (d.get('tehnika', '') == 'Varalica')
-          && (d.get('mamac', '') == 'Mušica') == (d.get('tehnika', '') == 'Mušičarenje');
+        return d.get('mamac', '').matches('Varalica( .+)?') == (d.get('tehnika', '') == 'Varalica')
+          && d.get('mamac', '').matches('Mušica( .+)?') == (d.get('tehnika', '') == 'Mušičarenje');
       }
 
       function ulovIspravan() {

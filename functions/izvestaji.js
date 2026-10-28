@@ -2,6 +2,7 @@
 //  - dnevniPregledPrijava: svako jutro u 8:00, samo ako je bilo novih prijava ulova
 //  - nedeljniPregled: ponedeljkom u 8:05, uvek (drži Brevo ključ aktivnim, ističe posle 90 dana bez slanja)
 //  - obavestiUklonjenUlov: odmah, kada moderacija ukloni ulov posle 3 prijave
+//  - obavestiVelikiUlov: odmah, kada ulov od 50+ poena počne da čeka odobrenje
 const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
 const { Timestamp } = require("firebase-admin/firestore");
@@ -50,6 +51,24 @@ function karticaPrijave(id, p) {
   </div>`;
 }
 
+const IZVOR_SLIKE = {
+    aplikacija: "slikano u aplikaciji", kamera: "kamera telefona (galerija)", poslata: "poslata (Viber/WhatsApp/Messenger)",
+};
+
+// Ulov od 50+ poena koji čeka odobrenje u admin panelu
+function karticaVelikog(u) {
+    const slika = u.slikaUrl ? `<img src="${esc(u.slikaUrl)}" width="160" style="border-radius:10px;float:right;margin-left:12px">` : "";
+    return `<div style="background:#132218;border:1px solid #1E3328;border-radius:14px;padding:16px;margin-bottom:14px;overflow:hidden">
+    ${slika}
+    <div style="color:#F1C40F;font-size:12px;font-weight:bold">ČEKA ODOBRENJE · ${esc(u.poeniNaCekanju ?? 0)} poena</div>
+    <div style="color:#fff;font-size:18px;font-weight:bold;margin:4px 0">${esc(u.vrstaRibe || "Nepoznata vrsta")}
+      <span style="color:#B0BDB9;font-size:14px;font-weight:normal">· ${esc(u.duzinaRibe ?? "?")} cm · ${esc(u.tezinaRibe ?? "?")} kg</span></div>
+    <div style="font-size:13px">Autor: <b style="color:#fff">${esc(u.authorUsername || "?")}</b> · ${esc(u.naziv || "")}</div>
+    <div style="font-size:13px">Slika: ${esc(IZVOR_SLIKE[u.izvorSlike] || u.izvorSlike || "?")} · ${esc(u.mamac || "")} / ${esc(u.tehnika || "")}</div>
+    <div style="font-size:13px;margin-top:8px">Odobri ili odbij u aplikaciji: <b style="color:#fff">Profil → Admin panel</b>.</div>
+  </div>`;
+}
+
 async function posaljiMail(naslov, html) {
     // U emulatoru se mail ne šalje, nego upisuje u kolekciju TestMailovi (za testove)
     if (process.env.FUNCTIONS_EMULATOR === "true") {
@@ -71,17 +90,31 @@ async function posaljiMail(naslov, html) {
 
 async function napraviDnevniPregled(db, sada = Date.now()) {
     const od = Timestamp.fromMillis(sada - DAN_MS);
-    const snap = await db.collection("PrijavljeniUlovi").where("poslednjaPrijava", ">=", od).get();
-    if (snap.empty) return null;
+    const [snap, veliki] = await Promise.all([
+        db.collection("PrijavljeniUlovi").where("poslednjaPrijava", ">=", od).get(),
+        db.collection("MestaZaPecanje").where("proveraAdmina", "==", "ceka").limit(50).get(),
+    ]);
+    if (snap.empty && veliki.empty) return null;
     const docs = snap.docs.sort((a, b) => (b.data().brojPrijava ?? 0) - (a.data().brojPrijava ?? 0));
     const uklonjenih = docs.filter((d) => d.data().status === "uklonjen").length;
     const novihPrijava = docs.reduce((zbir, d) => zbir + (d.data().razlozi || [])
         .filter((r) => (r.vreme?.toMillis ? r.vreme.toMillis() : 0) >= od.toMillis()).length, 0);
-    const naslov = `FishSpot: ${novihPrijava} nov${novihPrijava === 1 ? "a prijava" : "e prijave"}` +
-        (uklonjenih ? `, ${uklonjenih} uklonjen${uklonjenih === 1 ? " ulov" : "a ulova"}` : "");
-    const zbir = `<p style="font-size:15px">U poslednja 24 sata: <b style="color:#fff">${novihPrijava}</b> novih prijava za
-        <b style="color:#fff">${docs.length}</b> ulov(a), od toga <b style="color:#E74C3C">${uklonjenih}</b> uklonjeno automatski.</p>`;
-    return { naslov, html: omotac("Dnevni pregled prijava", zbir + docs.map((d) => karticaPrijave(d.id, d.data())).join("")) };
+    const delovi = [];
+    if (novihPrijava) delovi.push(`${novihPrijava} nov${novihPrijava === 1 ? "a prijava" : "e prijave"}`);
+    if (uklonjenih) delovi.push(`${uklonjenih} uklonjen${uklonjenih === 1 ? " ulov" : "a ulova"}`);
+    if (veliki.size) delovi.push(`${veliki.size} velik${veliki.size === 1 ? " ulov čeka" : "ih ulova čeka"} odobrenje`);
+    const naslov = `FishSpot: ${delovi.join(", ") || "dnevni pregled"}`;
+    let html = "";
+    if (veliki.size) {
+        html += `<p style="font-size:15px">Veliki ulovi (50+ poena) koji čekaju tvoje odobrenje: <b style="color:#F1C40F">${veliki.size}</b></p>` +
+            veliki.docs.map((d) => karticaVelikog(d.data())).join("");
+    }
+    if (docs.length) {
+        html += `<p style="font-size:15px">U poslednja 24 sata: <b style="color:#fff">${novihPrijava}</b> novih prijava za
+        <b style="color:#fff">${docs.length}</b> ulov(a), od toga <b style="color:#E74C3C">${uklonjenih}</b> uklonjeno automatski.</p>` +
+            docs.map((d) => karticaPrijave(d.id, d.data())).join("");
+    }
+    return { naslov, html: omotac("Dnevni pregled", html) };
 }
 
 async function napraviNedeljniPregled(db, sada = Date.now()) {
@@ -130,6 +163,17 @@ exports.obavestiUklonjenUlov = saKljucem.firestore.document("PrijavljeniUlovi/{s
     await posaljiMail(`FishSpot: uklonjen ulov (${vrsta}) posle ${posle.brojPrijava} prijave`,
         omotac("Ulov je automatski uklonjen", karticaPrijave(context.params.spotId, posle)));
     console.log(`Mail o uklonjenom ulovu ${context.params.spotId} poslat`);
+    return null;
+});
+
+// Odmah kad veliki ulov (50+ poena) počne da čeka odobrenje
+exports.obavestiVelikiUlov = saKljucem.firestore.document("MestaZaPecanje/{spotId}").onUpdate(async (change, context) => {
+    const pre = change.before.data();
+    const posle = change.after.data();
+    if (posle.proveraAdmina !== "ceka" || pre.proveraAdmina === "ceka") return null;
+    await posaljiMail(`FishSpot: veliki ulov čeka odobrenje (${posle.vrstaRibe || "ulov"}, ${posle.tezinaRibe ?? "?"} kg)`,
+        omotac("Veliki ulov čeka odobrenje", karticaVelikog(posle)));
+    console.log(`Mail o velikom ulovu ${context.params.spotId} poslat`);
     return null;
 });
 

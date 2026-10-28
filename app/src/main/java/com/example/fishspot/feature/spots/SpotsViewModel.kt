@@ -124,6 +124,7 @@ class SpotsViewModel : ViewModel() {
         duzinaRibe: Double, tezinaRibe: Double, mamac: String, tehnika: String,temperatura: String,
         pritisak: String,
         vetar: String,
+        izvorSlike: String,
         onResult: (Result<Unit>) -> Unit
     ) {
         viewModelScope.launch {
@@ -160,8 +161,8 @@ class SpotsViewModel : ViewModel() {
                     tehnika = tehnika,
                     temperatura = temperatura,
                     pritisak = pritisak,
-                    vetar = vetar
-
+                    vetar = vetar,
+                    izvorSlike = izvorSlike
                 )
 
                 // Ulov se čuva i pod svojom vrstom (VrsteRiba/{vrsta}/Ulovi) sa istim ID-jem,
@@ -228,21 +229,8 @@ class SpotsViewModel : ViewModel() {
                     }
                 }
 
-                // Računanje poena
-                val poeniZaOvajUlov = when {
-                    tezinaRibe > 5.0 -> 50L
-                    tezinaRibe > 2.0 -> 20L
-                    tezinaRibe > 1.0 -> 10L
-                    tezinaRibe > 0.5 -> 5L
-                    tezinaRibe > 0.0 -> 2L // i mala riba donosi poene
-                    else -> 0L
-                }
-
-                if (poeniZaOvajUlov > 0) {
-                    val userRef = firestore.collection("Korisnici").document(user.uid)
-                    userRef.update("poeni", com.google.firebase.firestore.FieldValue.increment(poeniZaOvajUlov))
-                }
-
+                // Poene dodeljuje server (proveriSlikuUlova) kad stigne slika: proveri izvor i da li je
+                // ista slika već objavljena
                 onResult(Result.success(Unit))
             } catch (e: Exception) {
                 onResult(Result.failure(e))

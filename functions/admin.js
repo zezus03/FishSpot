@@ -47,6 +47,16 @@ function zaAplikaciju(id, p) {
     };
 }
 
+function velikiZaAplikaciju(id, u) {
+    return {
+        id,
+        autorUlova: u.authorUsername || "", vrstaRibe: u.vrstaRibe || "", naziv: u.naziv || "", opis: u.opis || "",
+        duzinaRibe: u.duzinaRibe ?? 0, tezinaRibe: u.tezinaRibe ?? 0, mamac: u.mamac || "", tehnika: u.tehnika || "",
+        slikaUrl: u.slikaUrl || "", izvorSlike: u.izvorSlike || "", poeniNaCekanju: u.poeniNaCekanju ?? 0,
+        timestamp: ms(u.timestamp),
+    };
+}
+
 const DAN_MS = 24 * 3600 * 1000;
 
 function trebaOdluka(p) {
@@ -70,11 +80,12 @@ exports.jesamLiAdmin = functions.https.onCall(async (data, context) => {
 exports.adminPregled = functions.https.onCall(async (data, context) => {
     proveriAdmina(context);
     const db = admin.firestore();
-    const [prijavljeni, korisnici, ulovi, prijaveDanas] = await Promise.all([
+    const [prijavljeni, korisnici, ulovi, prijaveDanas, veliki] = await Promise.all([
         db.collection("PrijavljeniUlovi").orderBy("poslednjaPrijava", "desc").limit(100).get(),
         db.collection("Korisnici").count().get(),
         db.collection("MestaZaPecanje").count().get(),
         db.collection("Prijave").where("timestamp", ">=", Date.now() - DAN_MS).count().get(),
+        db.collection("MestaZaPecanje").where("proveraAdmina", "==", "ceka").limit(50).get(),
     ]);
     return {
         statistika: {
@@ -83,6 +94,8 @@ exports.adminPregled = functions.https.onCall(async (data, context) => {
             prijavaDanas: prijaveDanas.data().count,
             uklonjenih: prijavljeni.docs.filter((d) => d.data().status === "uklonjen").length,
         },
+        // Ulovi od 50+ poena koji čekaju odobrenje (najstariji prvi)
+        veliki: veliki.docs.map((d) => velikiZaAplikaciju(d.id, d.data())).sort((a, b) => (a.timestamp ?? 0) - (b.timestamp ?? 0)),
         // Rešeni ulovi se ne prikazuju; vraćen ulov se ponovo pojavi samo ako stignu nove prijave posle odluke
         prijavljeni: prijavljeni.docs.filter((d) => trebaOdluka(d.data())).map((d) => zaAplikaciju(d.id, d.data())),
     };
@@ -134,4 +147,34 @@ exports.adminObrisiUlov = functions.https.onCall(async (data, context) => {
     return { ok: true };
 });
 
-exports._interno = { ADMINI, zaAplikaciju, trebaOdluka };
+// Veliki ulov (50+ poena): "odobri" dodeljuje poene, "odbij" ostavlja ulov na mapi bez poena
+exports.adminVelikiUlov = functions.https.onCall(async (data, context) => {
+    const email = proveriAdmina(context);
+    const spotId = String(data?.spotId || "");
+    const odluka = data?.odluka;
+    if (!spotId || !["odobri", "odbij"].includes(odluka)) {
+        throw new functions.https.HttpsError("invalid-argument", "Neispravan zahtev.");
+    }
+    const { stanjePoena } = require("./ulovi")._interno;
+    const db = admin.firestore();
+    const ref = db.collection("MestaZaPecanje").doc(spotId);
+
+    const dodato = await db.runTransaction(async (tx) => {
+        const snap = await tx.get(ref);
+        if (!snap.exists) throw new functions.https.HttpsError("not-found", "Ulov više ne postoji.");
+        const ulov = snap.data();
+        const autorRef = db.collection("Korisnici").doc(ulov.authorId);
+        const autor = await tx.get(autorRef);
+        const stanje = stanjePoena({ ...ulov, proveraAdmina: odluka === "odobri" ? "odobren" : "odbijen" });
+        const razlika = stanje.poeni - (ulov.poeni ?? 0);
+        tx.update(ref, { ...stanje, resioAdmin: email, resenoVreme: Timestamp.now() });
+        if (razlika !== 0 && autor.exists) {
+            tx.update(autorRef, { poeni: Math.max(0, (autor.data().poeni ?? 0) + razlika) });
+        }
+        return razlika;
+    });
+    console.log(`Admin ${email}: veliki ulov ${spotId} ${odluka === "odobri" ? "odobren" : "odbijen"} (poeni ${dodato >= 0 ? "+" : ""}${dodato})`);
+    return { ok: true, poeni: dodato };
+});
+
+exports._interno = { ADMINI, zaAplikaciju, trebaOdluka, velikiZaAplikaciju };

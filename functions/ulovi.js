@@ -3,8 +3,9 @@
 // a ove funkcije srede sve ostalo: poene, spisak ulova po vrsti, komentare i slike.
 const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
+const { FieldValue } = require("firebase-admin/firestore");
 
-// Isti pragovi kao u aplikaciji (SpotsViewModel.addSpot)
+// Osnovni poeni po težini ribe
 function poeniZaUlov(tezinaKg) {
     if (tezinaKg > 5.0) return 50;
     if (tezinaKg > 2.0) return 20;
@@ -12,6 +13,44 @@ function poeniZaUlov(tezinaKg) {
     if (tezinaKg > 0.5) return 5;
     if (tezinaKg > 0) return 2; // i mala riba donosi poene
     return 0;
+}
+
+// Izvor slike određuje aplikacija pri izboru slike (ProveraSlike.kt):
+//   "aplikacija" - slikano kamerom iz FishSpot-a (+20% poena)
+//   "kamera"     - iz galerije, sa podacima kamere i ne starije od par dana
+//   "poslata"    - skora slika primljena preko Vibera, WhatsApp-a ili Messengera
+//   ostalo ("ai", "screenshot", "stara", "nepoznata") - ulov se objavljuje, ali bez poena
+//   ("ai" = slika nosi oznaku da je napravljena ili izmenjena veštačkom inteligencijom)
+const IZVORI_SA_POENIMA = ["aplikacija", "kamera", "poslata"];
+const BONUS_ZA_APLIKACIJU = 1.2;
+
+// Poeni za novi ulov (sa poljem izvorSlike); slika koja je već objavljena ne donosi poene
+function poeniZaNoviUlov(ulov) {
+    if (ulov.proveraSlike?.duplikatOd) return 0;
+    if (!IZVORI_SA_POENIMA.includes(ulov.izvorSlike)) return 0;
+    const osnovni = poeniZaUlov(ulov.tezinaRibe ?? 0);
+    return ulov.izvorSlike === "aplikacija" ? Math.round(osnovni * BONUS_ZA_APLIKACIJU) : osnovni;
+}
+
+// Ulovi od ovoliko poena i više (riba preko 5 kg) dobijaju poene tek kad ih admin odobri
+const PRAG_ZA_ADMINA = 50;
+
+// Koliko poena ulov treba da ima sada i koliko čeka odluku admina.
+// proveraAdmina: "ceka" | "odobren" | "odbijen" | "" (nije potrebna)
+function stanjePoena(ulov) {
+    const n = poeniZaNoviUlov(ulov);
+    if (ulov.proveraAdmina === "odbijen") return { poeni: 0, poeniNaCekanju: 0, proveraAdmina: "odbijen" };
+    if (n < PRAG_ZA_ADMINA) return { poeni: n, poeniNaCekanju: 0, proveraAdmina: ulov.proveraAdmina === "odobren" ? "odobren" : "" };
+    if (ulov.proveraAdmina === "odobren") return { poeni: n, poeniNaCekanju: 0, proveraAdmina: "odobren" };
+    return { poeni: 0, poeniNaCekanju: n, proveraAdmina: "ceka" };
+}
+
+// Koliko je autor do sada dobio za ulov (to se oduzima pri brisanju ili uklanjanju)
+function dodeljeniPoeni(ulov) {
+    // Stari ulovi, pre provere slike: poene je dodala aplikacija odmah po težini
+    if (ulov.izvorSlike === undefined) return poeniZaUlov(ulov.tezinaRibe ?? 0);
+    // Novi ulovi: poeni postoje tek kad server proveri sliku (proveriSlikuUlova)
+    return ulov.poeni ?? 0;
 }
 
 // Polja ulova koja se čuvaju i pod VrsteRiba/{vrstaId}/Ulovi/{id}
@@ -82,7 +121,11 @@ exports.obrisanUlov = functions.firestore
                 ? db.collection("VrsteRiba").doc(ulov.vrstaId).collection("Ulovi").doc(spotId).delete()
                 : Promise.resolve(),
             obrisiSliku(ulov.slikaUrl),
-            promeniPoene(ulov.authorId, -poeniZaUlov(ulov.tezinaRibe ?? 0)),
+            promeniPoene(ulov.authorId, -dodeljeniPoeni(ulov)),
+            // Otisak slike se briše, pa ista slika posle brisanja ulova opet može da se objavi
+            db.collection("OtisciSlika").doc("svi")
+                .update({ [`o.${spotId}`]: FieldValue.delete() })
+                .catch(() => null),
         ]);
 
         console.log(`Ulov ${spotId} obrisan i počišćen`);
@@ -104,7 +147,19 @@ exports.izmenjenUlov = functions.firestore
 
         const poslovi = [];
 
-        const razlika = poeniZaUlov(posle.tezinaRibe ?? 0) - poeniZaUlov(pre.tezinaRibe ?? 0);
+        let razlika = 0;
+        if (posle.izvorSlike === undefined) {
+            razlika = poeniZaUlov(posle.tezinaRibe ?? 0) - poeniZaUlov(pre.tezinaRibe ?? 0);
+        } else if (posle.poeni !== undefined) {
+            // Novi ulov čija je slika proverena: poeni se računaju ponovo sa novom težinom
+            // (riba koja pređe 5 kg ide adminu na proveru)
+            const stanje = stanjePoena(posle);
+            razlika = stanje.poeni - posle.poeni;
+            if (razlika !== 0 || stanje.poeniNaCekanju !== (posle.poeniNaCekanju ?? 0) ||
+                stanje.proveraAdmina !== (posle.proveraAdmina ?? "")) {
+                poslovi.push(change.after.ref.update(stanje));
+            }
+        }
         if (razlika !== 0) poslovi.push(promeniPoene(posle.authorId, razlika));
 
         if (pre.vrstaId && pre.vrstaId !== posle.vrstaId) {
@@ -183,4 +238,4 @@ exports.obrisiNalog = functions.https.onCall(async (data, context) => {
     return { obrisano: true };
 });
 
-exports._interno = { poeniZaUlov, putanjaIzLinka };
+exports._interno = { poeniZaUlov, poeniZaNoviUlov, stanjePoena, dodeljeniPoeni, promeniPoene, putanjaIzLinka, PRAG_ZA_ADMINA };

@@ -17,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -52,6 +53,7 @@ fun IzmenaUlovaDialog(
     vrsteRibaViewModel: VrsteRibaViewModel = viewModel()
 ) {
     val sveVrste by vrsteRibaViewModel.vrste.collectAsState()
+    val focusManager = LocalFocusManager.current
 
     var naziv by remember { mutableStateOf(spot.naziv) }
     var izabranaVrsta by remember {
@@ -156,6 +158,7 @@ fun IzmenaUlovaDialog(
                                         .clickable {
                                             izabranaVrsta = vrsta
                                             vrstaUnos = vrsta.prikaz
+                                            focusManager.clearFocus()
                                         }
                                         .padding(horizontal = 16.dp, vertical = 12.dp)
                                 )
@@ -192,7 +195,7 @@ fun IzmenaUlovaDialog(
                     }
 
                     NaslovSekcije("Mamac")
-                    IzborCipovima(opcije = OpcijeUlova.mamci, izabrano = mamac, onIzbor = { mamac = it })
+                    IzborMamca(izabrano = mamac, onIzbor = { mamac = it })
                     NaslovSekcije("Tehnika")
                     IzborCipovima(
                         opcije = OpcijeUlova.dozvoljeneTehnike(mamac), izabrano = tehnika,

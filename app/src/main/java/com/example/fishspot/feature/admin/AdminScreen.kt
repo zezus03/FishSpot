@@ -43,6 +43,8 @@ fun AdminScreen(onNavigateBack: () -> Unit, viewModel: AdminViewModel = viewMode
     val trebaPotvrda by viewModel.trebaPotvrda.collectAsState()
     var filter by remember { mutableStateOf(Filter.SVI) }
     var potvrda by remember { mutableStateOf<Pair<PrijavljenUlov, Boolean>?>(null) } // (ulov, brisanje?)
+    val veliki by viewModel.veliki.collectAsState()
+    var odlukaVelikog by remember { mutableStateOf<Pair<VelikiUlov, Boolean>?>(null) } // (ulov, odobri?)
 
     val prikazani = prijavljeni.filter {
         when (filter) {
@@ -77,6 +79,22 @@ fun AdminScreen(onNavigateBack: () -> Unit, viewModel: AdminViewModel = viewMode
                     Plocica(Icons.Default.Flag, "${statistika.prijavaDanas}", "prijava danas", Modifier.weight(1f))
                     Plocica(Icons.Default.Block, "${statistika.uklonjenih}", "čeka odluku", Modifier.weight(1f), FishBoje.Greska)
                 }
+            }
+            if (veliki.isNotEmpty()) {
+                item {
+                    Text("Veliki ulovi čekaju odobrenje (${veliki.size})", color = FishBoje.Upozorenje,
+                        fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Text("Riba preko 5 kg dobija poene tek kad je odobriš.", color = FishBoje.TekstPriguseni, fontSize = 13.sp)
+                }
+                items(veliki, key = { "veliki_" + it.id }) { ulov ->
+                    KarticaVelikog(
+                        ulov = ulov,
+                        uToku = uToku == ulov.id,
+                        onOdobri = { odlukaVelikog = ulov to true },
+                        onOdbij = { odlukaVelikog = ulov to false }
+                    )
+                }
+                item { NaslovSekcije("Prijavljeni ulovi") }
             }
             item {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -151,6 +169,91 @@ fun AdminScreen(onNavigateBack: () -> Unit, viewModel: AdminViewModel = viewMode
             },
             dismissButton = { TextButton(onClick = { potvrda = null }) { Text("Otkaži", color = FishBoje.TekstSekundarni) } }
         )
+    }
+
+    odlukaVelikog?.let { (ulov, odobri) ->
+        AlertDialog(
+            onDismissRequest = { odlukaVelikog = null },
+            containerColor = FishBoje.Kartica,
+            titleContentColor = FishBoje.TekstPrimarni,
+            textContentColor = FishBoje.TekstSekundarni,
+            title = { Text(if (odobri) "Odobri poene?" else "Ulov bez poena?", fontWeight = FontWeight.Bold) },
+            text = {
+                Text(
+                    if (odobri) "${ulov.autorUlova} dobija ${ulov.poeniNaCekanju} poena za ${ulov.vrstaRibe} od ${broj(ulov.tezinaRibe)} kg."
+                    else "${ulov.vrstaRibe} (${ulov.autorUlova}) ostaje na mapi, ali ne donosi poene ni posle izmene težine."
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (odobri) viewModel.odobriVeliki(ulov.id) else viewModel.odbijVeliki(ulov.id)
+                        odlukaVelikog = null
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (odobri) FishBoje.Akcenat else FishBoje.Greska,
+                        contentColor = if (odobri) FishBoje.Pozadina else Color.White
+                    )
+                ) { Text(if (odobri) "Odobri" else "Bez poena", fontWeight = FontWeight.Bold) }
+            },
+            dismissButton = { TextButton(onClick = { odlukaVelikog = null }) { Text("Otkaži", color = FishBoje.TekstSekundarni) } }
+        )
+    }
+}
+
+private fun opisIzvora(izvor: String) = when (izvor) {
+    "aplikacija" -> "Slikano u aplikaciji"
+    "kamera" -> "Kamera telefona (iz galerije)"
+    "poslata" -> "Poslata slika (Viber, WhatsApp, Messenger)"
+    else -> izvor
+}
+
+@Composable
+private fun KarticaVelikog(ulov: VelikiUlov, uToku: Boolean, onOdobri: () -> Unit, onOdbij: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(FishBoje.Kartica)
+            .border(1.dp, FishBoje.Upozorenje.copy(alpha = 0.5f), RoundedCornerShape(18.dp))
+            .padding(14.dp)
+    ) {
+        if (ulov.slikaUrl.isNotBlank()) {
+            AsyncImage(
+                model = ulov.slikaUrl, contentDescription = ulov.vrstaRibe, contentScale = ContentScale.Fit,
+                modifier = Modifier.fillMaxWidth().height(260.dp).clip(RoundedCornerShape(12.dp)).background(Color.Black)
+            )
+            Spacer(Modifier.height(10.dp))
+        }
+        Text("Čeka odobrenje · ${ulov.poeniNaCekanju} poena", color = FishBoje.Upozorenje, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        Text(ulov.vrstaRibe.ifBlank { "Nepoznata vrsta" }, color = FishBoje.TekstPrimarni, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+        Text("${broj(ulov.duzinaRibe)} cm · ${broj(ulov.tezinaRibe)} kg · ${ulov.mamac} / ${ulov.tehnika}",
+            color = FishBoje.TekstSekundarni, fontSize = 13.sp)
+        Text("Autor: ${ulov.autorUlova}${if (ulov.naziv.isNotBlank()) " · ${ulov.naziv}" else ""}",
+            color = FishBoje.TekstSekundarni, fontSize = 13.sp)
+        Text("Slika: ${opisIzvora(ulov.izvorSlike)}${ulov.timestamp?.let { " · " + vreme(it) } ?: ""}",
+            color = FishBoje.TekstSekundarni, fontSize = 13.sp)
+        if (ulov.opis.isNotBlank()) Text(ulov.opis, color = FishBoje.TekstPriguseni, fontSize = 13.sp)
+        Spacer(Modifier.height(12.dp))
+        if (uToku) {
+            LinearProgressIndicator(color = FishBoje.Akcenat, trackColor = FishBoje.Krug, modifier = Modifier.fillMaxWidth())
+        } else {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Button(
+                    onClick = onOdobri,
+                    colors = ButtonDefaults.buttonColors(containerColor = FishBoje.Akcenat, contentColor = FishBoje.Pozadina),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.weight(1f)
+                ) { Icon(Icons.Default.Check, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Odobri poene", fontWeight = FontWeight.Bold) }
+                OutlinedButton(
+                    onClick = onOdbij,
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = FishBoje.Greska),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, FishBoje.Greska.copy(alpha = 0.6f)),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.weight(1f)
+                ) { Icon(Icons.Default.Block, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Bez poena", fontWeight = FontWeight.Bold) }
+            }
+        }
     }
 }
 

@@ -52,6 +52,23 @@ data class PrijavljenUlov(
     val razlozi: List<Razlog>
 )
 
+// Ulov od 50+ poena koji čeka odobrenje
+data class VelikiUlov(
+    val id: String,
+    val autorUlova: String,
+    val vrstaRibe: String,
+    val naziv: String,
+    val opis: String,
+    val duzinaRibe: Double,
+    val tezinaRibe: Double,
+    val mamac: String,
+    val tehnika: String,
+    val slikaUrl: String,
+    val izvorSlike: String,
+    val poeniNaCekanju: Int,
+    val timestamp: Long?
+)
+
 data class AdminStatistika(val korisnika: Long = 0, val ulova: Long = 0, val prijavaDanas: Long = 0, val uklonjenih: Int = 0)
 
 class AdminViewModel : ViewModel() {
@@ -59,6 +76,8 @@ class AdminViewModel : ViewModel() {
 
     private val _prijavljeni = MutableStateFlow<List<PrijavljenUlov>>(emptyList())
     val prijavljeni = _prijavljeni.asStateFlow()
+    private val _veliki = MutableStateFlow<List<VelikiUlov>>(emptyList())
+    val veliki = _veliki.asStateFlow()
     private val _statistika = MutableStateFlow(AdminStatistika())
     val statistika = _statistika.asStateFlow()
     private val _ucitava = MutableStateFlow(true)
@@ -113,6 +132,8 @@ class AdminViewModel : ViewModel() {
                 )
                 @Suppress("UNCHECKED_CAST")
                 _prijavljeni.value = (podaci["prijavljeni"] as? List<Map<String, Any?>>).orEmpty().map { it.uPrijavu() }
+                @Suppress("UNCHECKED_CAST")
+                _veliki.value = (podaci["veliki"] as? List<Map<String, Any?>>).orEmpty().map { it.uVelikiUlov() }
             } catch (e: Exception) {
                 Log.e("Admin", "Pregled nije učitan", e)
                 val odbijen = (e as? com.google.firebase.functions.FirebaseFunctionsException)?.code ==
@@ -131,13 +152,19 @@ class AdminViewModel : ViewModel() {
     fun ulovURedu(id: String) = akcija(id, "adminUlovURedu", "Ulov je vraćen i zaštićen od novih prijava")
     fun obrisiTrajno(id: String) = akcija(id, "adminObrisiUlov", "Ulov je trajno obrisan")
 
-    private fun akcija(id: String, funkcija: String, poruka: String) {
+    fun odobriVeliki(id: String) =
+        akcija(id, "adminVelikiUlov", "Poeni su dodeljeni", mapOf("odluka" to "odobri"))
+    fun odbijVeliki(id: String) =
+        akcija(id, "adminVelikiUlov", "Ulov ostaje na mapi, ali bez poena", mapOf("odluka" to "odbij"))
+
+    private fun akcija(id: String, funkcija: String, poruka: String, dodatno: Map<String, Any> = emptyMap()) {
         viewModelScope.launch {
             _uToku.value = id
             try {
-                functions.getHttpsCallable(funkcija).call(mapOf("spotId" to id)).await()
+                functions.getHttpsCallable(funkcija).call(mapOf("spotId" to id) + dodatno).await()
                 // Rešen ulov odmah nestaje sa liste
                 _prijavljeni.value = _prijavljeni.value.filterNot { it.id == id }
+                _veliki.value = _veliki.value.filterNot { it.id == id }
                 FishPoruka.prikazi(poruka)
                 kotlinx.coroutines.delay(1500) // da server završi vraćanje ili brisanje pre osvežavanja
                 osvezi()
@@ -148,6 +175,18 @@ class AdminViewModel : ViewModel() {
                 _uToku.value = null
             }
         }
+    }
+
+    private fun Map<String, Any?>.uVelikiUlov(): VelikiUlov {
+        fun s(k: String) = this[k] as? String ?: ""
+        fun d(k: String) = (this[k] as? Number)?.toDouble() ?: 0.0
+        return VelikiUlov(
+            id = s("id"), autorUlova = s("autorUlova"), vrstaRibe = s("vrstaRibe"), naziv = s("naziv"), opis = s("opis"),
+            duzinaRibe = d("duzinaRibe"), tezinaRibe = d("tezinaRibe"), mamac = s("mamac"), tehnika = s("tehnika"),
+            slikaUrl = s("slikaUrl"), izvorSlike = s("izvorSlike"),
+            poeniNaCekanju = (this["poeniNaCekanju"] as? Number)?.toInt() ?: 0,
+            timestamp = (this["timestamp"] as? Number)?.toLong()
+        )
     }
 
     @Suppress("UNCHECKED_CAST")

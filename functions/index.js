@@ -81,16 +81,6 @@ exports.posaljiNotifikacijuZaKomentar = functions.firestore
 //   "vracen"   - admin je pregledao ulov; nove prijave se beleže, ali ga više ne uklanjaju
 const BROJ_PRIJAVA_ZA_UKLANJANJE = 3;
 
-// Isti pragovi kao u aplikaciji (SpotsViewModel.addSpot)
-function poeniZaUlov(tezinaKg) {
-    if (tezinaKg > 5.0) return 50;
-    if (tezinaKg > 2.0) return 20;
-    if (tezinaKg > 1.0) return 10;
-    if (tezinaKg > 0.5) return 5;
-    if (tezinaKg > 0) return 2; // i mala riba donosi poene
-    return 0;
-}
-
 // Ime za prikaz adminu: "Ime Prezime (korisnickoIme)"
 function podaciKorisnika(snap) {
     const k = snap.exists ? snap.data() : {};
@@ -151,7 +141,7 @@ exports.obradiPrijavuUlova = functions.firestore
                 if (ulov.vrstaId) {
                     tx.delete(db.collection("VrsteRiba").doc(ulov.vrstaId).collection("Ulovi").doc(prijava.spotId));
                 }
-                const poeni = poeniZaUlov(ulov.tezinaRibe ?? 0);
+                const poeni = require("./ulovi")._interno.dodeljeniPoeni(ulov);
                 if (poeni > 0 && ulov.authorId) {
                     tx.set(db.collection("Korisnici").doc(ulov.authorId), {
                         poeni: FieldValue.increment(-poeni),
@@ -232,6 +222,9 @@ exports.obrisanUlov = ulovi.obrisanUlov;
 exports.izmenjenUlov = ulovi.izmenjenUlov;
 exports.obrisiNalog = ulovi.obrisiNalog;
 
+// Otisak slike ulova, provera iste slike i dodela poena (functions/slike.js)
+exports.proveriSlikuUlova = require("./slike").proveriSlikuUlova;
+
 // Vode u blizini van Srbije, Geoapify ključ je samo na serveru (functions/vode.js)
 exports.vodeUBlizini = require("./vode").vodeUBlizini;
 
@@ -243,6 +236,7 @@ const izvestaji = require("./izvestaji");
 exports.dnevniPregledPrijava = izvestaji.dnevniPregledPrijava;
 exports.nedeljniPregled = izvestaji.nedeljniPregled;
 exports.obavestiUklonjenUlov = izvestaji.obavestiUklonjenUlov;
+exports.obavestiVelikiUlov = izvestaji.obavestiVelikiUlov;
 
 // Admin panel u aplikaciji (functions/admin.js)
 const adminPanel = require("./admin");
@@ -250,6 +244,7 @@ exports.jesamLiAdmin = adminPanel.jesamLiAdmin;
 exports.adminPregled = adminPanel.adminPregled;
 exports.adminUlovURedu = adminPanel.adminUlovURedu;
 exports.adminObrisiUlov = adminPanel.adminObrisiUlov;
+exports.adminVelikiUlov = adminPanel.adminVelikiUlov;
 
 // Vremenska prognoza preko servera, ključ i keš na serveru (functions/vreme.js)
 exports.vremenskaPrognoza = require("./vreme").vremenskaPrognoza;

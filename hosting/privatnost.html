@@ -38,7 +38,7 @@
       <li><strong>Ulovi:</strong> fotografija, vrsta, dužina i težina ribe, mamac, tehnika, opis, ocena mesta, lokacija ulova i vremenski uslovi u trenutku ulova. Ulove vide svi prijavljeni korisnici.</li>
       <li><strong>Lokacija:</strong> dok je aplikacija otvorena, tvoja trenutna lokacija se koristi za mapu, prognozu i obaveštenja o obližnjim vodama, i ostaje na tvom telefonu. Drugim korisnicima se prikazuje <strong>samo ako uključiš „Prikaži me na mapi“</strong> na profilu, i to samo dok je aplikacija otvorena. Kada je isključiš ili zatvoriš aplikaciju, tvoja lokacija se briše sa servera.</li>
       <li><strong>Poruke i komentari:</strong> komentari na ulovima (vidljivi svima), privatne poruke (vide ih samo dva učesnika razgovora) i pitanja koja postaviš asistentu Deda Peri.</li>
-      <li><strong>Poeni i rang lista:</strong> poeni koje dobijaš za ulove.</li>
+      <li><strong>Poeni i rang lista:</strong> poeni koje dobijaš za ulove, izvor fotografije ulova i otisak fotografije (vidi „Poeni i provera fotografija“).</li>
       <li><strong>Prijave ulova:</strong> kada prijaviš neprikladan ulov, čuvamo razlog i ko je prijavio, da bi moderacija mogla da ga pregleda.</li>
       <li><strong>Tehnički podaci:</strong> token za obaveštenja i izveštaji o padu aplikacije (model telefona, verzija sistema, tok greške) preko Firebase Crashlytics.</li>
     </ul>
@@ -46,7 +46,30 @@
 
   <section>
     <h2>Kamera i prepoznavanje ribe</h2>
-    <p>Fotografija ulova se proverava modelom koji radi isključivo na tvom telefonu. Slika se šalje na server tek kada sačuvaš ulov.</p>
+    <p>Fotografija ulova se proverava modelom koji radi isključivo na tvom telefonu. Slika se šalje na server tek kada sačuvaš ulov, smanjena i bez dodatnih podataka iz fajla (lokacija, model telefona i slično se ne šalju).</p>
+  </section>
+
+  <section>
+    <h2>Poeni i provera fotografija</h2>
+    <p>Poeni za ulov zavise od težine ribe:</p>
+    <ul>
+      <li>do 0,5 kg: <strong>2 poena</strong></li>
+      <li>preko 0,5 do 1 kg: <strong>5 poena</strong></li>
+      <li>preko 1 do 2 kg: <strong>10 poena</strong></li>
+      <li>preko 2 do 5 kg: <strong>20 poena</strong></li>
+      <li>preko 5 kg: <strong>50 poena</strong></li>
+    </ul>
+    <p>Koliko poena ulov donosi zavisi i od fotografije:</p>
+    <ul>
+      <li><strong>Slikano kamerom u aplikaciji:</strong> poeni + 20% (zaokruženo, npr. 50 → 60).</li>
+      <li><strong>Fotografija iz galerije sa kamere telefona</strong>, ne starija od 3 dana: puni poeni.</li>
+      <li><strong>Fotografija primljena preko Vibera, WhatsApp-a ili Messengera</strong>, ne starija od 3 dana: puni poeni.</li>
+      <li><strong>Bez poena:</strong> fotografija napravljena ili izmenjena veštačkom inteligencijom (npr. ChatGPT, Gemini), snimak ekrana, fotografija starija od 3 dana, fotografija bez podataka sa kamere (npr. skinuta sa interneta) i fotografija koja je već objavljena u FishSpot-u.</li>
+    </ul>
+    <p><strong>Riba preko 5 kg</strong> (50 i više poena) dobija poene tek kada ulov pregleda administrator. Do tada su poeni na čekanju. Ako administrator proceni da fotografija ili podaci nisu verodostojni, ulov ostaje na mapi, ali bez poena.</p>
+    <p>Ulov bez poena se i dalje objavljuje i vidi na mapi. Pre čuvanja ulova aplikacija ispod fotografije prikazuje da li ona donosi poene.</p>
+    <p>Kada izmeniš težinu, poeni se računaju ponovo. Kada obrišeš ulov, oduzimaju se tačno poeni koje je doneo. Ulov koji moderacija ukloni posle prijava gubi poene, a dobija ih nazad ako ga admin vrati.</p>
+    <p><strong>Kako se ovo proverava:</strong> aplikacija na tvom telefonu čita podatke iz fajla fotografije (vreme snimanja, marku i model telefona, ime fajla i folder, oznaku da je fotografiju napravila veštačka inteligencija). Na server se šalje samo rezultat, npr. „slikano u aplikaciji“ ili „snimak ekrana“. Server od svake objavljene fotografije pravi otisak, kratak niz brojeva po kome prepoznaje istu fotografiju. Iz otiska ne može da se dobije fotografija, a briše se zajedno sa ulovom.</p>
   </section>
 
   <section>
