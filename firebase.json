@@ -46,7 +46,7 @@
     }
   ],
   "extensions": {
-    "firestore-genai-chatbot": "googlecloud/firestore-genai-chatbot@0.0.19",
+    "firestore-genai-chatbot": "googlecloud/firestore-genai-chatbot@0.1.0",
     "storage-resize-images": "firebase/storage-resize-images@0.3.5"
   }
 }

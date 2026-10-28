@@ -22,6 +22,17 @@ async function vratiPitanje(uid) {
     });
 }
 
+const ZAMISLIO_SE = "Bistro, sinko! Deda Pera se malo zamislio pa mu je misao pobegla. Pitaj me ponovo, " +
+    "ovo pitanje ti se ne računa u dnevna.";
+
+// Tragovi "razmišljanja" modela na engleskom, koje ne sme da vidi korisnik
+function sadrziRazmisljanje(odgovor) {
+    const t = String(odgovor || "");
+    return /^\s*(THOUGHT|THINKING|Thought|Reasoning)\s*:/.test(t) ||
+        /\bTHOUGHT:/.test(t) ||
+        /\b(the user is asking|the user corrected|I need to|I must|I should|safety rules|Rule \d)\b/i.test(t);
+}
+
 function normalizuj(tekst) {
     return String(tekst || "")
         .toLowerCase()
@@ -81,6 +92,14 @@ exports.proveriOdgovorDedePere = functions.firestore
         }
         if (!poruka.response) return null; // čeka se odgovor ekstenzije
 
+        // Model je u odgovor ubacio svoje "razmišljanje" (npr. "THOUGHT: The user..."): korisnik to ne sme da vidi
+        if (sadrziRazmisljanje(poruka.response)) {
+            console.warn(`Deda Pera: odgovor sa razmišljanjem modela za ${context.params.uid}, zamenjen`);
+            await change.after.ref.update({ response: ZAMISLIO_SE, provereno: true, zauzet: true });
+            await vratiPitanje(context.params.uid);
+            return null;
+        }
+
         const blokirano = jeZloupotreba(poruka.prompt) || otkrivaUputstva(poruka.response);
         const izmene = { provereno: true };
         if (blokirano) {
@@ -92,4 +111,4 @@ exports.proveriOdgovorDedePere = functions.firestore
         return null;
     });
 
-exports._interno = { jeZloupotreba, otkrivaUputstva, ODBIJANJE, ZAUZET };
+exports._interno = { jeZloupotreba, otkrivaUputstva, sadrziRazmisljanje, ODBIJANJE, ZAUZET };
