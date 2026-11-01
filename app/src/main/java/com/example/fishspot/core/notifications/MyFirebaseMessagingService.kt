@@ -67,7 +67,8 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
         val channelId = "fishspot_obavestenja"
         val notificationBuilder = NotificationCompat.Builder(this, channelId)
-            .setSmallIcon(R.mipmap.ic_launcher)
+            .setSmallIcon(R.drawable.ic_notifikacija)
+            .setColor(0xFF1B7A3E.toInt()) // zelena ikonica i naslov obaveštenja
             .setContentTitle(title)
             .setContentText(messageBody)
             .setAutoCancel(true)

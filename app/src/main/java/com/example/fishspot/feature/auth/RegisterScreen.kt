@@ -150,7 +150,7 @@ fun RegisterScreen(
             Image(
                 painter = painterResource(id = R.drawable.logo_fishspot),
                 contentDescription = "FishSpot",
-                modifier = Modifier.width(200.dp)
+                modifier = Modifier.width(150.dp)
             )
 
             Text(
@@ -426,7 +426,7 @@ fun RegisterScreen(
             Image(
                 painter = painterResource(id = R.drawable.logo_fishspot),
                 contentDescription = "FishSpot",
-                modifier = Modifier.width(200.dp)
+                modifier = Modifier.width(150.dp)
             )
         }
     }

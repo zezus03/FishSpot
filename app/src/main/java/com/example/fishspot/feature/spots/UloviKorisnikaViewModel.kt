@@ -21,6 +21,10 @@ class UloviKorisnikaViewModel : ViewModel() {
     private val _poVrstama = MutableStateFlow<List<BrojPoVrsti>>(emptyList())
     val poVrstama = _poVrstama.asStateFlow()
 
+    // Ulovi čija je slika prošla proveru i koji su dobili poene (oznaka "Potvrđen ulov" na kartici za deljenje)
+    private val _potvrdjeni = MutableStateFlow<Set<String>>(emptySet())
+    val potvrdjeni = _potvrdjeni.asStateFlow()
+
     private val _imeKorisnika = MutableStateFlow<String?>(null)
     val imeKorisnika = _imeKorisnika.asStateFlow()
 
@@ -50,9 +54,18 @@ class UloviKorisnikaViewModel : ViewModel() {
                     .mapNotNull { it.toObject(FishSpot::class.java)?.copy(id = it.id)?.razdvojenLatinskiNaziv() }
                     .sortedByDescending { it.timestamp }
                 _ulovi.value = lista
+                _potvrdjeni.value = snapshot?.documents.orEmpty().filter { d ->
+                    d.getString("izvorSlike") in listOf("aplikacija", "kamera", "poslata") &&
+                        (d.getLong("poeni") ?: 0L) > 0L && d.getString("proveraAdmina") != "ceka"
+                }.map { it.id }.toSet()
+                // Čuvarka se računa kod svake vrste koja je u njoj
                 _poVrstama.value = lista
-                    .groupBy { it.vrstaRibe.ifBlank { "Nepoznata vrsta" } }
-                    .map { (vrsta, ulovi) -> BrojPoVrsti(vrsta, ulovi.first().latinskiNaziv, ulovi.size) }
+                    .flatMap { u ->
+                        if (u.cuvarka && u.cuvarkaVrste.isNotEmpty()) u.cuvarkaVrste.map { it.naziv to it.latinskiNaziv }
+                        else listOf(u.vrstaRibe.ifBlank { "Nepoznata vrsta" } to u.latinskiNaziv)
+                    }
+                    .groupBy { it.first }
+                    .map { (vrsta, ulovi) -> BrojPoVrsti(vrsta, ulovi.first().second, ulovi.size) }
                     .sortedWith(compareByDescending<BrojPoVrsti> { it.broj }.thenBy { it.vrsta })
             }
     }

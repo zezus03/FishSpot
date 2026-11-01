@@ -31,6 +31,14 @@
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyBOX1-FFqcL5MMWkwERPzyBhxzj0cxC3xc" />
 
+        <!-- Ikonica i boja za Firebase obaveštenja koja stižu dok je aplikacija zatvorena -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_notifikacija" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/boja_obavestenja" />
+
         <!-- ARCore je opcion; AddSpotScreen proverava podršku pre prikaza dugmeta za AR -->
         <meta-data android:name="com.google.ar.core" android:value="optional"
             tools:replace="android:value" />
@@ -40,6 +48,7 @@
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTask"
+            android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustResize"
             android:theme="@style/Theme.FishSpot">
 
@@ -56,8 +65,20 @@
             </intent-filter>
         </service>
         <!-- 2. NOVI AR KAMERA EKRAN (na pravoj putanji) -->
+        <!-- Deljenje kartice ulova sa drugim aplikacijama (Instagram, WhatsApp...) -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fajlovi"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/deljenje_putanje" />
+        </provider>
+
         <activity
             android:name=".feature.fish.ArMeasureActivity"
+            android:screenOrientation="portrait"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
 
     </application>

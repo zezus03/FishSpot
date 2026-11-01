@@ -27,6 +27,17 @@ data class UserMessage(
     val primalacId: String = "" // kome je poruka; po ovome primalac dobija poruke i kad pošiljalac nije na mapi
 )
 
+// Jedan razgovor na ekranu Poruke (Razgovori/{moj uid}/sa/{uid})
+data class Razgovor(
+    val uid: String,
+    val ime: String,
+    val slika: String,
+    val poslednja: String,
+    val vreme: Long,
+    val neprocitano: Long,
+    val odMene: Boolean
+)
+
 class ActiveUsersViewModel : ViewModel() {
 
     private val firestore = FirebaseFirestore.getInstance()
@@ -55,10 +66,48 @@ class ActiveUsersViewModel : ViewModel() {
     private var mySlikaUrl: String? = null
     private var myUsername: String = "Pecaroš"
 
+    // Spisak razgovora (ekran Poruke); upisuje ga server pri svakoj poruci
+    private val _razgovori = MutableStateFlow<List<Razgovor>>(emptyList())
+    val razgovori = _razgovori.asStateFlow()
+    private var razgovoriRegistracija: ListenerRegistration? = null
+
     init {
         listenToActiveUsers()
         fetchMyProfileData()
         slusajDolaznePoruke()
+        slusajRazgovore()
+    }
+
+    private fun slusajRazgovore() {
+        val mojUid = auth.currentUser?.uid ?: return
+        razgovoriRegistracija = firestore.collection("Razgovori").document(mojUid).collection("sa")
+            .orderBy("vreme", com.google.firebase.firestore.Query.Direction.DESCENDING)
+            .limit(50)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    android.util.Log.e("Poruke", "Slušanje razgovora", error)
+                    return@addSnapshotListener
+                }
+                _razgovori.value = snapshot?.documents.orEmpty().mapNotNull { d ->
+                    Razgovor(
+                        uid = d.getString("uid") ?: d.id,
+                        ime = d.getString("ime") ?: "Pecaroš",
+                        slika = d.getString("slika").orEmpty(),
+                        poslednja = d.getString("poslednja").orEmpty(),
+                        vreme = d.getLong("vreme") ?: 0L,
+                        neprocitano = d.getLong("neprocitano") ?: 0L,
+                        odMene = d.getBoolean("odMene") ?: false
+                    )
+                }
+            }
+    }
+
+    // Razgovor je otvoren: brojač nepročitanih se vraća na 0
+    fun oznaciProcitano(uid: String) {
+        val mojUid = auth.currentUser?.uid ?: return
+        if ((_razgovori.value.firstOrNull { it.uid == uid }?.neprocitano ?: 0L) == 0L) return
+        firestore.collection("Razgovori").document(mojUid).collection("sa").document(uid)
+            .update("neprocitano", 0)
     }
 
     // Sve nove poruke upućene meni, bez obzira da li je pošiljalac na mapi
@@ -103,6 +152,7 @@ class ActiveUsersViewModel : ViewModel() {
 
     override fun onCleared() {
         dolazneRegistracija?.remove()
+        razgovoriRegistracija?.remove()
         listeners.values.forEach { it.remove() }
     }
 

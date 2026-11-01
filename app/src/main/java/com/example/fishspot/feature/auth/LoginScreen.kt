@@ -105,7 +105,7 @@ fun LoginScreen(
             Image(
                 painter = painterResource(id = R.drawable.logo_fishspot),
                 contentDescription = "FishSpot",
-                modifier = Modifier.width(280.dp)
+                modifier = Modifier.width(210.dp)
             )
             Text(
                 text = "Tvoja digitalna čuvarka",

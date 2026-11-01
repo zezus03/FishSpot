@@ -30,7 +30,8 @@ fun FishZaglavlje(
     onNazad: (() -> Unit)?,
     ikona: ImageVector? = null,
     slika: (@Composable () -> Unit)? = null,
-    podnaslov: (@Composable () -> Unit)? = null
+    podnaslov: (@Composable () -> Unit)? = null,
+    akcija: (@Composable () -> Unit)? = null // dugme u gornjem desnom uglu (npr. filter)
 ) {
     Box(
         modifier = Modifier
@@ -82,5 +83,6 @@ fun FishZaglavlje(
                 }
             }
         }
+        if (akcija != null) Box(Modifier.align(Alignment.TopEnd)) { akcija() }
     }
 }

@@ -5,6 +5,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -16,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Air
 import androidx.compose.material.icons.filled.ChatBubbleOutline
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
@@ -45,6 +48,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
 import com.example.fishspot.core.model.Korisnici
 import com.example.fishspot.core.theme.FishBoje
@@ -76,7 +81,8 @@ fun UlovDetalji(
     onPrijavi: (razlog: String, opis: String) -> Unit,
     onAutorKlik: () -> Unit = {},
     onIzmeni: () -> Unit = {},
-    onObrisi: () -> Unit = {}
+    onObrisi: () -> Unit = {},
+    onPosaljiPoruku: (() -> Unit)? = null
 ) {
     var noviKomentar by remember { mutableStateOf("") }
     var prikaziPrijavu by remember { mutableStateOf(false) }
@@ -121,6 +127,20 @@ fun UlovDetalji(
                         vreme = dateFormat.format(Date(spot.timestamp))
                     )
                 }
+                // Pitaj autora nešto o ulovu, i kad nije na mapi (dobija obaveštenje)
+                if (!mojUlov && onPosaljiPoruku != null) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    OutlinedButton(
+                        onClick = onPosaljiPoruku,
+                        shape = RoundedCornerShape(12.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, FishBoje.AkcenatTamni),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = FishBoje.Akcenat)
+                    ) {
+                        Icon(Icons.Default.ChatBubbleOutline, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("Pošalji poruku", fontWeight = FontWeight.SemiBold)
+                    }
+                }
 
                 if (spot.naziv.isNotBlank()) {
                     Spacer(modifier = Modifier.height(12.dp))
@@ -147,10 +167,14 @@ fun UlovDetalji(
 
                 // Podaci o ulovu: 2 x 2 pastelne pločice, kao parametri u prognozi
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    PlocicaPodatka(Icons.Default.Straighten, "Dužina",
-                        if (spot.duzinaRibe > 0) formatBroj(spot.duzinaRibe, "cm") else "—",
+                    PlocicaPodatka(Icons.Default.Straighten, if (spot.cuvarka) "Čuvarka" else "Dužina",
+                        when {
+                            spot.cuvarka -> "${spot.cuvarkaVrste.size} " + if (spot.cuvarkaVrste.size == 1) "vrsta" else "vrste"
+                            spot.duzinaRibe > 0 -> formatBroj(spot.duzinaRibe, "cm")
+                            else -> "—"
+                        },
                         FishBoje.PlavaPlocica, Modifier.weight(1f))
-                    PlocicaPodatka(Icons.Default.Scale, "Težina",
+                    PlocicaPodatka(Icons.Default.Scale, if (spot.cuvarka) "Ukupno" else "Težina",
                         if (spot.tezinaRibe > 0) formatBroj(spot.tezinaRibe, "kg") else "—",
                         FishBoje.ZelenaPlocica, Modifier.weight(1f))
                 }
@@ -356,9 +380,10 @@ fun UlovDetalji(
 }
 
 // Velika slika sa nazivom vrste preko donjeg dela
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 private fun NaslovnaSlika(spot: FishSpot) {
-    val naziv = spot.vrstaRibe.ifBlank { "Nepoznata vrsta" }
+    val naziv = spot.nazivVrsta.ifBlank { "Nepoznata vrsta" }
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -367,13 +392,24 @@ private fun NaslovnaSlika(spot: FishSpot) {
             .background(FishBoje.Kartica)
             .border(1.dp, FishBoje.IvicaKartice, RoundedCornerShape(24.dp))
     ) {
-        if (!spot.slikaUrl.isNullOrBlank()) {
-            AsyncImage(
-                model = spot.slikaUrl,
-                contentDescription = "Slika ulova",
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
-            )
+        // Glavna slika pa dodatne (ekipa, štap, varalica); listaju se prevlačenjem, dodir otvara ceo ekran
+        val slike = remember(spot.slikaUrl, spot.dodatneSlike) {
+            listOfNotNull(spot.slikaUrl?.takeIf { it.isNotBlank() }) + spot.dodatneSlike.filter { it.isNotBlank() }
+        }
+        val pager = rememberPagerState(pageCount = { slike.size })
+        var ceoEkran by remember { mutableStateOf<Int?>(null) }
+        if (slike.isNotEmpty()) {
+            HorizontalPager(state = pager, modifier = Modifier.fillMaxSize()) { strana ->
+                AsyncImage(
+                    model = slike[strana],
+                    contentDescription = if (strana == 0) "Slika ulova" else "Dodatna slika ${strana}",
+                    modifier = Modifier.fillMaxSize().clickable { ceoEkran = strana },
+                    contentScale = ContentScale.Crop
+                )
+            }
+            ceoEkran?.let { pocetna ->
+                SlikeCeoEkran(slike = slike, pocetna = pocetna, onZatvori = { ceoEkran = null })
+            }
         } else {
             Icon(
                 Icons.Default.SetMeal,
@@ -396,8 +432,60 @@ private fun NaslovnaSlika(spot: FishSpot) {
                 .padding(16.dp)
         ) {
             Text(naziv, color = FishBoje.TekstPrimarni, fontSize = 26.sp, fontWeight = FontWeight.Bold)
-            if (spot.latinskiNaziv.isNotBlank()) {
+            if (spot.cuvarka) {
+                Text("Čuvarka", color = FishBoje.Akcenat, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+            } else if (spot.latinskiNaziv.isNotBlank()) {
                 Text(spot.latinskiNaziv, color = FishBoje.Akcenat, fontSize = 14.sp, fontStyle = FontStyle.Italic)
+            }
+        }
+        if (slike.size > 1) {
+            TackiceSlika(broj = slike.size, trenutna = pager.currentPage,
+                modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp))
+        }
+    }
+}
+
+@Composable
+private fun TackiceSlika(broj: Int, trenutna: Int, modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier
+            .background(FishBoje.Pozadina.copy(alpha = 0.6f), RoundedCornerShape(50))
+            .padding(horizontal = 8.dp, vertical = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(5.dp)
+    ) {
+        repeat(broj) { i ->
+            Box(
+                Modifier
+                    .size(if (i == trenutna) 8.dp else 6.dp)
+                    .background(if (i == trenutna) FishBoje.Akcenat else FishBoje.TekstPriguseni, CircleShape)
+            )
+        }
+    }
+}
+
+// Slike ulova preko celog ekrana, bez sečenja
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@Composable
+private fun SlikeCeoEkran(slike: List<String>, pocetna: Int, onZatvori: () -> Unit) {
+    Dialog(onDismissRequest = onZatvori, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        Box(Modifier.fillMaxSize().background(Color.Black)) {
+            val pager = rememberPagerState(initialPage = pocetna, pageCount = { slike.size })
+            HorizontalPager(state = pager, modifier = Modifier.fillMaxSize()) { strana ->
+                AsyncImage(
+                    model = slike[strana], contentDescription = "Slika ${strana + 1} od ${slike.size}",
+                    modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Fit
+                )
+            }
+            IconButton(
+                onClick = onZatvori,
+                modifier = Modifier.align(Alignment.TopEnd).statusBarsPadding().padding(12.dp)
+                    .background(FishBoje.Pozadina.copy(alpha = 0.6f), CircleShape)
+            ) {
+                Icon(Icons.Default.Close, contentDescription = "Zatvori", tint = Color.White)
+            }
+            if (slike.size > 1) {
+                TackiceSlika(broj = slike.size, trenutna = pager.currentPage,
+                    modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(20.dp))
             }
         }
     }

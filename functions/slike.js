@@ -70,6 +70,7 @@ exports.proveriSlikuUlova = functions
 
         const spotId = context.params.spotId;
         const db = admin.firestore();
+        console.log(`Provera slike ulova ${spotId} (${posle.izvorSlike})`);
 
         let otisak = null;
         try {
@@ -90,6 +91,13 @@ exports.proveriSlikuUlova = functions
 
             const otisci = indeksSnap.exists ? (indeksSnap.data().o ?? {}) : {};
             const duplikatOd = otisak ? nadjiDuplikat(otisak, otisci, spotId) : null;
+
+            // Ista slika ne sme dvaput kao ulov. Aplikacija to proverava pre objave (proveriOtisakSlike);
+            // ako ipak stigne (stara verzija, zaobilaženje), ulov se briše (obrisanUlov čisti sliku i ostalo)
+            if (duplikatOd) {
+                tx.delete(ulovSnap.ref);
+                return `ista slika kao ulov ${duplikatOd}, ulov obrisan`;
+            }
             const proveraSlike = { otisak: otisak ?? "", duplikatOd: duplikatOd ?? "", vreme: Timestamp.now() };
             // Riba preko 5 kg (50+ poena): poeni čekaju odobrenje admina
             const stanje = stanjePoena({ ...ulov, proveraSlike });
@@ -102,12 +110,21 @@ exports.proveriSlikuUlova = functions
             }
             if (Object.keys(otisci).length > 8000) console.warn("OtisciSlika/svi se približava granici veličine dokumenta");
             return `${ulov.izvorSlike}, poena ${poeni}` +
-                (stanje.poeniNaCekanju ? `, ${stanje.poeniNaCekanju} čeka admina` : "") +
-                (duplikatOd ? `, ista slika kao ulov ${duplikatOd}` : "");
+                (stanje.poeniNaCekanju ? `, ${stanje.poeniNaCekanju} čeka admina` : "");
         });
 
         console.log(`Slika ulova ${spotId}: ${ishod}`);
         return null;
     });
+
+// Aplikacija pre objave pita da li je slika (njen otisak) već objavljena; ne otkriva koji je to ulov
+exports.proveriOtisakSlike = functions.https.onCall(async (data, context) => {
+    if (!context.auth) throw new functions.https.HttpsError("unauthenticated", "Moraš biti prijavljen.");
+    const otisak = String(data?.otisak || "");
+    if (!/^[0-9a-f]{16}$/.test(otisak)) throw new functions.https.HttpsError("invalid-argument", "Neispravan otisak.");
+    const snap = await indeksRef().get();
+    const otisci = snap.exists ? (snap.data().o ?? {}) : {};
+    return { postoji: !!nadjiDuplikat(otisak, otisci, "") };
+});
 
 exports._interno = { otisakSlike, razlikaOtisaka, nadjiDuplikat };

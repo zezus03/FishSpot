@@ -4,6 +4,11 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -458,7 +463,9 @@ private fun DetaljiStanice(viewModel: WaterLevelViewModel) {
                     )
                 }
                 Spacer(Modifier.height(12.dp))
-                Grafikon(vrednosti)
+                Grafikon(merenja)
+                Text("Dodirni ili prevuci prstom po grafiku za tačan vodostaj", color = FishBoje.TekstPriguseni,
+                    fontSize = 11.sp, modifier = Modifier.padding(top = 4.dp))
                 Row(modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
                     Text(kratkoVreme(merenja.first().t), color = FishBoje.TekstPriguseni, fontSize = 11.sp)
                     Spacer(Modifier.weight(1f))
@@ -481,42 +488,108 @@ private fun Statistika(oznaka: String, vrednost: String, modifier: Modifier) {
     }
 }
 
-// Linijski grafikon vodostaja sa providnim prelazom ispod linije
+// Linijski grafikon vodostaja: vrednosti na levoj osi, najviša, najniža i poslednja tačka sa brojem,
+// a dodir ili prevlačenje prstom pokazuje tačan vodostaj i vreme tog merenja
 @Composable
-private fun Grafikon(vrednosti: List<Int>) {
+private fun Grafikon(merenja: List<MerenjeVodostaja>) {
+    val vrednosti = merenja.map { it.v }
     val min = vrednosti.min()
     val max = vrednosti.max()
     val raspon = (max - min).coerceAtLeast(1)
+    val iMax = vrednosti.indexOf(max)
+    val iMin = vrednosti.indexOf(min)
+    val poslednji = vrednosti.size - 1
+    var izabran by remember(merenja) { mutableStateOf<Int?>(null) }
+    val gustina = androidx.compose.ui.platform.LocalDensity.current.density
+
+    fun indeks(x: Float, sirina: Float, levo: Float): Int =
+        (((x - levo) / (sirina - levo)) * poslednji).toInt().coerceIn(0, poslednji)
+
     Canvas(
         modifier = Modifier
             .fillMaxWidth()
-            .height(140.dp)
+            .height(190.dp)
             .background(FishBoje.Polje, RoundedCornerShape(12.dp))
-            .padding(horizontal = 8.dp, vertical = 12.dp)
+            .padding(start = 6.dp, end = 12.dp, top = 30.dp, bottom = 14.dp)
+            .pointerInput(merenja) {
+                val levo = 40f * gustina
+                detectTapGestures(onPress = { p ->
+                    izabran = indeks(p.x, size.width.toFloat(), levo)
+                    tryAwaitRelease()
+                })
+            }
+            .pointerInput(merenja) {
+                val levo = 40f * gustina
+                detectHorizontalDragGestures(
+                    onDragStart = { p -> izabran = indeks(p.x, size.width.toFloat(), levo) },
+                    onHorizontalDrag = { promena, _ -> izabran = indeks(promena.position.x, size.width.toFloat(), levo) }
+                )
+            }
     ) {
-        val korak = size.width / (vrednosti.size - 1)
-        fun tacka(i: Int) = Offset(i * korak, size.height - (vrednosti[i] - min).toFloat() / raspon * size.height)
+        val levo = 40.dp.toPx() // prostor za brojeve na osi
+        val sirina = size.width - levo
+        val korak = sirina / poslednji
+        fun tacka(i: Int) = Offset(levo + i * korak, size.height - (vrednosti[i] - min).toFloat() / raspon * size.height)
 
-        // Pomoćne linije
+        val osa = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            color = FishBoje.TekstPriguseni.toArgb(); textSize = 10.sp.toPx(); textAlign = android.graphics.Paint.Align.RIGHT
+        }
+        val oznaka = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+            color = FishBoje.TekstPrimarni.toArgb(); textSize = 11.sp.toPx(); isFakeBoldText = true
+            textAlign = android.graphics.Paint.Align.CENTER
+        }
+
+        // Pomoćne linije sa vrednostima: najviši, srednji i najniži vodostaj
         for (k in 0..2) {
             val y = size.height * k / 2f
-            drawLine(FishBoje.IvicaKartice, Offset(0f, y), Offset(size.width, y), strokeWidth = 1f)
+            drawLine(FishBoje.IvicaKartice, Offset(levo, y), Offset(size.width, y), strokeWidth = 1f)
+            val vrednost = max - (max - min) * k / 2
+            drawContext.canvas.nativeCanvas.drawText("$vrednost", levo - 6.dp.toPx(), y + 4.dp.toPx(), osa)
         }
 
         val linija = Path().apply {
             moveTo(tacka(0).x, tacka(0).y)
-            for (i in 1 until vrednosti.size) lineTo(tacka(i).x, tacka(i).y)
+            for (i in 1..poslednji) lineTo(tacka(i).x, tacka(i).y)
         }
         val povrsina = Path().apply {
-            moveTo(tacka(0).x, tacka(0).y)
-            for (i in 1 until vrednosti.size) lineTo(tacka(i).x, tacka(i).y)
+            addPath(linija)
             lineTo(size.width, size.height)
-            lineTo(0f, size.height)
+            lineTo(levo, size.height)
             close()
         }
         drawPath(povrsina, Brush.verticalGradient(listOf(FishBoje.Akcenat.copy(alpha = 0.3f), Color.Transparent)))
         drawPath(linija, FishBoje.Akcenat, style = Stroke(width = 2.5.dp.toPx()))
-        drawCircle(FishBoje.Akcenat, radius = 4.dp.toPx(), center = tacka(vrednosti.size - 1))
+
+        // Najviša, najniža i poslednja tačka sa brojem iznad (ispod za najnižu)
+        fun obelezi(i: Int, ispod: Boolean) {
+            val t = tacka(i)
+            drawCircle(FishBoje.Pozadina, radius = 5.dp.toPx(), center = t)
+            drawCircle(FishBoje.Akcenat, radius = 3.5.dp.toPx(), center = t)
+            val x = t.x.coerceIn(levo + 16.dp.toPx(), size.width - 16.dp.toPx())
+            val y = if (ispod) t.y + 15.dp.toPx() else t.y - 8.dp.toPx()
+            drawContext.canvas.nativeCanvas.drawText("${vrednosti[i]}", x, y.coerceIn(10.dp.toPx(), size.height + 12.dp.toPx()), oznaka)
+        }
+        setOf(iMax, iMin, poslednji).forEach { obelezi(it, ispod = it == iMin && it != iMax) }
+
+        // Izabrano merenje: uspravna linija i oblačić sa vodostajem i vremenom
+        izabran?.let { i ->
+            val t = tacka(i)
+            drawLine(FishBoje.TekstSekundarni, Offset(t.x, 0f), Offset(t.x, size.height), strokeWidth = 1.dp.toPx())
+            drawCircle(Color.White, radius = 5.dp.toPx(), center = t)
+            val tekst = "${vrednosti[i]} cm · ${kratkoVreme(merenja[i].t)}"
+            val oblak = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+                color = FishBoje.TekstPrimarni.toArgb(); textSize = 12.sp.toPx(); isFakeBoldText = true
+            }
+            val sirinaTeksta = oblak.measureText(tekst)
+            val levoOblaka = (t.x - sirinaTeksta / 2 - 8.dp.toPx()).coerceIn(levo, size.width - sirinaTeksta - 16.dp.toPx())
+            val vrh = -28.dp.toPx()
+            drawRoundRect(
+                FishBoje.Kartica, topLeft = Offset(levoOblaka, vrh),
+                size = androidx.compose.ui.geometry.Size(sirinaTeksta + 16.dp.toPx(), 22.dp.toPx()),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(8.dp.toPx())
+            )
+            drawContext.canvas.nativeCanvas.drawText(tekst, levoOblaka + 8.dp.toPx(), vrh + 15.dp.toPx(), oblak)
+        }
     }
 }
 

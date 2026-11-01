@@ -6,6 +6,7 @@
 const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
 const { Timestamp } = require("firebase-admin/firestore");
+const { nazivVrsta } = require("./ulovi")._interno;
 
 const ADMIN_MAIL = "fishspot.rs@gmail.com";
 const KONZOLA = "https://console.firebase.google.com/project/fishspot-52735/firestore/databases/-default-/data/~2FPrijavljeniUlovi~2F";
@@ -43,9 +44,11 @@ function karticaPrijave(id, p) {
     return `<div style="background:#132218;border:1px solid #1E3328;border-radius:14px;padding:16px;margin-bottom:14px;overflow:hidden">
     ${slika}
     <div style="color:${boja};font-size:12px;font-weight:bold">${oznaka} · ${p.brojPrijava ?? 0} prijav${(p.brojPrijava ?? 0) === 1 ? "a" : "e"}</div>
-    <div style="color:#fff;font-size:18px;font-weight:bold;margin:4px 0">${esc(u.vrstaRibe || "Nepoznata vrsta")}
+    <div style="color:#fff;font-size:18px;font-weight:bold;margin:4px 0">${esc(nazivVrsta(u) || "Nepoznata vrsta")}
       <span style="color:#B0BDB9;font-size:14px;font-weight:normal">· ${esc(u.duzinaRibe ?? "?")} cm · ${esc(u.tezinaRibe ?? "?")} kg</span></div>
     <div style="font-size:13px">Autor: <b style="color:#fff">${esc(p.autorUlova || u.authorUsername || "?")}</b> · ${esc(u.naziv || "")}</div>
+    ${(u.dodatneSlike || []).length ? `<div style="margin-top:8px">${u.dodatneSlike.map((s) =>
+        `<img src="${esc(s)}" height="70" style="border-radius:8px;margin:0 6px 6px 0">`).join("")}</div>` : ""}
     <ul style="padding-left:18px;margin:10px 0">${razlozi}</ul>
     <a href="${KONZOLA}${encodeURIComponent(id)}" style="display:inline-block;background:#2ECC71;color:#0B1612;padding:8px 14px;border-radius:10px;text-decoration:none;font-weight:bold;font-size:13px">Otvori u konzoli</a>
   </div>`;
@@ -61,10 +64,12 @@ function karticaVelikog(u) {
     return `<div style="background:#132218;border:1px solid #1E3328;border-radius:14px;padding:16px;margin-bottom:14px;overflow:hidden">
     ${slika}
     <div style="color:#F1C40F;font-size:12px;font-weight:bold">ČEKA ODOBRENJE · ${esc(u.poeniNaCekanju ?? 0)} poena</div>
-    <div style="color:#fff;font-size:18px;font-weight:bold;margin:4px 0">${esc(u.vrstaRibe || "Nepoznata vrsta")}
+    <div style="color:#fff;font-size:18px;font-weight:bold;margin:4px 0">${esc(nazivVrsta(u) || "Nepoznata vrsta")}
       <span style="color:#B0BDB9;font-size:14px;font-weight:normal">· ${esc(u.duzinaRibe ?? "?")} cm · ${esc(u.tezinaRibe ?? "?")} kg</span></div>
     <div style="font-size:13px">Autor: <b style="color:#fff">${esc(u.authorUsername || "?")}</b> · ${esc(u.naziv || "")}</div>
     <div style="font-size:13px">Slika: ${esc(IZVOR_SLIKE[u.izvorSlike] || u.izvorSlike || "?")} · ${esc(u.mamac || "")} / ${esc(u.tehnika || "")}</div>
+    ${(u.dodatneSlike || []).length ? `<div style="margin-top:10px;clear:both">${u.dodatneSlike.map((s) =>
+        `<img src="${esc(s)}" height="80" style="border-radius:8px;margin:0 6px 6px 0">`).join("")}</div>` : ""}
     <div style="font-size:13px;margin-top:8px">Odobri ili odbij u aplikaciji: <b style="color:#fff">Profil → Admin panel</b>.</div>
   </div>`;
 }
@@ -159,7 +164,7 @@ exports.obavestiUklonjenUlov = saKljucem.firestore.document("PrijavljeniUlovi/{s
     const pre = change.before.exists ? change.before.data() : {};
     const posle = change.after.exists ? change.after.data() : null;
     if (!posle || posle.status !== "uklonjen" || pre.status === "uklonjen") return null;
-    const vrsta = posle.ulov?.vrstaRibe || "ulov";
+    const vrsta = nazivVrsta(posle.ulov) || "ulov";
     await posaljiMail(`FishSpot: uklonjen ulov (${vrsta}) posle ${posle.brojPrijava} prijave`,
         omotac("Ulov je automatski uklonjen", karticaPrijave(context.params.spotId, posle)));
     console.log(`Mail o uklonjenom ulovu ${context.params.spotId} poslat`);
@@ -171,7 +176,7 @@ exports.obavestiVelikiUlov = saKljucem.firestore.document("MestaZaPecanje/{spotI
     const pre = change.before.data();
     const posle = change.after.data();
     if (posle.proveraAdmina !== "ceka" || pre.proveraAdmina === "ceka") return null;
-    await posaljiMail(`FishSpot: veliki ulov čeka odobrenje (${posle.vrstaRibe || "ulov"}, ${posle.tezinaRibe ?? "?"} kg)`,
+    await posaljiMail(`FishSpot: veliki ulov čeka odobrenje (${nazivVrsta(posle) || "ulov"}, ${posle.tezinaRibe ?? "?"} kg)`,
         omotac("Veliki ulov čeka odobrenje", karticaVelikog(posle)));
     console.log(`Mail o velikom ulovu ${context.params.spotId} poslat`);
     return null;

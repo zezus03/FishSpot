@@ -4,6 +4,23 @@ package com.example.fishspot.feature.spots
 import androidx.annotation.DrawableRes
 import com.example.fishspot.R
 
+// Vrsta u čuvarki (isto kao VrstaRibe, sa praznim podrazumevanim vrednostima zbog čitanja iz baze)
+data class VrstaKratko(val id: String = "", val naziv: String = "", val latinskiNaziv: String = "")
+
+const val MAKS_TEZINA_CUVARKE = 30.0
+
+// Podaci o ribi (vrsta, dužina, težina, čuvarka) mogu da se menjaju samo ovoliko posle objave,
+// da niko kasnije ne bi "povećao" stari ulov (npr. pred kraj takmičenja). Isto proveravaju pravila baze.
+const val MINUTA_ZA_IZMENU_RIBE = 30
+
+val FishSpot.ribaMozeDaSeMenja: Boolean
+    get() = objavljeno?.let { System.currentTimeMillis() - it.time < MINUTA_ZA_IZMENU_RIBE * 60_000L } ?: false
+const val MAKS_VRSTA_CUVARKE = 10
+
+// Naziv za prikaz: kod čuvarke sve vrste ("Bodorka, Ukljeva"), inače vrsta ribe
+val FishSpot.nazivVrsta: String
+    get() = if (cuvarka && cuvarkaVrste.isNotEmpty()) cuvarkaVrste.joinToString(", ") { it.naziv } else vrstaRibe
+
 data class KategorijaMamca(val naziv: String, @DrawableRes val slika: Int, val mamci: List<String>)
 
 // Vrsta varalice ili tip mušice (slika može da fali, tada se prikazuje ikonica)
@@ -21,7 +38,8 @@ data class FishSpot(
     val latinskiNaziv: String = "",
     val ocena: Float = 0.0f,
     val opis: String = "",
-    val slikaUrl: String? = null,
+    val slikaUrl: String? = null, // glavna slika (na njoj je riba)
+    val dodatneSlike: List<String> = emptyList(), // do 4 dodatne (ekipa, štap, varalica)
     val lat: Double = 0.0,
     val lng: Double = 0.0,
     val timestamp: Long = System.currentTimeMillis(),
@@ -33,6 +51,12 @@ data class FishSpot(
     val pritisak: String = "",
     val vetar: String = "",
     val izvorSlike: String = "", // vidi ProveraSlike.kt; prazno kod starih ulova
+    // Čuvarka: više riba (i vrsta) zajedno, težina je ukupna (do 30 kg), bez dužine;
+    // vrstaId/vrstaRibe su tada prva izabrana vrsta
+    val cuvarka: Boolean = false,
+    val cuvarkaVrste: List<VrstaKratko> = emptyList(),
+    // Vreme objave po satu servera (upisuje ga Firestore); podaci o ribi mogu da se menjaju 30 min posle toga
+    @com.google.firebase.firestore.ServerTimestamp val objavljeno: java.util.Date? = null,
     val likedBy: List<String> = emptyList() // <-- OVO DODAJ!
 )
 // Ponuđeni mamci i tehnike (dodavanje i izmena ulova)

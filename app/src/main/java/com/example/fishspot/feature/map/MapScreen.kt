@@ -1,4 +1,5 @@
 package com.example.fishspot.feature.map
+import com.example.fishspot.feature.spots.nazivVrsta
 import com.example.fishspot.core.theme.FishPoruka
 
 import com.example.fishspot.feature.weather.WeatherScreen
@@ -102,16 +103,16 @@ fun MapScreen(
     val currentUserId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
     val userLocation by mapViewModel.userLocation.collectAsState()
     val userProfileImage by mapViewModel.userProfileImage.collectAsState() // ✅ NOVO
-    val spots by spotsViewModel.filteredSpots.collectAsState()
-    val currentFilterState by spotsViewModel.filterState.collectAsState()
+    val spots by spotsViewModel.sviUlovi.collectAsState()
     val comments by spotsViewModel.comments.collectAsState()
     val activeUsers by activeUsersViewModel.activeUsers.collectAsState()
+    val razgovori by activeUsersViewModel.razgovori.collectAsState()
+    var prikaziPoruke by remember { mutableStateOf(false) }
     val deliLokaciju by mapViewModel.deliLokaciju.collectAsState()
     // Obaveštenje kad je neko blizu (bez posebnog čitanja baze)
     LaunchedEffect(activeUsers) { mapViewModel.proveriBliskeKorisnike(activeUsers, context) }
 
     var isAddMode by remember { mutableStateOf(false) }
-    var showFilterDialog by remember { mutableStateOf(false) }
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -252,15 +253,6 @@ fun MapScreen(
         }
     }
 
-    if (showFilterDialog && openedChatUserId == null) {
-        FilterDialog(
-            currentFilterState = currentFilterState,
-            onDismiss = { showFilterDialog = false },
-            onApplyFilters = { autor, vrstaRibe, ocena, startDate, endDate, searchText, radius ->
-                spotsViewModel.applyFilters(autor, vrstaRibe, ocena, startDate, endDate, searchText, radius)
-            }
-        )
-    }
 
     LaunchedEffect(spots) {
         delay(50)
@@ -296,24 +288,22 @@ fun MapScreen(
                                     .build()
 
                                 val result = context.imageLoader.execute(request)
-                                if (result is coil.request.SuccessResult) {
-                                    val bitmap = result.drawable.toBitmap(100, 100)
-                                    markerIcon = BitmapDescriptorFactory.fromBitmap(bitmap)
-                                } else {
-                                    markerIcon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
-                                }
+                                markerIcon = if (result is coil.request.SuccessResult) {
+                                    BitmapDescriptorFactory.fromBitmap(saZelenomIvicom(result.drawable.toBitmap(100, 100)))
+                                } else pinKorisnika
                             } catch (e: Exception) {
-                                markerIcon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
+                                markerIcon = pinKorisnika
                             }
                         } else {
-                            markerIcon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
+                            markerIcon = pinKorisnika
                         }
                     }
 
+                    // Tvoj pin: tvoja sličica sa zelenom ivicom (dodir ne otvara chat)
                     Marker(
                         state = rememberMarkerState(position = userPosition),
-                        title = "Moja lokacija",
-                        icon = markerIcon ?: BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
+                        title = "Ovo si ti",
+                        icon = markerIcon ?: pinKorisnika
                     )
                 }
 
@@ -323,7 +313,7 @@ fun MapScreen(
                         Marker(
                             state = rememberMarkerState(key = spot.id, position = spotPosition),
                             title = spot.naziv,
-                            snippet = "Riba: ${spot.vrstaRibe}, Klikni za komentar",
+                            snippet = "Riba: ${spot.nazivVrsta}, Klikni za komentar",
                             icon = pinUlova,
                             onClick = {
                                 selectedSpotForComments = spot
@@ -452,16 +442,6 @@ fun MapScreen(
                     )
                 }
 
-                IconButton(
-                    onClick = { showFilterDialog = true },
-                    modifier = iconModifier
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.FilterList,
-                        contentDescription = "Filter",
-                        tint = bojaIkone
-                    )
-                }
 
                 IconButton(
                     onClick = onNavigateToList,
@@ -483,6 +463,23 @@ fun MapScreen(
                         contentDescription = "Rang lista",
                         tint = bojaIkone
                     )
+                }
+
+                // Poruke: svi razgovori, sa brojem nepročitanih
+                IconButton(
+                    onClick = { prikaziPoruke = true },
+                    modifier = iconModifier
+                ) {
+                    val neprocitano = razgovori.sumOf { it.neprocitano }
+                    BadgedBox(badge = {
+                        if (neprocitano > 0) Badge(containerColor = FishBoje.Greska) { Text(if (neprocitano > 9) "9+" else "$neprocitano") }
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.ChatBubbleOutline,
+                            contentDescription = "Poruke",
+                            tint = bojaIkone
+                        )
+                    }
                 }
 
                 // Odjava je na ekranu profila
@@ -825,6 +822,15 @@ fun MapScreen(
                         }
                     },
                     onIzmeni = { ulovZaIzmenu = azuriraniSpot },
+                    onPosaljiPoruku = {
+                        val uid = azuriraniSpot.authorId
+                        val ime = autorUlova?.userName?.takeIf { it.isNotBlank() } ?: azuriraniSpot.authorUsername
+                        scope.launch { sheetState.hide() }.invokeOnCompletion {
+                            selectedSpotForComments = null
+                            spotsViewModel.clearComments()
+                            if (uid.isNotBlank()) activeUsersViewModel.otvoriChatSa(uid, ime)
+                        }
+                    },
                     onObrisi = {
                         spotsViewModel.obrisiUlov(azuriraniSpot) { uspeh ->
                             if (uspeh) {
@@ -846,11 +852,27 @@ fun MapScreen(
                 onDismiss = { ulovZaIzmenu = null },
                 onSacuvaj = { izmena ->
                     ulovZaIzmenu = null
-                    spotsViewModel.izmeniUlov(ulov, izmena) { uspeh ->
+                    spotsViewModel.izmeniUlov(context, ulov, izmena) { uspeh ->
                         FishPoruka.prikazi(if (uspeh) "Izmene su sačuvane" else "Greška pri čuvanju izmena")
                     }
                 }
             )
+        }
+
+        if (prikaziPoruke) {
+            com.example.fishspot.feature.chat.PorukeEkran(
+                razgovori = razgovori,
+                onOtvori = { r ->
+                    prikaziPoruke = false
+                    activeUsersViewModel.otvoriChatSa(r.uid, r.ime)
+                },
+                onZatvori = { prikaziPoruke = false }
+            )
+        }
+
+        // Otvoren razgovor (i nova poruka u njemu) se odmah računa kao pročitan
+        LaunchedEffect(openedChatUserId, razgovori) {
+            openedChatUserId?.let { activeUsersViewModel.oznaciProcitano(it) }
         }
 
         val messagesMap by activeUsersViewModel.messagesMap.collectAsState()
@@ -1025,3 +1047,15 @@ private fun dugmePotvrdiBoje() = ButtonDefaults.buttonColors(
     containerColor = FishBoje.Akcenat,
     contentColor = FishBoje.Pozadina
 )
+
+// Okrugla sličica sa zelenom ivicom, da se tvoj pin razlikuje od drugih pecaroša
+private fun saZelenomIvicom(slika: android.graphics.Bitmap): android.graphics.Bitmap {
+    val ivica = 8
+    val strana = slika.width + ivica * 2
+    val izlaz = android.graphics.Bitmap.createBitmap(strana, strana, android.graphics.Bitmap.Config.ARGB_8888)
+    val platno = android.graphics.Canvas(izlaz)
+    val boja = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF2ECC71.toInt() }
+    platno.drawCircle(strana / 2f, strana / 2f, strana / 2f, boja)
+    platno.drawBitmap(slika, ivica.toFloat(), ivica.toFloat(), null)
+    return izlaz
+}

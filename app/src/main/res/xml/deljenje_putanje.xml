@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Kartice ulova za deljenje (KarticaZaDeljenje.kt) se čuvaju u cache/deljenje -->
+<paths>
+    <cache-path name="deljenje" path="deljenje/" />
+</paths>

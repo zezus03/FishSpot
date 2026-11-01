@@ -170,7 +170,7 @@ class MapViewModel : ViewModel() {
                     // Čim se slikaURL promeni u bazi, odmah generišemo novi URL sa timestamp-om
                     val slikaUrl = korisnik?.slikaURL
                     if (!slikaUrl.isNullOrBlank()) {
-                        val urlSaCacheBusting = "$slikaUrl?t=${System.currentTimeMillis()}"
+                        val urlSaCacheBusting = slikaUrl + (if ("?" in slikaUrl) "&" else "?") + "t=${System.currentTimeMillis()}"
                         _userProfileImage.value = urlSaCacheBusting
                         Log.d("MapViewModel", "Profilna slika detektovana i osvežena uživo: $urlSaCacheBusting")
                     }
@@ -212,7 +212,7 @@ class MapViewModel : ViewModel() {
     }
 
     fun azurirajProfilnuSliku(novaUrl: String) {
-        val urlSaCacheBusting = "$novaUrl?t=${System.currentTimeMillis()}"
+        val urlSaCacheBusting = novaUrl + (if ("?" in novaUrl) "&" else "?") + "t=${System.currentTimeMillis()}"
         _userProfileImage.value = urlSaCacheBusting
         Log.d("MapViewModel", "Profilna slika ažurirana na mapi: $urlSaCacheBusting")
     }
@@ -271,52 +271,39 @@ class MapViewModel : ViewModel() {
             return
         }
 
-        for (voda in vodeList) {
+        // Jedno obaveštenje po proveri: najbliža reka, jezero ili akumulacija (potok samo ako nema većeg).
+        // Jarkovi i odvodi se preskaču, a nazivi se pišu latinicom ("Крња Река" -> "Krnja Reka").
+        data class Kandidat(val naziv: String, val tip: String, val vaznost: Int, val d: Float, val lat: Double, val lng: Double)
+        val kandidati = vodeList.mapNotNull { voda ->
             val latVode = voda.center?.lat ?: voda.lat ?: 0.0
             val lngVode = voda.center?.lon ?: voda.lon ?: 0.0
-
-            if (latVode != 0.0 && lngVode != 0.0) {
-                val locVode = Location("").apply { latitude = latVode; longitude = lngVode }
-                val d = myLoc.distanceTo(locVode)
-
-                if (d <= 5000) {
-                    val tagovi = voda.tags
-                    val naziv = tagovi?.get("name") ?: "Nepoznata voda"
-
-                    val tipVode = when (tagovi?.get("waterway")) {
-                        "river"  -> "Reka"
-                        "stream" -> "Potok"
-                        "canal"  -> "Kanal"
-                        "drain"  -> "Odvod"
-                        "ditch"  -> "Jarak"
-                        else -> when (tagovi?.get("water")) {
-                            "lake"       -> "Jezero"
-                            "reservoir"  -> "Akumulacija"
-                            "pond"       -> "Bara"
-                            else         -> "Voda"
-                        }
-                    }
-
-                    val poslednjeObavestenjeZaVodu = vremeObavestenjaVode[naziv] ?: 0L
-
-                    if (trenutnoVreme - poslednjeObavestenjeZaVodu > LIMIT_ZATISJA_MS) {
-                        val tekstUdaljenosti = if (d >= 1000) {
-                            String.format("%.1f km", d / 1000f)
-                        } else {
-                            "${d.toInt()} metara"
-                        }
-
-                        Log.d("USPEH_REKA", "Nađena voda: $naziv ($tipVode) na $tekstUdaljenosti")
-
-                        prikaziNotifikaciju(
-                            "Na $tekstUdaljenosti od tebe je $naziv ($tipVode)",
-                            context, latVode, lngVode
-                        )
-                        vremeObavestenjaVode[naziv] = trenutnoVreme
-                    }
+            if (latVode == 0.0 || lngVode == 0.0) return@mapNotNull null
+            val tagovi = voda.tags
+            val ime = tagovi?.get("name")?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+            val (tip, vaznost) = when (tagovi["waterway"]) {
+                "river" -> "Reka" to 0
+                "canal" -> "Kanal" to 1
+                "stream" -> "Potok" to 2
+                "drain", "ditch" -> return@mapNotNull null
+                else -> when (tagovi["water"]) {
+                    "lake" -> "Jezero" to 0
+                    "reservoir" -> "Akumulacija" to 0
+                    "pond" -> "Bara" to 1
+                    else -> "Voda" to 1
                 }
             }
+            val d = myLoc.distanceTo(Location("").apply { latitude = latVode; longitude = lngVode })
+            if (d > 5000) return@mapNotNull null
+            Kandidat(com.example.fishspot.feature.spots.NazivMesta.uLatinicu(ime), tip, vaznost, d, latVode, lngVode)
         }
+            .filter { trenutnoVreme - (vremeObavestenjaVode[it.naziv] ?: 0L) > LIMIT_ZATISJA_MS }
+            .sortedWith(compareBy({ it.vaznost }, { it.d }))
+
+        val voda = kandidati.firstOrNull() ?: return
+        val tekstUdaljenosti = if (voda.d >= 1000) String.format("%.1f km", voda.d / 1000f) else "${voda.d.toInt()} metara"
+        Log.d("USPEH_REKA", "Nađena voda: ${voda.naziv} (${voda.tip}) na $tekstUdaljenosti")
+        prikaziNotifikaciju("Na $tekstUdaljenosti od tebe je ${voda.naziv} (${voda.tip})", context, voda.lat, voda.lng)
+        vremeObavestenjaVode[voda.naziv] = trenutnoVreme
     }
 
     // Vode van Srbije daje naša Cloud Function vodeUBlizini (Geoapify ključ je samo na serveru)
@@ -370,7 +357,8 @@ class MapViewModel : ViewModel() {
         )
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.drawable.ic_notifikacija)
+            .setColor(0xFF1B7A3E.toInt()) // zelena ikonica i naslov obaveštenja
             .setContentTitle("FishSpot obaveštenje")
             .setContentText(poruka)
             .setPriority(NotificationCompat.PRIORITY_HIGH)

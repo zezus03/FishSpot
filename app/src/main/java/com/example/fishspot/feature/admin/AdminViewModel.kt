@@ -49,6 +49,7 @@ data class PrijavljenUlov(
     val mamac: String,
     val tehnika: String,
     val slikaUrl: String,
+    val dodatneSlike: List<String>,
     val razlozi: List<Razlog>
 )
 
@@ -64,6 +65,7 @@ data class VelikiUlov(
     val mamac: String,
     val tehnika: String,
     val slikaUrl: String,
+    val dodatneSlike: List<String>,
     val izvorSlike: String,
     val poeniNaCekanju: Int,
     val timestamp: Long?
@@ -184,6 +186,7 @@ class AdminViewModel : ViewModel() {
             id = s("id"), autorUlova = s("autorUlova"), vrstaRibe = s("vrstaRibe"), naziv = s("naziv"), opis = s("opis"),
             duzinaRibe = d("duzinaRibe"), tezinaRibe = d("tezinaRibe"), mamac = s("mamac"), tehnika = s("tehnika"),
             slikaUrl = s("slikaUrl"), izvorSlike = s("izvorSlike"),
+            dodatneSlike = (this["dodatneSlike"] as? List<*>).orEmpty().filterIsInstance<String>(),
             poeniNaCekanju = (this["poeniNaCekanju"] as? Number)?.toInt() ?: 0,
             timestamp = (this["timestamp"] as? Number)?.toLong()
         )
@@ -205,6 +208,7 @@ class AdminViewModel : ViewModel() {
             vrstaRibe = s(u, "vrstaRibe"), naziv = s(u, "naziv"), opis = s(u, "opis"),
             duzinaRibe = d(u, "duzinaRibe"), tezinaRibe = d(u, "tezinaRibe"),
             mamac = s(u, "mamac"), tehnika = s(u, "tehnika"), slikaUrl = s(u, "slikaUrl"),
+            dodatneSlike = (u["dodatneSlike"] as? List<*>).orEmpty().filterIsInstance<String>(),
             razlozi = (this["razlozi"] as? List<Map<String, Any?>>).orEmpty().map {
                 Razlog(s(it, "razlog"), s(it, "opis"), s(it, "prijavio"), (it["vreme"] as? Number)?.toLong())
             }

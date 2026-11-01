@@ -14,7 +14,14 @@ import androidx.compose.material.icons.filled.Phishing
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.SetMeal
 import androidx.compose.material.icons.filled.Straighten
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -49,6 +56,35 @@ fun SpotsListScreen(
     onSpotSelected: (spotId: String) -> Unit
 ) {
     val spots by spotsViewModel.filteredSpots.collectAsState()
+    val sviUlovi by spotsViewModel.sviUlovi.collectAsState()
+    val filter by spotsViewModel.filterState.collectAsState()
+    val filterUkljucen = filter != FilterState()
+    var prikaziFilter by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+
+    // Filter po udaljenosti treba tvoju lokaciju (lista ima svoj ViewModel, odvojen od mape)
+    LaunchedEffect(Unit) {
+        val dozvola = androidx.core.content.ContextCompat.checkSelfPermission(
+            context, android.Manifest.permission.ACCESS_FINE_LOCATION
+        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        if (dozvola) {
+            try {
+                com.google.android.gms.location.LocationServices.getFusedLocationProviderClient(context)
+                    .lastLocation.addOnSuccessListener { it?.let(spotsViewModel::updateUserLocation) }
+            } catch (_: SecurityException) {
+            }
+        }
+    }
+
+    if (prikaziFilter) {
+        com.example.fishspot.feature.map.FilterDialog(
+            currentFilterState = filter,
+            onDismiss = { prikaziFilter = false },
+            onApplyFilters = { autor, vrstaRibe, ocena, startDate, endDate, searchText, radius ->
+                spotsViewModel.applyFilters(autor, vrstaRibe, ocena, startDate, endDate, searchText, radius)
+            }
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -62,12 +98,48 @@ fun SpotsListScreen(
             onNazad = onNavigateBack,
             podnaslov = {
                 Text(
-                    if (spots.size == 1) "1 ulov" else "${spots.size} ulova",
+                    when {
+                        filterUkljucen -> "${spots.size} od ${sviUlovi.size} ulova"
+                        spots.size == 1 -> "1 ulov"
+                        else -> "${spots.size} ulova"
+                    },
                     color = FishBoje.TekstPriguseni,
                     fontSize = 13.sp
                 )
+            },
+            akcija = {
+                // Filter je ovde, ne na mapi (mapa uvek prikazuje sve ulove)
+                Box {
+                    IconButton(
+                        onClick = { prikaziFilter = true },
+                        modifier = Modifier
+                            .size(40.dp)
+                            .background(if (filterUkljucen) FishBoje.Akcenat else FishBoje.Krug, CircleShape)
+                    ) {
+                        Icon(Icons.Default.FilterList, contentDescription = "Filter",
+                            tint = if (filterUkljucen) FishBoje.Pozadina else FishBoje.Akcenat)
+                    }
+                }
             }
         )
+
+        if (filterUkljucen) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(FishBoje.Akcenat.copy(alpha = 0.12f))
+                    .padding(start = 12.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(opisFiltera(filter), color = FishBoje.TekstPrimarni, fontSize = 13.sp,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                TextButton(onClick = { spotsViewModel.ponistiFilter() }) {
+                    Text("Poništi", color = FishBoje.Akcenat, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
 
         if (spots.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -91,6 +163,19 @@ fun SpotsListScreen(
             }
         }
     }
+}
+
+// Kratak opis uključenog filtera: "Filter: Šaran · do 10 km · ocena 3+"
+private fun opisFiltera(f: FilterState): String {
+    val delovi = listOfNotNull(
+        f.vrstaRibe.takeIf { it.isNotBlank() },
+        f.autor.takeIf { it.isNotBlank() }?.let { "autor: $it" },
+        f.searchText.takeIf { it.isNotBlank() }?.let { "„$it“" },
+        f.radiusKm?.takeIf { it > 0 }?.let { "do ${it.toInt()} km" },
+        f.minimalnaOcena.takeIf { it > 0 }?.let { "ocena ${it.toInt()}+" },
+        if (f.startDate != null || f.endDate != null) "period" else null
+    )
+    return "Filter: " + delovi.joinToString(" · ").ifBlank { "uključen" }
 }
 
 @Composable
@@ -118,7 +203,7 @@ fun SpotListItem(spot: FishSpot, onSpotClick: () -> Unit) {
             if (!spot.slikaUrl.isNullOrEmpty()) {
                 AsyncImage(
                     model = spot.slikaUrl,
-                    contentDescription = "Slika ulova: ${spot.vrstaRibe}",
+                    contentDescription = "Slika ulova: ${spot.nazivVrsta}",
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
@@ -151,9 +236,11 @@ fun SpotListItem(spot: FishSpot, onSpotClick: () -> Unit) {
                     .align(Alignment.BottomStart)
                     .padding(horizontal = 14.dp, vertical = 10.dp)
             ) {
-                Text(spot.vrstaRibe.ifBlank { "Nepoznata vrsta" }, color = FishBoje.TekstPrimarni,
+                Text(spot.nazivVrsta.ifBlank { "Nepoznata vrsta" }, color = FishBoje.TekstPrimarni,
                     fontSize = 21.sp, fontWeight = FontWeight.Bold)
-                if (spot.latinskiNaziv.isNotBlank()) {
+                if (spot.cuvarka) {
+                    Text("Čuvarka", color = FishBoje.Akcenat, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                } else if (spot.latinskiNaziv.isNotBlank()) {
                     Text(spot.latinskiNaziv, color = FishBoje.Akcenat, fontSize = 13.sp, fontStyle = FontStyle.Italic)
                 }
             }

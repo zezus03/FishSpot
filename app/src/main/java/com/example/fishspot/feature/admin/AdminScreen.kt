@@ -44,6 +44,10 @@ fun AdminScreen(onNavigateBack: () -> Unit, viewModel: AdminViewModel = viewMode
     var filter by remember { mutableStateOf(Filter.SVI) }
     var potvrda by remember { mutableStateOf<Pair<PrijavljenUlov, Boolean>?>(null) } // (ulov, brisanje?)
     val veliki by viewModel.veliki.collectAsState()
+    val izazoviViewModel: com.example.fishspot.feature.ranking.IzazoviViewModel = viewModel()
+    val izazovi by izazoviViewModel.izazovi.collectAsState()
+    val vrsteViewModel: com.example.fishspot.feature.fish.VrsteRibaViewModel = viewModel()
+    val sveVrste by vrsteViewModel.vrste.collectAsState()
     var odlukaVelikog by remember { mutableStateOf<Pair<VelikiUlov, Boolean>?>(null) } // (ulov, odobri?)
 
     val prikazani = prijavljeni.filter {
@@ -80,6 +84,7 @@ fun AdminScreen(onNavigateBack: () -> Unit, viewModel: AdminViewModel = viewMode
                     Plocica(Icons.Default.Block, "${statistika.uklonjenih}", "čeka odluku", Modifier.weight(1f), FishBoje.Greska)
                 }
             }
+            item { AdminIzazoviOdeljak(izazovi, sveVrste) }
             if (veliki.isNotEmpty()) {
                 item {
                     Text("Veliki ulovi čekaju odobrenje (${veliki.size})", color = FishBoje.Upozorenje,
@@ -225,6 +230,7 @@ private fun KarticaVelikog(ulov: VelikiUlov, uToku: Boolean, onOdobri: () -> Uni
             )
             Spacer(Modifier.height(10.dp))
         }
+        DodatneSlike(ulov.dodatneSlike)
         Text("Čeka odobrenje · ${ulov.poeniNaCekanju} poena", color = FishBoje.Upozorenje, fontSize = 12.sp, fontWeight = FontWeight.Bold)
         Text(ulov.vrstaRibe.ifBlank { "Nepoznata vrsta" }, color = FishBoje.TekstPrimarni, fontSize = 18.sp, fontWeight = FontWeight.Bold)
         Text("${broj(ulov.duzinaRibe)} cm · ${broj(ulov.tezinaRibe)} kg · ${ulov.mamac} / ${ulov.tehnika}",
@@ -289,6 +295,7 @@ private fun KarticaPrijave(ulov: PrijavljenUlov, uToku: Boolean, onURedu: () -> 
                 Text("Autor: ${ulov.autorUlova}", color = FishBoje.TekstSekundarni, fontSize = 13.sp)
             }
         }
+        DodatneSlike(ulov.dodatneSlike)
         Spacer(Modifier.height(10.dp))
         NaslovSekcije("Razlozi prijave")
         ulov.razlozi.forEach { r ->
@@ -326,6 +333,22 @@ private fun KarticaPrijave(ulov: PrijavljenUlov, uToku: Boolean, onURedu: () -> 
             }
         }
     }
+}
+
+// Dodatne slike ulova (ekipa, štap, varalica) kao red sličica
+@Composable
+private fun DodatneSlike(slike: List<String>) {
+    if (slike.isEmpty()) return
+    Spacer(Modifier.height(8.dp))
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        items(slike) { url ->
+            AsyncImage(
+                model = url, contentDescription = "Dodatna slika", contentScale = ContentScale.Crop,
+                modifier = Modifier.size(72.dp).clip(RoundedCornerShape(10.dp))
+            )
+        }
+    }
+    Spacer(Modifier.height(8.dp))
 }
 
 @Composable

@@ -180,7 +180,7 @@ exports.vratiPrijavljeniUlov = functions.firestore
             // Ulov je bio uklonjen: vraćamo ga iz sačuvane kopije
             if (!spotSnap.exists && ulov) {
                 tx.set(spotRef, ulov);
-                if (ulov.vrstaId) {
+                if (ulov.vrstaId && ulov.cuvarka !== true) {
                     tx.set(db.collection("VrsteRiba").doc(ulov.vrstaId).collection("Ulovi").doc(spotId), {
                         authorId: ulov.authorId,
                         authorUsername: ulov.authorUsername ?? "",
@@ -224,6 +224,7 @@ exports.obrisiNalog = ulovi.obrisiNalog;
 
 // Otisak slike ulova, provera iste slike i dodela poena (functions/slike.js)
 exports.proveriSlikuUlova = require("./slike").proveriSlikuUlova;
+exports.proveriOtisakSlike = require("./slike").proveriOtisakSlike;
 
 // Vode u blizini van Srbije, Geoapify ključ je samo na serveru (functions/vode.js)
 exports.vodeUBlizini = require("./vode").vodeUBlizini;
@@ -260,12 +261,30 @@ exports.posaljiObavestenjeZaPoruku = functions.firestore
         const primalac = poruka.primalacId || ucesnici.find((u) => u !== poruka.senderId);
         if (!primalac || primalac === poruka.senderId || !ucesnici.includes(primalac)) return null;
 
-        const korisnik = await admin.firestore().collection("Korisnici").doc(primalac).get();
+        const db = admin.firestore();
+        const [korisnik, posiljalac] = await Promise.all([
+            db.collection("Korisnici").doc(primalac).get(),
+            db.collection("Korisnici").doc(poruka.senderId).get(),
+        ]);
+        const ime = String(poruka.senderUsername || posiljalac.data()?.userName || "Pecaroš").slice(0, 40);
+        const tekst = String(poruka.text || "").slice(0, 120);
+
+        // Spisak razgovora (ekran Poruke): Razgovori/{uid}/sa/{drugi} za oba učesnika
+        const vreme = typeof poruka.timestamp === "number" ? poruka.timestamp : Date.now();
+        const kratko = tekst.slice(0, 80);
+        const paket = db.batch();
+        paket.set(db.doc(`Razgovori/${primalac}/sa/${poruka.senderId}`), {
+            uid: poruka.senderId, ime, slika: posiljalac.data()?.slikaURL || "",
+            poslednja: kratko, vreme, odMene: false, neprocitano: FieldValue.increment(1),
+        }, { merge: true });
+        paket.set(db.doc(`Razgovori/${poruka.senderId}/sa/${primalac}`), {
+            uid: primalac, ime: String(korisnik.data()?.userName || "Pecaroš").slice(0, 40), slika: korisnik.data()?.slikaURL || "",
+            poslednja: kratko, vreme, odMene: true,
+        }, { merge: true });
+        await paket.commit().catch((e) => console.error("Spisak razgovora nije ažuriran:", e.message));
+
         const token = korisnik.exists ? korisnik.data().fcmToken : null;
         if (!token) return null;
-
-        const ime = String(poruka.senderUsername || "Pecaroš").slice(0, 40);
-        const tekst = String(poruka.text || "").slice(0, 120);
         try {
             await admin.messaging().send({
                 token,
@@ -278,3 +297,15 @@ exports.posaljiObavestenjeZaPoruku = functions.firestore
         }
         return null;
     });
+
+// Izazovi: prijava, rang i pravljenje iz admin panela (functions/izazovi.js)
+const izazovi = require("./izazovi");
+exports.izazoviPromenaUlova = izazovi.izazoviPromenaUlova;
+exports.pridruziSeIzazovu = izazovi.pridruziSeIzazovu;
+exports.adminSacuvajIzazov = izazovi.adminSacuvajIzazov;
+exports.adminObrisiIzazov = izazovi.adminObrisiIzazov;
+
+// Bedževi: računanje iz proverenih ulova i obaveštenje (functions/bedzevi.js)
+const bedzevi = require("./bedzevi");
+exports.bedzeviPromenaUlova = bedzevi.bedzeviPromenaUlova;
+exports.osveziMojeBedzeve = bedzevi.osveziMojeBedzeve;

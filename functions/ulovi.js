@@ -29,7 +29,19 @@ function poeniZaNoviUlov(ulov) {
     if (ulov.proveraSlike?.duplikatOd) return 0;
     if (!IZVORI_SA_POENIMA.includes(ulov.izvorSlike)) return 0;
     const osnovni = poeniZaUlov(ulov.tezinaRibe ?? 0);
-    return ulov.izvorSlike === "aplikacija" ? Math.round(osnovni * BONUS_ZA_APLIKACIJU) : osnovni;
+    const poeni = ulov.izvorSlike === "aplikacija" ? Math.round(osnovni * BONUS_ZA_APLIKACIJU) : osnovni;
+    // Čuvarka (više riba zajedno) donosi najviše 20 poena
+    return ulov.cuvarka === true ? Math.min(poeni, MAKS_POENA_CUVARKA) : poeni;
+}
+
+const MAKS_POENA_CUVARKA = 20;
+
+// Naziv za prikaz adminu i u mailovima: kod čuvarke sve vrste
+function nazivVrsta(u) {
+    if (u?.cuvarka && Array.isArray(u.cuvarkaVrste) && u.cuvarkaVrste.length) {
+        return "Čuvarka: " + u.cuvarkaVrste.map((v) => v.naziv).join(", ");
+    }
+    return u?.vrstaRibe || "";
 }
 
 // Ulovi od ovoliko poena i više (riba preko 5 kg) dobijaju poene tek kad ih admin odobri
@@ -142,7 +154,20 @@ exports.izmenjenUlov = functions.firestore
         const pre = change.before.data();
         const posle = change.after.data();
 
-        const poljaVrste = ["vrstaId", "duzinaRibe", "tezinaRibe", "mamac", "tehnika", "authorUsername"];
+        // Dodatne slike koje je autor uklonio u izmeni ulova brišu se iz Storage-a. Briše se samo fajl
+        // sa istim početkom imena kao glavna slika ulova, da niko ne može da obriše tuđu sliku.
+        const uklonjene = (pre.dodatneSlike || []).filter((u) => !(posle.dodatneSlike || []).includes(u));
+        const osnova = putanjaIzLinka(posle.slikaUrl || pre.slikaUrl)?.replace(/\.[^.]+$/, "");
+        if (uklonjene.length && osnova) {
+            const bucket = admin.storage().bucket();
+            await Promise.all(uklonjene.map(putanjaIzLinka)
+                .filter((p) => p && p.startsWith(osnova + "_") && p !== osnova + ".jpg")
+                .flatMap((p) => [p, p.replace(/\.[^.]+$/, "_200x200.jpg")])
+                .map((p) => bucket.file(p).delete({ ignoreNotFound: true }).catch((e) => console.warn(e.message))));
+            console.log(`Ulov ${spotId}: obrisano dodatnih slika ${uklonjene.length}`);
+        }
+
+        const poljaVrste = ["vrstaId", "duzinaRibe", "tezinaRibe", "mamac", "tehnika", "authorUsername", "cuvarka"];
         if (poljaVrste.every((p) => pre[p] === posle[p])) return null; // npr. lajk ili slika
 
         const poslovi = [];
@@ -162,10 +187,11 @@ exports.izmenjenUlov = functions.firestore
         }
         if (razlika !== 0) poslovi.push(promeniPoene(posle.authorId, razlika));
 
-        if (pre.vrstaId && pre.vrstaId !== posle.vrstaId) {
+        // Čuvarka ne ulazi u spisak ulova po vrsti (rekordi)
+        if (pre.vrstaId && (pre.vrstaId !== posle.vrstaId || posle.cuvarka === true)) {
             poslovi.push(db.collection("VrsteRiba").doc(pre.vrstaId).collection("Ulovi").doc(spotId).delete());
         }
-        if (posle.vrstaId) {
+        if (posle.vrstaId && posle.cuvarka !== true) {
             poslovi.push(db.collection("VrsteRiba").doc(posle.vrstaId).collection("Ulovi").doc(spotId)
                 .set(ulovPoVrsti(posle)));
         }
@@ -223,6 +249,15 @@ exports.obrisiNalog = functions.https.onCall(async (data, context) => {
         if (soba.id.split("_").includes(uid)) await db.recursiveDelete(soba);
     }
     await db.recursiveDelete(db.collection("bot_chats").doc(uid));
+    await db.recursiveDelete(db.collection("Razgovori").doc(uid));
+    // Učešće u izazovima
+    for (const iz of (await db.collection("Izazovi").get()).docs) {
+        const uc = iz.ref.collection("ucesnici").doc(uid);
+        if ((await uc.get()).exists) {
+            await uc.delete();
+            await iz.ref.update({ brojUcesnika: FieldValue.increment(-1) });
+        }
+    }
     await db.collection("ActiveUsers").doc(uid).delete();
     await Promise.all(["BotLimit", "VodeLimit"].map((k) => db.collection(k).doc(uid).delete()));
 
@@ -238,4 +273,4 @@ exports.obrisiNalog = functions.https.onCall(async (data, context) => {
     return { obrisano: true };
 });
 
-exports._interno = { poeniZaUlov, poeniZaNoviUlov, stanjePoena, dodeljeniPoeni, promeniPoene, putanjaIzLinka, PRAG_ZA_ADMINA };
+exports._interno = { nazivVrsta, poeniZaUlov, poeniZaNoviUlov, stanjePoena, dodeljeniPoeni, promeniPoene, putanjaIzLinka, PRAG_ZA_ADMINA };

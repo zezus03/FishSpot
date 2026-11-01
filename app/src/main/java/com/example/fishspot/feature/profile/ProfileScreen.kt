@@ -169,7 +169,18 @@ fun ProfileScreen(
                 .padding(horizontal = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // ────── PROFILNA SLIKA SA ZNAČKOM ZA PROMENU ──────
+            // ────── PROFILNA SLIKA SA ZNAČKOM ZA PROMENU, DESNO BEDŽEVI ──────
+            val mojiBedzevi = com.example.fishspot.feature.bedzevi.rememberOsvojeniBedzevi(currentUser?.uid)
+            var prikaziBedzeve by remember { mutableStateOf(false) }
+            // Stari ulovi: server jednom proveri bedževe kad se otvori profil
+            LaunchedEffect(Unit) {
+                com.google.firebase.functions.FirebaseFunctions.getInstance().getHttpsCallable("osveziMojeBedzeve").call()
+            }
+            if (prikaziBedzeve) {
+                com.example.fishspot.feature.bedzevi.BedzeviDialog(ime = null, osvojeni = mojiBedzevi, onZatvori = { prikaziBedzeve = false })
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+            Spacer(Modifier.width(76.dp)) // da slika ostane na sredini
             Box(contentAlignment = Alignment.BottomEnd) {
                 Box(
                     modifier = Modifier
@@ -216,6 +227,23 @@ fun ProfileScreen(
                     Icon(Icons.Default.PhotoCamera, contentDescription = "Promeni sliku",
                         tint = FishBoje.Pozadina, modifier = Modifier.size(18.dp))
                 }
+            }
+            Spacer(Modifier.width(16.dp))
+            // Bedževi: poslednji osvojen (ili siv prvi) i broj osvojenih
+            Box(contentAlignment = Alignment.TopEnd, modifier = Modifier.size(60.dp).clickable { prikaziBedzeve = true }) {
+                val poslednji = mojiBedzevi.firstOrNull()?.let { com.example.fishspot.feature.bedzevi.Bedzevi.po(it.id) }
+                com.example.fishspot.feature.bedzevi.SlikaBedza(
+                    poslednji ?: com.example.fishspot.feature.bedzevi.Bedzevi.svi.first(),
+                    osvojen = poslednji != null, velicina = 56
+                )
+                Box(
+                    modifier = Modifier.background(FishBoje.Akcenat, CircleShape).border(2.dp, FishBoje.Pozadina, CircleShape)
+                        .padding(horizontal = 6.dp, vertical = 1.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("${mojiBedzevi.size}", color = FishBoje.Pozadina, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                }
+            }
             }
 
             Spacer(Modifier.height(12.dp))
@@ -436,7 +464,7 @@ fun ProfileScreen(
                                 profileImageUrl = newImageUrl
 
                                 mapViewModel.ucitajPodatkeKorisnika(forceReload = true)
-                                mapViewModel.azurirajProfilnuSliku("$newImageUrl?t=${System.currentTimeMillis()}")
+                                mapViewModel.azurirajProfilnuSliku(newImageUrl)
 
                                 successMessage = "Profil je uspešno ažuriran!"
                                 isSaving = false

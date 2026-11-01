@@ -24,6 +24,8 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -61,6 +63,18 @@ fun UloviKorisnikaScreen(
     val ime by viewModel.imeKorisnika.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val mojiUlovi = remember(uid) { FirebaseAuth.getInstance().currentUser?.uid == uid }
+    val potvrdjeni by viewModel.potvrdjeni.collectAsState()
+    val bedzevi = com.example.fishspot.feature.bedzevi.rememberOsvojeniBedzevi(uid)
+    var prikaziBedzeve by remember { mutableStateOf(false) }
+    if (prikaziBedzeve) {
+        com.example.fishspot.feature.bedzevi.BedzeviDialog(
+            ime = if (mojiUlovi) null else ime, osvojeni = bedzevi, onZatvori = { prikaziBedzeve = false }
+        )
+    }
+    var ulovZaDeljenje by remember { mutableStateOf<FishSpot?>(null) }
+    ulovZaDeljenje?.let { u ->
+        PodeliUlovDialog(ulov = u, ime = ime ?: u.authorUsername, potvrdjen = u.id in potvrdjeni, onZatvori = { ulovZaDeljenje = null })
+    }
 
     LazyColumn(
         modifier = Modifier
@@ -95,11 +109,21 @@ fun UloviKorisnikaScreen(
             else -> {
                 item { Zbir(ulovi) }
 
+                // Bedževi iznad ulovljenih vrsta
+                item {
+                    com.example.fishspot.feature.bedzevi.RedBedzeva(
+                        osvojeni = bedzevi, onOtvori = { prikaziBedzeve = true },
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp)
+                    )
+                }
                 item { NaslovSekcije("Ulovljene vrste", Modifier.padding(start = 16.dp, top = 20.dp, bottom = 8.dp)) }
                 item { SpisakVrsta(poVrstama) }
 
                 item { NaslovSekcije("Svi ulovi · ${ulovi.size}", Modifier.padding(start = 16.dp, top = 20.dp, bottom = 8.dp)) }
-                items(ulovi, key = { it.id }) { ulov -> DetaljnaKarticaUlova(ulov) }
+                items(ulovi, key = { it.id }) { ulov ->
+                    // Deliti se mogu samo sopstveni ulovi
+                    DetaljnaKarticaUlova(ulov, onPodeli = if (mojiUlovi) ({ ulovZaDeljenje = ulov }) else null)
+                }
             }
         }
     }
@@ -109,7 +133,8 @@ fun UloviKorisnikaScreen(
 @Composable
 private fun Zbir(ulovi: List<FishSpot>) {
     val ukupnaTezina = ulovi.sumOf { it.tezinaRibe }
-    val najveci = ulovi.maxByOrNull { it.tezinaRibe }?.takeIf { it.tezinaRibe > 0 }
+    // Čuvarka nije jedna riba, pa ne ulazi u najveći ulov
+    val najveci = ulovi.filterNot { it.cuvarka }.maxByOrNull { it.tezinaRibe }?.takeIf { it.tezinaRibe > 0 }
 
     Row(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -200,7 +225,7 @@ private fun SpisakVrsta(poVrstama: List<BrojPoVrsti>) {
 
 // Kartica ulova sa svim podacima
 @Composable
-private fun DetaljnaKarticaUlova(ulov: FishSpot) {
+private fun DetaljnaKarticaUlova(ulov: FishSpot, onPodeli: (() -> Unit)? = null) {
     val datum = remember(ulov.timestamp) {
         SimpleDateFormat("dd.MM.yyyy. HH:mm", Locale.getDefault()).format(Date(ulov.timestamp))
     }
@@ -238,9 +263,11 @@ private fun DetaljnaKarticaUlova(ulov: FishSpot) {
                     .background(Brush.verticalGradient(listOf(Color.Transparent, FishBoje.Kartica)))
             )
             Column(modifier = Modifier.align(Alignment.BottomStart).padding(horizontal = 14.dp, vertical = 8.dp)) {
-                Text(ulov.vrstaRibe.ifBlank { "Nepoznata vrsta" }, color = FishBoje.TekstPrimarni, fontSize = 20.sp,
+                Text(ulov.nazivVrsta.ifBlank { "Nepoznata vrsta" }, color = FishBoje.TekstPrimarni, fontSize = 20.sp,
                     fontWeight = FontWeight.Bold)
-                if (ulov.latinskiNaziv.isNotBlank()) {
+                if (ulov.cuvarka) {
+                    Text("Čuvarka", color = FishBoje.Akcenat, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                } else if (ulov.latinskiNaziv.isNotBlank()) {
                     Text(ulov.latinskiNaziv, color = FishBoje.Akcenat, fontSize = 13.sp, fontStyle = FontStyle.Italic)
                 }
             }
@@ -263,8 +290,9 @@ private fun DetaljnaKarticaUlova(ulov: FishSpot) {
 
         Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Podatak(Icons.Default.Straighten, "Dužina",
-                    if (ulov.duzinaRibe > 0) formatBroj(ulov.duzinaRibe, "cm") else "—", Modifier.weight(1f))
+                Podatak(Icons.Default.Straighten, if (ulov.cuvarka) "Čuvarka" else "Dužina",
+                    if (ulov.cuvarka) "${ulov.cuvarkaVrste.size} vrst." else if (ulov.duzinaRibe > 0) formatBroj(ulov.duzinaRibe, "cm") else "—",
+                    Modifier.weight(1f))
                 Podatak(Icons.Default.Scale, "Težina",
                     if (ulov.tezinaRibe > 0) formatBroj(ulov.tezinaRibe, "kg") else "—", Modifier.weight(1f))
             }
@@ -300,8 +328,8 @@ private fun DetaljnaKarticaUlova(ulov: FishSpot) {
                 ulov.pritisak.takeIf { it.isNotBlank() && it != "Nepoznato" }?.let { Icons.Default.Speed to it },
                 ulov.vetar.takeIf { it.isNotBlank() && it != "Nepoznato" }?.let { Icons.Default.Air to it }
             )
-            if (uslovi.isNotEmpty()) {
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            if (uslovi.isNotEmpty() || onPodeli != null) {
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                     uslovi.forEach { (ikona, tekst) ->
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -312,6 +340,20 @@ private fun DetaljnaKarticaUlova(ulov: FishSpot) {
                             Icon(ikona, contentDescription = null, tint = FishBoje.Akcenat, modifier = Modifier.size(12.dp))
                             Spacer(Modifier.width(3.dp))
                             Text(tekst, color = FishBoje.TekstSekundarni, fontSize = 11.sp, maxLines = 1)
+                        }
+                    }
+                    if (onPodeli != null) {
+                        Spacer(Modifier.weight(1f))
+                        // Desno od uslova: kartica ulova za društvene mreže
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(20.dp))
+                                .background(FishBoje.Akcenat.copy(alpha = 0.12f))
+                                .clickable(onClick = onPodeli)
+                                .padding(8.dp)
+                        ) {
+                            Icon(Icons.Default.Share, contentDescription = "Podeli ulov", tint = FishBoje.Akcenat, modifier = Modifier.size(18.dp))
                         }
                     }
                 }

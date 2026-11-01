@@ -26,7 +26,8 @@ class VrsteRibaViewModel : ViewModel() {
             .addOnFailureListener { Log.e("VrsteRiba", "Greška pri učitavanju vrsta", it) }
     }
 
-    // Vrste koje odgovaraju unetom tekstu; prvo one čiji naziv počinje tim tekstom ("dev" -> Deverika)
+    // Vrste koje odgovaraju unetom tekstu, po pravom, latinskom ili lokalnom nazivu ("karaš" -> Karaš i Babuška).
+    // Prvo one čiji pravi naziv počinje tim tekstom ("dev" -> Deverika), pa lokalni nazivi.
     fun pretrazi(unos: String): List<VrstaRibe> {
         val trazeno = LovostajChecker.normalizujTekst(unos)
         if (trazeno.isEmpty()) return _vrste.value
@@ -34,14 +35,16 @@ class VrsteRibaViewModel : ViewModel() {
         return _vrste.value
             .filter {
                 LovostajChecker.normalizujTekst(it.naziv).contains(trazeno) ||
-                    it.latinskiNaziv.lowercase().contains(trazeno)
+                    it.latinskiNaziv.lowercase().contains(trazeno) ||
+                    LokalniNazivi.pogodak(it.id, unos) != null
             }
             .sortedBy { vrsta ->
                 val naziv = LovostajChecker.normalizujTekst(vrsta.naziv)
                 when {
                     naziv.startsWith(trazeno) -> 0
                     naziv.split(" ").any { it.startsWith(trazeno) } -> 1
-                    else -> 2
+                    LokalniNazivi.pogodak(vrsta.id, unos) != null -> 2
+                    else -> 3
                 }
             }
     }

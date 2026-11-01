@@ -3,6 +3,7 @@
 const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
 const { Timestamp } = require("firebase-admin/firestore");
+const { nazivVrsta } = require("./ulovi")._interno;
 
 // Admin adrese su u functions/.env (ADMIN_EMAILS=adresa1,adresa2); taj fajl se objavljuje, ali nije na GitHub-u
 const ADMINI = (process.env.ADMIN_EMAILS || "").split(",").map((a) => a.trim().toLowerCase()).filter(Boolean);
@@ -36,9 +37,10 @@ function zaAplikaciju(id, p) {
         oduzetoPoena: p.oduzetoPoena || 0,
         resioAdmin: p.resioAdmin || "",
         ulov: {
-            vrstaRibe: u.vrstaRibe || "", naziv: u.naziv || "", opis: u.opis || "",
+            vrstaRibe: nazivVrsta(u), naziv: u.naziv || "", opis: u.opis || "",
             duzinaRibe: u.duzinaRibe ?? 0, tezinaRibe: u.tezinaRibe ?? 0,
             mamac: u.mamac || "", tehnika: u.tehnika || "", slikaUrl: u.slikaUrl || "",
+            dodatneSlike: Array.isArray(u.dodatneSlike) ? u.dodatneSlike : [],
             lat: u.lat ?? 0, lng: u.lng ?? 0, timestamp: ms(u.timestamp),
         },
         razlozi: (p.razlozi || []).map((r) => ({
@@ -50,9 +52,10 @@ function zaAplikaciju(id, p) {
 function velikiZaAplikaciju(id, u) {
     return {
         id,
-        autorUlova: u.authorUsername || "", vrstaRibe: u.vrstaRibe || "", naziv: u.naziv || "", opis: u.opis || "",
+        autorUlova: u.authorUsername || "", vrstaRibe: nazivVrsta(u), naziv: u.naziv || "", opis: u.opis || "",
         duzinaRibe: u.duzinaRibe ?? 0, tezinaRibe: u.tezinaRibe ?? 0, mamac: u.mamac || "", tehnika: u.tehnika || "",
-        slikaUrl: u.slikaUrl || "", izvorSlike: u.izvorSlike || "", poeniNaCekanju: u.poeniNaCekanju ?? 0,
+        slikaUrl: u.slikaUrl || "", dodatneSlike: Array.isArray(u.dodatneSlike) ? u.dodatneSlike : [],
+        izvorSlike: u.izvorSlike || "", poeniNaCekanju: u.poeniNaCekanju ?? 0,
         timestamp: ms(u.timestamp),
     };
 }
@@ -177,4 +180,4 @@ exports.adminVelikiUlov = functions.https.onCall(async (data, context) => {
     return { ok: true, poeni: dodato };
 });
 
-exports._interno = { ADMINI, zaAplikaciju, trebaOdluka, velikiZaAplikaciju };
+exports._interno = { ADMINI, proveriAdmina, zaAplikaciju, trebaOdluka, velikiZaAplikaciju };

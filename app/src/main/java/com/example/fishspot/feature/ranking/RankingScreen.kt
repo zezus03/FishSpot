@@ -16,6 +16,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.foundation.clickable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,43 +52,70 @@ fun RankingScreen(
 ) {
     val userRanking by rankingViewModel.userRanking.collectAsState()
     val mojId = remember { FirebaseAuth.getInstance().currentUser?.uid }
+    var kartica by remember { mutableStateOf(0) } // 0 = opšta rang lista, 1 = izazovi
+    val izazoviViewModel: IzazoviViewModel = viewModel()
+    val vrsteViewModel: com.example.fishspot.feature.fish.VrsteRibaViewModel = viewModel()
+    val sveVrste by vrsteViewModel.vrste.collectAsState()
+    val nazivVrste: (String) -> String = { id -> sveVrste.firstOrNull { it.id == id }?.naziv ?: id }
 
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(FishBoje.Pozadina),
-        contentPadding = PaddingValues(bottom = 24.dp)
-    ) {
-        item {
-            FishZaglavlje(
-                oznaka = "FishSpot • rang lista",
-                naslov = "Najbolji ribolovci",
-                ikona = Icons.Default.EmojiEvents,
-                onNazad = onNavigateBack,
-                podnaslov = {
-                    Text("Poeni se dobijaju za ulove, po težini ribe", color = FishBoje.TekstPriguseni, fontSize = 12.sp)
-                }
-            )
-        }
-
-        if (userRanking.isNotEmpty()) {
-            item {
-                Postolje(
-                    prvi = userRanking.getOrNull(0),
-                    drugi = userRanking.getOrNull(1),
-                    treci = userRanking.getOrNull(2),
-                    mojId = mojId,
-                    onUserSelected = onUserSelected
+    Column(modifier = Modifier.fillMaxSize().background(FishBoje.Pozadina)) {
+        FishZaglavlje(
+            oznaka = "FishSpot • rang lista",
+            naslov = if (kartica == 0) "Najbolji ribolovci" else "Izazovi",
+            ikona = Icons.Default.EmojiEvents,
+            onNazad = onNavigateBack,
+            podnaslov = {
+                Text(
+                    if (kartica == 0) "Poeni se dobijaju za ulove, po težini ribe" else "Takmičenja sa svojom rang listom",
+                    color = FishBoje.TekstPriguseni, fontSize = 12.sp
                 )
             }
+        )
+        // Kartice: Opšta | Izazovi
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)
+                .clip(RoundedCornerShape(14.dp)).background(FishBoje.Kartica).padding(4.dp)
+        ) {
+            listOf("Opšta", "Izazovi").forEachIndexed { i, naziv ->
+                val izabrana = kartica == i
+                Box(
+                    modifier = Modifier.weight(1f).clip(RoundedCornerShape(10.dp))
+                        .background(if (izabrana) FishBoje.Akcenat else Color.Transparent)
+                        .clickable { kartica = i }
+                        .padding(vertical = 10.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(naziv, color = if (izabrana) FishBoje.Pozadina else FishBoje.TekstSekundarni,
+                        fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                }
+            }
         }
 
-        if (userRanking.size > 3) {
-            item {
-                NaslovSekcije("Ostali", Modifier.padding(start = 16.dp, top = 20.dp, bottom = 6.dp))
+        if (kartica == 1) {
+            IzazoviSadrzaj(izazoviViewModel, nazivVrste)
+        } else LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 24.dp)
+        ) {
+            if (userRanking.isNotEmpty()) {
+                item {
+                    Postolje(
+                        prvi = userRanking.getOrNull(0),
+                        drugi = userRanking.getOrNull(1),
+                        treci = userRanking.getOrNull(2),
+                        mojId = mojId,
+                        onUserSelected = onUserSelected
+                    )
+                }
             }
-            itemsIndexed(userRanking.drop(3), key = { _, user -> user.id }) { index, user ->
-                RankingListItem(rank = index + 4, user = user, jaSam = user.id == mojId, onUserClick = onUserSelected)
+
+            if (userRanking.size > 3) {
+                item {
+                    NaslovSekcije("Ostali", Modifier.padding(start = 16.dp, top = 20.dp, bottom = 6.dp))
+                }
+                itemsIndexed(userRanking.drop(3), key = { _, user -> user.id }) { index, user ->
+                    RankingListItem(rank = index + 4, user = user, jaSam = user.id == mojId, onUserClick = onUserSelected)
+                }
             }
         }
     }

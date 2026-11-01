@@ -29,8 +29,12 @@ data class FilterState(
     val radiusKm: Float? = null
 )
 
-// Najveća strana slike ulova koja se šalje na server
+// Najveća strana i kvalitet slika ulova koje se šalju na server: glavna slika je veća
+// (na njoj su provere i prikaz na mapi), dodatne (ekipa, štap, varalica) su manje zbog prostora
 private const val MAKS_STRANA_SLIKE = 1600
+private const val KVALITET_SLIKE = 82
+private const val MAKS_STRANA_DODATNE = 1080
+private const val KVALITET_DODATNE = 75
 
 class SpotsViewModel : ViewModel() {
 
@@ -39,8 +43,20 @@ class SpotsViewModel : ViewModel() {
     private val storage = FirebaseStorage.getInstance()
 
     private val _spots = MutableStateFlow<List<FishSpot>>(emptyList())
-    private val _filterState = MutableStateFlow(FilterState())
+    private val _filterState = zajednickiFilter
     val filterState = _filterState.asStateFlow()
+
+    // Svi ulovi bez filtera (mapa); filter važi samo za listu ulova
+    val sviUlovi: StateFlow<List<FishSpot>> get() = _spots.asStateFlow()
+
+    companion object {
+        // Filter liste ulova se pamti dok je aplikacija otvorena
+        private val zajednickiFilter = MutableStateFlow(FilterState())
+    }
+
+    fun ponistiFilter() {
+        _filterState.value = FilterState()
+    }
     private val _currentUserLocation = MutableStateFlow<Location?>(null)
 
     private val komentari = MutableStateFlow<List<Comment>>(emptyList())
@@ -51,14 +67,14 @@ class SpotsViewModel : ViewModel() {
             spots.filter { spot ->
                 val autorFilterPassed = filter.autor.isBlank() || spot.authorUsername.contains(filter.autor, ignoreCase = true)
                 // Deo naziva je dovoljan ("dever" nalazi Deverika)
-                val vrstaRibeFilterPassed = filter.vrstaRibe.isBlank() || spot.vrstaRibe.contains(filter.vrstaRibe.trim(), ignoreCase = true)
+                val vrstaRibeFilterPassed = filter.vrstaRibe.isBlank() || spot.nazivVrsta.contains(filter.vrstaRibe.trim(), ignoreCase = true)
                 val ocenaFilterPassed = spot.ocena >= filter.minimalnaOcena
                 val startDateFilterPassed = filter.startDate == null || spot.timestamp >= filter.startDate
                 val endDateFilterPassed = filter.endDate == null || spot.timestamp <= filter.endDate
                 val searchTextFilterPassed = filter.searchText.isBlank() ||
                         spot.naziv.contains(filter.searchText, ignoreCase = true) ||
                         spot.opis.contains(filter.searchText, ignoreCase = true) ||
-                        spot.vrstaRibe.contains(filter.searchText, ignoreCase = true)
+                        spot.nazivVrsta.contains(filter.searchText, ignoreCase = true)
                 val radiusFilterPassed = when {
                     filter.radiusKm == null -> true
                     userLocation == null -> true
@@ -119,12 +135,15 @@ class SpotsViewModel : ViewModel() {
 
     fun addSpot(
         context: android.content.Context, // Dodat Context!
-        naziv: String, vrsta: VrstaRibe, ocena: Float, opis: String, slikaUri: Uri?,
+        naziv: String, vrsta: VrstaRibe, ocena: Float, opis: String,
+        glavnaSlika: Uri?, dodatneSlike: List<Uri>,
         location: android.location.Location,
         duzinaRibe: Double, tezinaRibe: Double, mamac: String, tehnika: String,temperatura: String,
         pritisak: String,
         vetar: String,
         izvorSlike: String,
+        cuvarka: Boolean = false,
+        cuvarkaVrste: List<VrstaRibe> = emptyList(),
         onResult: (Result<Unit>) -> Unit
     ) {
         viewModelScope.launch {
@@ -162,7 +181,9 @@ class SpotsViewModel : ViewModel() {
                     temperatura = temperatura,
                     pritisak = pritisak,
                     vetar = vetar,
-                    izvorSlike = izvorSlike
+                    izvorSlike = izvorSlike,
+                    cuvarka = cuvarka,
+                    cuvarkaVrste = cuvarkaVrste.map { VrstaKratko(it.id, it.naziv, it.latinskiNaziv) }
                 )
 
                 // Ulov se čuva i pod svojom vrstom (VrsteRiba/{vrsta}/Ulovi) sa istim ID-jem,
@@ -176,40 +197,38 @@ class SpotsViewModel : ViewModel() {
                     "tehnika" to tehnika,
                     "timestamp" to fishSpot.timestamp
                 )
-                firestore.batch()
-                    .set(docRef, fishSpot)
-                    .set(
+                // Čuvarka ne ulazi u spisak ulova po vrsti (rekordi), jer nije jedna riba
+                val paket = firestore.batch().set(docRef, fishSpot)
+                if (!cuvarka) {
+                    paket.set(
                         firestore.collection("VrsteRiba").document(vrsta.id)
                             .collection("Ulovi").document(spotId),
                         ulovPoVrsti
                     )
-                    .commit()
+                }
+                paket.commit()
                     .addOnFailureListener { Log.e("SpotsViewModel", "Greška pri upisu ulova", it) }
 
-                // Ako ima slike, predajemo je WorkManager-u
-                if (slikaUri != null) {
+                // Slike se smanjuju pre slanja (umesto 3-8 MB sa kamere šalje se oko 300 KB za glavnu
+                // i oko 120 KB za dodatnu), pa se predaju WorkManager-u koji ih šalje kad ima interneta
+                if (glavnaSlika != null) {
                     try {
-                        // Slika se smanjuje pre slanja (duža strana najviše 1600 px, JPEG 82%):
-                        // umesto 3-8 MB sa kamere šalje se oko 300 KB, pa se brže učitava i manje košta
-                        val localFile = java.io.File(context.filesDir, "upload_${spotId}.jpg")
+                        val glavniFajl = java.io.File(context.filesDir, "upload_${spotId}.jpg")
+                        val dodatniFajlovi = dodatneSlike.take(MAKS_SLIKA_ULOVA - 1).mapIndexed { i, _ ->
+                            java.io.File(context.filesDir, "upload_${spotId}_d${i + 1}.jpg")
+                        }
                         kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                            val slika = com.example.fishspot.feature.fish.ucitajSlikuUspravno(context, slikaUri, MAKS_STRANA_SLIKE)
-                            val razmera = MAKS_STRANA_SLIKE.toFloat() / maxOf(slika.width, slika.height)
-                            val smanjena = if (razmera < 1f) {
-                                android.graphics.Bitmap.createScaledBitmap(
-                                    slika, (slika.width * razmera).toInt(), (slika.height * razmera).toInt(), true
-                                )
-                            } else slika
-                            java.io.FileOutputStream(localFile).use {
-                                smanjena.compress(android.graphics.Bitmap.CompressFormat.JPEG, 82, it)
+                            sacuvajSmanjeno(context, glavnaSlika, glavniFajl, MAKS_STRANA_SLIKE, KVALITET_SLIKE)
+                            dodatniFajlovi.forEachIndexed { i, fajl ->
+                                sacuvajSmanjeno(context, dodatneSlike[i], fajl, MAKS_STRANA_DODATNE, KVALITET_DODATNE)
                             }
-                            if (smanjena != slika) slika.recycle()
-                            smanjena.recycle()
                         }
 
                         val inputData = androidx.work.Data.Builder()
-                            .putString("FILE_PATH", localFile.absolutePath)
+                            .putString("FILE_PATH", glavniFajl.absolutePath)
+                            .putStringArray("DODATNE", dodatniFajlovi.map { it.absolutePath }.toTypedArray())
                             .putString("DOC_ID", spotId)
+                            .putString("IME", UUID.randomUUID().toString()) // isto ime i kad se slanje ponovi
                             .build()
 
                         // Radnik se budi samo kad ima interneta
@@ -237,6 +256,36 @@ class SpotsViewModel : ViewModel() {
             }
         }
     }
+    // Pre objave: da li je ista slika već objavljena u FishSpot-u (server poredi otisak sa svim ulovima).
+    // Bez interneta ili ako provera ne uspe vraća false, a server proverava ponovo kad slika stigne.
+    suspend fun slikaVecObjavljena(context: android.content.Context, uri: Uri): Boolean {
+        val otisak = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+            OtisakSlike.izracunaj(context, uri)
+        } ?: return false
+        return try {
+            val odgovor = kotlinx.coroutines.withTimeout(10_000) {
+                com.google.firebase.functions.FirebaseFunctions.getInstance()
+                    .getHttpsCallable("proveriOtisakSlike").call(mapOf("otisak" to otisak)).await()
+            }
+            (odgovor.data as? Map<*, *>)?.get("postoji") == true
+        } catch (e: Exception) {
+            Log.w("SpotsViewModel", "Provera iste slike nije uspela", e)
+            false
+        }
+    }
+
+    // Učita sliku uspravno, smanji je na najveću stranu i sačuva kao JPEG
+    private fun sacuvajSmanjeno(context: android.content.Context, uri: Uri, fajl: java.io.File, maksStrana: Int, kvalitet: Int) {
+        val slika = com.example.fishspot.feature.fish.ucitajSlikuUspravno(context, uri, maksStrana)
+        val razmera = maksStrana.toFloat() / maxOf(slika.width, slika.height)
+        val smanjena = if (razmera < 1f) {
+            android.graphics.Bitmap.createScaledBitmap(slika, (slika.width * razmera).toInt(), (slika.height * razmera).toInt(), true)
+        } else slika
+        java.io.FileOutputStream(fajl).use { smanjena.compress(android.graphics.Bitmap.CompressFormat.JPEG, kvalitet, it) }
+        if (smanjena != slika) slika.recycle()
+        smanjena.recycle()
+    }
+
     fun loadComments(spotId: String) {
         viewModelScope.launch {
             try {
@@ -343,25 +392,53 @@ class SpotsViewModel : ViewModel() {
             }
     }
     // Autor menja svoj ulov; poene i spisak po vrsti usklađuje Cloud Function izmenjenUlov
-    fun izmeniUlov(spot: FishSpot, izmena: IzmenaUlova, onResult: (Boolean) -> Unit) {
-        val izmene = mapOf(
-            "naziv" to izmena.naziv,
-            "vrstaRibe" to izmena.vrsta.naziv,
-            "vrstaId" to izmena.vrsta.id,
-            "latinskiNaziv" to izmena.vrsta.latinskiNaziv,
-            "duzinaRibe" to izmena.duzinaRibe,
-            "tezinaRibe" to izmena.tezinaRibe,
-            "mamac" to izmena.mamac,
-            "tehnika" to izmena.tehnika,
-            "ocena" to izmena.ocena,
-            "opis" to izmena.opis
-        )
-        firestore.collection("MestaZaPecanje").document(spot.id).update(izmene)
-            .addOnSuccessListener { onResult(true) }
-            .addOnFailureListener {
-                Log.e("SpotsViewModel", "Greška pri izmeni ulova", it)
+    fun izmeniUlov(context: android.content.Context, spot: FishSpot, izmena: IzmenaUlova, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val izmene = mutableMapOf<String, Any>(
+                    "naziv" to izmena.naziv,
+                    "vrstaRibe" to izmena.vrsta.naziv,
+                    "cuvarka" to izmena.cuvarka,
+                    "cuvarkaVrste" to izmena.cuvarkaVrste.map {
+                        mapOf("id" to it.id, "naziv" to it.naziv, "latinskiNaziv" to it.latinskiNaziv)
+                    },
+                    "vrstaId" to izmena.vrsta.id,
+                    "latinskiNaziv" to izmena.vrsta.latinskiNaziv,
+                    "duzinaRibe" to izmena.duzinaRibe,
+                    "tezinaRibe" to izmena.tezinaRibe,
+                    "mamac" to izmena.mamac,
+                    "tehnika" to izmena.tehnika,
+                    "ocena" to izmena.ocena,
+                    "opis" to izmena.opis
+                )
+                // Dodatne slike: zadržane ostaju, nove se smanje i pošalju pod istim početkom imena kao glavna
+                // (da ih brisanje ulova obriše zajedno sa njom); uklonjene briše server (izmenjenUlov)
+                if (izmena.dodatneSlike != spot.dodatneSlike || izmena.noveSlike.isNotEmpty()) {
+                    val osnova = spot.slikaUrl?.let { Regex("/o/([^?]+)").find(it)?.groupValues?.get(1) }
+                        ?.let { java.net.URLDecoder.decode(it, "UTF-8").removeSuffix(".jpg") }
+                    val nove = if (osnova == null) emptyList() else izmena.noveSlike.mapIndexed { i, uri ->
+                        val fajl = java.io.File(context.cacheDir, "izmena_${spot.id}_$i.jpg")
+                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                            sacuvajSmanjeno(context, uri, fajl, MAKS_STRANA_DODATNE, KVALITET_DODATNE)
+                        }
+                        val ref = storage.reference.child("${osnova}_e${System.currentTimeMillis()}_${i + 1}.jpg")
+                        ref.putFile(Uri.fromFile(fajl)).await()
+                        fajl.delete()
+                        ref.downloadUrl.await().toString()
+                    }
+                    izmene["dodatneSlike"] = (izmena.dodatneSlike + nove).take(MAKS_SLIKA_ULOVA - 1)
+                }
+                // Posle 30 minuta od objave podaci o ribi se ne šalju (pravila baze bi odbila izmenu)
+                if (!spot.ribaMozeDaSeMenja) {
+                    izmene.keys.removeAll(listOf("vrstaRibe", "vrstaId", "latinskiNaziv", "duzinaRibe", "tezinaRibe", "cuvarka", "cuvarkaVrste"))
+                }
+                firestore.collection("MestaZaPecanje").document(spot.id).update(izmene).await()
+                onResult(true)
+            } catch (e: Exception) {
+                Log.e("SpotsViewModel", "Greška pri izmeni ulova", e)
                 onResult(false)
             }
+        }
     }
 
     // Autor briše svoj ulov; komentare, sliku i poene sređuje Cloud Function obrisanUlov
@@ -376,6 +453,8 @@ class SpotsViewModel : ViewModel() {
 
     fun sacuvajFcmToken() {
         val user = auth.currentUser ?: return
+        // Obaveštenje kad admin objavi novi izazov
+        com.google.firebase.messaging.FirebaseMessaging.getInstance().subscribeToTopic("izazovi")
         com.google.firebase.messaging.FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
             if (!task.isSuccessful) {
                 Log.w("SpotsViewModel", "Fetching FCM registration token failed", task.exception)
