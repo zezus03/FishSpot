@@ -133,7 +133,8 @@ exports.obrisanUlov = functions.firestore
                 ? db.collection("VrsteRiba").doc(ulov.vrstaId).collection("Ulovi").doc(spotId).delete()
                 : Promise.resolve(),
             obrisiSliku(ulov.slikaUrl),
-            promeniPoene(ulov.authorId, -dodeljeniPoeni(ulov)),
+            // Ulov iz prošle sezone: poeni su već u istoriji, tekuća sezona se ne dira
+            require("./sezona")._interno.uTekucojSezoni(ulov) ? promeniPoene(ulov.authorId, -dodeljeniPoeni(ulov)) : Promise.resolve(),
             // Otisak slike se briše, pa ista slika posle brisanja ulova opet može da se objavi
             db.collection("OtisciSlika").doc("svi")
                 .update({ [`o.${spotId}`]: FieldValue.delete() })
@@ -185,7 +186,7 @@ exports.izmenjenUlov = functions.firestore
                 poslovi.push(change.after.ref.update(stanje));
             }
         }
-        if (razlika !== 0) poslovi.push(promeniPoene(posle.authorId, razlika));
+        if (razlika !== 0 && require("./sezona")._interno.uTekucojSezoni(posle)) poslovi.push(promeniPoene(posle.authorId, razlika));
 
         // Čuvarka ne ulazi u spisak ulova po vrsti (rekordi)
         if (pre.vrstaId && (pre.vrstaId !== posle.vrstaId || posle.cuvarka === true)) {

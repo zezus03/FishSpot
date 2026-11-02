@@ -38,7 +38,9 @@ service cloud.firestore {
       allow delete: if false;
 
       function poeniIspravni() {
-        return request.resource.data.get('poeni', 0) == resource.data.get('poeni', 0);
+        // Poene i istoriju sezona menja samo server
+        return request.resource.data.get('poeni', 0) == resource.data.get('poeni', 0)
+          && request.resource.data.get('sezone', {}) == resource.data.get('sezone', {});
       }
 
       // Bedževi: vide ih svi prijavljeni, upisuje ih samo server (functions/bedzevi.js)

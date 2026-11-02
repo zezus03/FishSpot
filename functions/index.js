@@ -141,7 +141,8 @@ exports.obradiPrijavuUlova = functions.firestore
                 if (ulov.vrstaId) {
                     tx.delete(db.collection("VrsteRiba").doc(ulov.vrstaId).collection("Ulovi").doc(prijava.spotId));
                 }
-                const poeni = require("./ulovi")._interno.dodeljeniPoeni(ulov);
+                // Oduzimaju se samo poeni tekuće sezone (vraćanje ulova vraća isto toliko)
+                const poeni = require("./sezona")._interno.uTekucojSezoni(ulov) ? require("./ulovi")._interno.dodeljeniPoeni(ulov) : 0;
                 if (poeni > 0 && ulov.authorId) {
                     tx.set(db.collection("Korisnici").doc(ulov.authorId), {
                         poeni: FieldValue.increment(-poeni),
@@ -309,3 +310,6 @@ exports.adminObrisiIzazov = izazovi.adminObrisiIzazov;
 const bedzevi = require("./bedzevi");
 exports.bedzeviPromenaUlova = bedzevi.bedzeviPromenaUlova;
 exports.osveziMojeBedzeve = bedzevi.osveziMojeBedzeve;
+
+// ─── SEZONA RANG LISTE (do 31.12.) ───
+exports.novaSezona = require("./sezona").novaSezona;

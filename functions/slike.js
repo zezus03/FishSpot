@@ -105,7 +105,7 @@ exports.proveriSlikuUlova = functions
 
             tx.update(ulovSnap.ref, { ...stanje, proveraSlike });
             if (otisak) tx.set(indeksRef(), { o: { [spotId]: { h: otisak, a: ulov.authorId } } }, { merge: true });
-            if (poeni > 0 && autorSnap.exists) {
+            if (poeni > 0 && autorSnap.exists && require("./sezona")._interno.uTekucojSezoni(ulov)) {
                 tx.update(autorRef, { poeni: (autorSnap.data().poeni ?? 0) + poeni });
             }
             if (Object.keys(otisci).length > 8000) console.warn("OtisciSlika/svi se približava granici veličine dokumenta");

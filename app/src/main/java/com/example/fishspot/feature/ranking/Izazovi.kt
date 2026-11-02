@@ -48,9 +48,20 @@ fun opisMerila(merilo: String) = when (merilo) {
     else -> "Najteža riba"
 }
 
+private fun kg(v: Double) = String.format(Locale.US, "%.2f", v).trimEnd('0').trimEnd('.').replace('.', ',') + " kg"
+
+private fun brojUlovaTekst(n: Long) = "$n " + if (n % 10 == 1L && n % 100 != 11L) "ulov" else "ulova"
+
 private fun rezultatTekst(merilo: String, u: UcesnikIzazova): String = when (merilo) {
-    "broj" -> "${u.rezultat.toInt()} " + if (u.rezultat.toInt() == 1) "ulov" else "ulova"
-    else -> String.format(Locale.US, "%.2f", u.rezultat).trimEnd('0').trimEnd('.').replace('.', ',') + " kg"
+    "broj" -> brojUlovaTekst(u.rezultat.toLong())
+    else -> kg(u.rezultat)
+}
+
+// Dodatni podatak ispod rezultata: kod broja ulova ukupna težina, kod ukupne težine broj ulova
+private fun dodatakRezultata(merilo: String, u: UcesnikIzazova): String? = when (merilo) {
+    "broj" -> if (u.brojUlova > 0) "ukupno " + kg(u.ukupnaTezina) else null
+    "ukupno" -> brojUlovaTekst(u.brojUlova)
+    else -> null
 }
 
 private fun datum(ms: Long) = SimpleDateFormat("d.M.yyyy.", Locale.getDefault()).format(Date(ms))
@@ -75,7 +86,7 @@ fun stanjeIzazova(iz: Izazov, sada: Long = System.currentTimeMillis()): String {
 
 // Kartica Izazovi na rang listi: aktivni, predstojeći i završeni izazovi
 @Composable
-fun IzazoviSadrzaj(vm: IzazoviViewModel, nazivVrste: (String) -> String) {
+fun IzazoviSadrzaj(vm: IzazoviViewModel, nazivVrste: (String) -> String, onUlovSelected: (String) -> Unit = {}) {
     val izazovi by vm.izazovi.collectAsState()
     var otvoren by remember { mutableStateOf<Izazov?>(null) }
     val sada = System.currentTimeMillis()
@@ -106,7 +117,7 @@ fun IzazoviSadrzaj(vm: IzazoviViewModel, nazivVrste: (String) -> String) {
     otvoren?.let { iz ->
         // Uvek najnovija verzija izazova (broj učesnika se menja)
         val svez = izazovi.firstOrNull { it.id == iz.id } ?: iz
-        IzazovDetaljiDialog(svez, vm, nazivVrste) { otvoren = null }
+        IzazovDetaljiDialog(svez, vm, nazivVrste, onUlovSelected) { otvoren = null }
     }
 }
 
@@ -158,8 +169,12 @@ private fun vrsteTekst(iz: Izazov, nazivVrste: (String) -> String) =
     if (iz.vrste.isEmpty()) "sve vrste" else iz.vrste.joinToString(", ") { nazivVrste(it) }
 
 @Composable
-private fun IzazovDetaljiDialog(iz: Izazov, vm: IzazoviViewModel, nazivVrste: (String) -> String, onZatvori: () -> Unit) {
+private fun IzazovDetaljiDialog(
+    iz: Izazov, vm: IzazoviViewModel, nazivVrste: (String) -> String,
+    onUlovSelected: (String) -> Unit, onZatvori: () -> Unit
+) {
     LaunchedEffect(iz.id) { vm.otvori(iz.id) }
+    var izabraniUid by remember { mutableStateOf<String?>(null) }
     val ucesnici by vm.ucesnici.collectAsState()
     val prijavljujem by vm.prijavljujem.collectAsState()
     val mojIndeks = ucesnici.indexOfFirst { it.uid == vm.mojUid }
@@ -212,7 +227,12 @@ private fun IzazovDetaljiDialog(iz: Izazov, vm: IzazoviViewModel, nazivVrste: (S
                     if (ucesnici.isEmpty()) item {
                         Text("Još nema prijavljenih. Budi prvi!", color = FishBoje.TekstSekundarni, fontSize = 14.sp)
                     }
-                    itemsIndexed(ucesnici, key = { _, u -> u.uid }) { i, u -> RedUcesnika(i + 1, u, iz.merilo, u.uid == vm.mojUid) }
+                    item {
+                        Text("Dodirni učesnika da vidiš ulove sa kojima se takmiči.", color = FishBoje.TekstPriguseni, fontSize = 12.sp)
+                    }
+                    itemsIndexed(ucesnici, key = { _, u -> u.uid }) { i, u ->
+                        RedUcesnika(i + 1, u, iz.merilo, u.uid == vm.mojUid) { izabraniUid = u.uid }
+                    }
                 }
                 if (mozeDaSePrijavi) {
                     Button(
@@ -233,6 +253,98 @@ private fun IzazovDetaljiDialog(iz: Izazov, vm: IzazoviViewModel, nazivVrste: (S
             }
         }
     }
+
+    // Uvek najnovija verzija učesnika (rezultat se menja dok je prozor otvoren)
+    val izabrani = izabraniUid?.let { uid -> ucesnici.indexOfFirst { it.uid == uid } }?.takeIf { it >= 0 }
+    if (izabrani != null) {
+        UloviUcesnikaDialog(
+            mesto = izabrani + 1, u = ucesnici[izabrani], merilo = iz.merilo,
+            onUlov = { id -> izabraniUid = null; onZatvori(); onUlovSelected(id) },
+            onZatvori = { izabraniUid = null }
+        )
+    }
+}
+
+@Composable
+private fun UloviUcesnikaDialog(
+    mesto: Int, u: UcesnikIzazova, merilo: String, onUlov: (String) -> Unit, onZatvori: () -> Unit
+) {
+    Dialog(onDismissRequest = onZatvori, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        Surface(modifier = Modifier.fillMaxSize(), color = FishBoje.Pozadina) {
+            Column(Modifier.fillMaxSize().systemBarsPadding()) {
+                Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp, top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(44.dp).clip(CircleShape).background(FishBoje.Krug), contentAlignment = Alignment.Center) {
+                        if (u.slika.isNotBlank()) AsyncImage(u.slika, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                        else Text(u.ime.take(1).uppercase(), color = FishBoje.Akcenat, fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("$mesto. MESTO", color = FishBoje.TekstPriguseni, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Text(u.ime, color = FishBoje.TekstPrimarni, fontSize = 20.sp, fontWeight = FontWeight.Bold,
+                            maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                    IconButton(onClick = onZatvori) { Icon(Icons.Default.Close, "Zatvori", tint = FishBoje.TekstPrimarni) }
+                }
+                // Sažetak: rezultat, broj ulova i ukupna težina
+                Row(
+                    Modifier.fillMaxWidth().padding(16.dp).clip(RoundedCornerShape(16.dp)).background(FishBoje.Kartica).padding(vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    Statistika("Rezultat", rezultatTekst(merilo, u))
+                    Statistika("Ulova", "${u.brojUlova}")
+                    Statistika("Ukupno", kg(u.ukupnaTezina))
+                }
+                if (u.ulovi.isEmpty()) {
+                    Text(
+                        "Još nema ulova koji se računaju u ovom izazovu.",
+                        color = FishBoje.TekstSekundarni, fontSize = 14.sp, textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth().padding(24.dp)
+                    )
+                }
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(u.ulovi, key = { it.id }) { ulov -> RedUlova(ulov) { onUlov(ulov.id) } }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun Statistika(naziv: String, vrednost: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(vrednost, color = FishBoje.TekstPrimarni, fontWeight = FontWeight.Bold, fontSize = 17.sp)
+        Text(naziv, color = FishBoje.TekstPriguseni, fontSize = 12.sp)
+    }
+}
+
+@Composable
+private fun RedUlova(ulov: UlovUIzazovu, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(FishBoje.Kartica)
+            .border(1.dp, FishBoje.IvicaKartice, RoundedCornerShape(14.dp))
+            .clickable(onClick = onClick)
+            .padding(10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(Modifier.size(64.dp).clip(RoundedCornerShape(10.dp)).background(FishBoje.Krug), contentAlignment = Alignment.Center) {
+            if (ulov.slikaUrl.isNotBlank()) AsyncImage(ulov.slikaUrl, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+            else Icon(Icons.Default.SetMeal, null, tint = FishBoje.TekstPriguseni)
+        }
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(ulov.vrsta.ifBlank { "Riba" }, color = FishBoje.TekstPrimarni, fontWeight = FontWeight.SemiBold,
+                maxLines = 2, overflow = TextOverflow.Ellipsis)
+            if (ulov.vreme > 0) Text(datum(ulov.vreme), color = FishBoje.TekstPriguseni, fontSize = 12.sp)
+        }
+        Text(kg(ulov.tezina), color = FishBoje.TekstPrimarni, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+    }
 }
 
 @Composable
@@ -245,7 +357,7 @@ private fun Pravilo(ikona: ImageVector, tekst: String) {
 }
 
 @Composable
-private fun RedUcesnika(mesto: Int, u: UcesnikIzazova, merilo: String, jaSam: Boolean) {
+private fun RedUcesnika(mesto: Int, u: UcesnikIzazova, merilo: String, jaSam: Boolean, onClick: () -> Unit) {
     val boja = when (mesto) { 1 -> ZLATNA; 2 -> Color(0xFFB0BEC5); 3 -> Color(0xFFCD7F32); else -> FishBoje.TekstPriguseni }
     Row(
         modifier = Modifier
@@ -253,6 +365,7 @@ private fun RedUcesnika(mesto: Int, u: UcesnikIzazova, merilo: String, jaSam: Bo
             .clip(RoundedCornerShape(14.dp))
             .background(if (jaSam) FishBoje.Akcenat.copy(alpha = 0.12f) else FishBoje.Kartica)
             .border(1.dp, if (jaSam) FishBoje.AkcenatTamni else FishBoje.IvicaKartice, RoundedCornerShape(14.dp))
+            .clickable(onClick = onClick)
             .padding(10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -273,6 +386,9 @@ private fun RedUcesnika(mesto: Int, u: UcesnikIzazova, merilo: String, jaSam: Bo
                 modifier = Modifier.size(44.dp).clip(RoundedCornerShape(10.dp)))
             Spacer(Modifier.width(10.dp))
         }
-        Text(rezultatTekst(merilo, u), color = FishBoje.TekstPrimarni, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+        Column(horizontalAlignment = Alignment.End) {
+            Text(rezultatTekst(merilo, u), color = FishBoje.TekstPrimarni, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+            dodatakRezultata(merilo, u)?.let { Text(it, color = FishBoje.TekstPriguseni, fontSize = 12.sp) }
+        }
     }
 }

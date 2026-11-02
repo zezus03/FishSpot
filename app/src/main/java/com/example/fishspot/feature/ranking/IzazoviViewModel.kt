@@ -33,8 +33,20 @@ data class UcesnikIzazova(
     val slika: String,
     val rezultat: Double,
     val brojUlova: Long,
+    val ukupnaTezina: Double,
     val najboljiSlika: String,
-    val najboljiVrsta: String
+    val najboljiVrsta: String,
+    val ulovi: List<UlovUIzazovu>
+)
+
+// Ulov sa kojim se učesnik takmiči (server ga upisuje u Izazovi/{id}/ucesnici/{uid}.ulovi)
+data class UlovUIzazovu(
+    val id: String,
+    val slikaUrl: String,
+    val vrsta: String,
+    val tezina: Double,
+    val vreme: Long,
+    val cuvarka: Boolean
 )
 
 class IzazoviViewModel : ViewModel() {
@@ -87,16 +99,32 @@ class IzazoviViewModel : ViewModel() {
                 _ucesnici.value = s?.documents.orEmpty().map { d ->
                     @Suppress("UNCHECKED_CAST")
                     val najbolji = d.get("najbolji") as? Map<String, Any?>
+                    @Suppress("UNCHECKED_CAST")
+                    val ulovi = (d.get("ulovi") as? List<Map<String, Any?>>).orEmpty().map { u ->
+                        UlovUIzazovu(
+                            id = u["id"] as? String ?: "",
+                            slikaUrl = u["slikaUrl"] as? String ?: "",
+                            vrsta = u["vrsta"] as? String ?: "",
+                            tezina = (u["tezina"] as? Number)?.toDouble() ?: 0.0,
+                            vreme = (u["vreme"] as? Number)?.toLong() ?: 0L,
+                            cuvarka = u["cuvarka"] as? Boolean ?: false
+                        )
+                    }
                     UcesnikIzazova(
                         uid = d.id,
                         ime = d.getString("ime") ?: "Pecaroš",
                         slika = d.getString("slika").orEmpty(),
                         rezultat = d.getDouble("rezultat") ?: 0.0,
                         brojUlova = d.getLong("brojUlova") ?: 0L,
+                        // Stariji zapisi nemaju ukupnu težinu: zbir iz spiska ulova
+                        ukupnaTezina = d.getDouble("ukupnaTezina") ?: ulovi.sumOf { it.tezina },
                         najboljiSlika = najbolji?.get("slikaUrl") as? String ?: "",
-                        najboljiVrsta = najbolji?.get("vrsta") as? String ?: ""
+                        najboljiVrsta = najbolji?.get("vrsta") as? String ?: "",
+                        ulovi = ulovi
                     )
-                }
+                    // Isti rezultat: prednost ima veća ukupna težina, pa veći broj ulova
+                }.sortedWith(compareByDescending<UcesnikIzazova> { it.rezultat }
+                    .thenByDescending { it.ukupnaTezina }.thenByDescending { it.brojUlova })
             }
     }
 

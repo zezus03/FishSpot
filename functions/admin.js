@@ -171,7 +171,7 @@ exports.adminVelikiUlov = functions.https.onCall(async (data, context) => {
         const stanje = stanjePoena({ ...ulov, proveraAdmina: odluka === "odobri" ? "odobren" : "odbijen" });
         const razlika = stanje.poeni - (ulov.poeni ?? 0);
         tx.update(ref, { ...stanje, resioAdmin: email, resenoVreme: Timestamp.now() });
-        if (razlika !== 0 && autor.exists) {
+        if (razlika !== 0 && autor.exists && require("./sezona")._interno.uTekucojSezoni(ulov)) {
             tx.update(autorRef, { poeni: Math.max(0, (autor.data().poeni ?? 0) + razlika) });
         }
         return razlika;

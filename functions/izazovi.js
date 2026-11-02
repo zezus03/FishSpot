@@ -41,13 +41,20 @@ function nazivVrste(u) {
 function izracunaj(izazov, ulovi) {
     const vazeci = ulovi.filter((u) => ulovVazi(izazov, u));
     const najveci = vazeci.reduce((m, u) => ((u.tezinaRibe ?? 0) > (m?.tezinaRibe ?? -1) ? u : m), null);
+    const ukupno = vazeci.reduce((z, u) => z + (u.tezinaRibe ?? 0), 0);
     let rezultat = 0;
     if (izazov.merilo === "najteza") rezultat = najveci?.tezinaRibe ?? 0;
-    else if (izazov.merilo === "ukupno") rezultat = vazeci.reduce((z, u) => z + (u.tezinaRibe ?? 0), 0);
+    else if (izazov.merilo === "ukupno") rezultat = ukupno;
     else rezultat = vazeci.length;
     return {
         rezultat: Math.round(rezultat * 100) / 100,
         brojUlova: vazeci.length,
+        ukupnaTezina: Math.round(ukupno * 100) / 100,
+        // Ulovi sa kojima se učesnik takmiči (najteži prvi), za pregled u aplikaciji
+        ulovi: [...vazeci].sort((a, b) => (b.tezinaRibe ?? 0) - (a.tezinaRibe ?? 0)).slice(0, 100).map((u) => ({
+            id: u.id, slikaUrl: u.slikaUrl || "", vrsta: nazivVrste(u), tezina: u.tezinaRibe ?? 0,
+            vreme: vremeObjave(u), cuvarka: u.cuvarka === true,
+        })),
         najbolji: najveci ? {
             id: najveci.id, slikaUrl: najveci.slikaUrl || "", vrsta: nazivVrste(najveci), tezina: najveci.tezinaRibe ?? 0,
         } : null,
@@ -104,7 +111,7 @@ exports.pridruziSeIzazovu = functions.https.onCall(async (data, context) => {
         if (uc.exists) return;
         tx.set(uc.ref, {
             ime: String(korisnik.data()?.userName || "Pecaroš").slice(0, 40), slika: korisnik.data()?.slikaURL || "",
-            rezultat: 0, brojUlova: 0, najbolji: null, prijavljen: Date.now(),
+            rezultat: 0, brojUlova: 0, ukupnaTezina: 0, ulovi: [], najbolji: null, prijavljen: Date.now(),
         });
         tx.update(izRef, { brojUcesnika: FieldValue.increment(1) });
     });

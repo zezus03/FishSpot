@@ -48,7 +48,8 @@ private val Bronza = Color(0xFFCD7F32)
 fun RankingScreen(
     rankingViewModel: RankingViewModel = viewModel(),
     onNavigateBack: () -> Unit,
-    onUserSelected: (userId: String) -> Unit
+    onUserSelected: (userId: String) -> Unit,
+    onUlovSelected: (spotId: String) -> Unit = {}
 ) {
     val userRanking by rankingViewModel.userRanking.collectAsState()
     val mojId = remember { FirebaseAuth.getInstance().currentUser?.uid }
@@ -92,11 +93,12 @@ fun RankingScreen(
         }
 
         if (kartica == 1) {
-            IzazoviSadrzaj(izazoviViewModel, nazivVrste)
+            IzazoviSadrzaj(izazoviViewModel, nazivVrste, onUlovSelected)
         } else LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(bottom = 24.dp)
         ) {
+            item { TrajanjeSezone() }
             if (userRanking.isNotEmpty()) {
                 item {
                     Postolje(
@@ -118,6 +120,34 @@ fun RankingScreen(
                 }
             }
         }
+    }
+}
+
+// Sezona traje do kraja godine: poeni za rang listu se računaju do 31.12.
+@Composable
+private fun TrajanjeSezone() {
+    // Calendar umesto java.time (aplikacija radi i na Androidu 7)
+    val kalendar = java.util.Calendar.getInstance()
+    val godina = kalendar.get(java.util.Calendar.YEAR)
+    val preostalo = (kalendar.getActualMaximum(java.util.Calendar.DAY_OF_YEAR) -
+        kalendar.get(java.util.Calendar.DAY_OF_YEAR)).toLong()
+    val dana = when {
+        preostalo == 0L -> "poslednji dan"
+        preostalo % 10 == 1L && preostalo % 100 != 11L -> "još $preostalo dan"
+        else -> "još $preostalo dana"
+    }
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)
+            .clip(RoundedCornerShape(12.dp)).background(FishBoje.Kartica)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(Icons.Default.EmojiEvents, contentDescription = null, tint = Zlato, modifier = Modifier.size(18.dp))
+        Spacer(Modifier.width(8.dp))
+        Text(
+            "Sezona $godina: poeni se računaju do 31.12.$godina. ($dana)",
+            color = FishBoje.TekstSekundarni, fontSize = 13.sp
+        )
     }
 }
 

@@ -161,7 +161,14 @@ fun MainNavigation(navController: NavHostController, auth: FirebaseAuth) {
             RankingScreen(
                 onNavigateBack = { navController.popBackStack() },
                 // Dodir na korisnika otvara njegov profil sa ulovima
-                onUserSelected = { userId -> navController.navigate("ulovi_korisnika/$userId") }
+                onUserSelected = { userId -> navController.navigate("ulovi_korisnika/$userId") },
+                // Ulov iz izazova se otvara na mapi, sa punim detaljima
+                onUlovSelected = { spotId ->
+                    runCatching { navController.getBackStackEntry("map") }.getOrNull()?.let { mapa ->
+                        mapa.savedStateHandle["spot_id_to_focus"] = spotId
+                        navController.popBackStack("map", inclusive = false)
+                    }
+                }
             )
         }
 
