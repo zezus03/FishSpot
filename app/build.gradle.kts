@@ -139,6 +139,9 @@ dependencies {
     implementation("com.google.firebase:firebase-functions-ktx")
     // Izveštaji o padovima aplikacije (Firebase konzola -> Crashlytics)
     implementation("com.google.firebase:firebase-crashlytics-ktx")
+    // App Check: Play Integrity za Play verziju, probni token za razvoj
+    implementation("com.google.firebase:firebase-appcheck-playintegrity")
+    debugImplementation("com.google.firebase:firebase-appcheck-debug")
     implementation("com.google.android.gms:play-services-auth:21.2.0")
 
     // Ostalo
