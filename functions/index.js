@@ -313,3 +313,6 @@ exports.osveziMojeBedzeve = bedzevi.osveziMojeBedzeve;
 
 // ─── SEZONA RANG LISTE (do 31.12.) ───
 exports.novaSezona = require("./sezona").novaSezona;
+
+// ─── NEDELJNO ČIŠĆENJE (stare prijave, slike bez ulova, Deda Pera) ───
+exports.nedeljnoCiscenje = require("./ciscenje").nedeljnoCiscenje;
