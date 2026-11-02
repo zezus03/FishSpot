@@ -39,12 +39,15 @@ import java.util.Date
 import java.util.Locale
 
 // Opšti bedževi; isti spisak (id i uslovi) računa server u functions/bedzevi.js
-data class Bedz(val id: String, val naziv: String, val uslov: String, @DrawableRes val slika: Int)
+// jedinstven: ne osvaja se ulovima i ne oduzima se (Pionir, Prijatelj FishSpot-a)
+data class Bedz(val id: String, val naziv: String, val uslov: String, @DrawableRes val slika: Int, val jedinstven: Boolean = false)
 
 data class OsvojenBedz(val id: String, val naziv: String, val dobijen: Long)
 
 object Bedzevi {
     val svi = listOf(
+        Bedz("pionir", "Pionir", "Uz FishSpot od samog početka: nalog napravljen 2026. godine", R.drawable.bedz_pionir, jedinstven = true),
+        Bedz("prijatelj", "Prijatelj FishSpot-a", "Dodeljuje ga tim FishSpot-a za posebnu podršku aplikaciji", R.drawable.bedz_prijatelj, jedinstven = true),
         Bedz("pecaros_1", "Pecaroš (bronza)", "Prvi provereni ulov", R.drawable.bedz_pecaros_1),
         Bedz("pecaros_2", "Pecaroš (srebro)", "25 proverenih ulova", R.drawable.bedz_pecaros_2),
         Bedz("pecaros_3", "Pecaroš (zlato)", "100 proverenih ulova", R.drawable.bedz_pecaros_3),
@@ -162,8 +165,17 @@ fun BedzeviDialog(ime: String?, osvojeni: List<OsvojenBedz>, onZatvori: () -> Un
                             SlikaBedza(b, osvojen = o != null, velicina = 64)
                             Spacer(Modifier.width(12.dp))
                             Column(Modifier.weight(1f)) {
-                                Text(b.naziv, color = if (o != null) FishBoje.TekstPrimarni else FishBoje.TekstPriguseni,
-                                    fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(b.naziv, color = if (o != null) FishBoje.TekstPrimarni else FishBoje.TekstPriguseni,
+                                        fontWeight = FontWeight.Bold, fontSize = 15.sp, modifier = Modifier.weight(1f, fill = false))
+                                    if (b.jedinstven) {
+                                        Spacer(Modifier.width(6.dp))
+                                        Text("JEDINSTVEN", color = androidx.compose.ui.graphics.Color(0xFFCE93D8), fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.clip(RoundedCornerShape(6.dp))
+                                                .background(androidx.compose.ui.graphics.Color(0x339C27B0)).padding(horizontal = 6.dp, vertical = 2.dp))
+                                    }
+                                }
                                 Text(b.uslov, color = FishBoje.TekstSekundarni, fontSize = 13.sp)
                                 Text(
                                     if (o != null) "Osvojen ${datum(o.dobijen)}" else "Još nije osvojen",

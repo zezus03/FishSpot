@@ -250,6 +250,7 @@ exports.obrisiNalog = functions.https.onCall(async (data, context) => {
         if (soba.id.split("_").includes(uid)) await db.recursiveDelete(soba);
     }
     await db.recursiveDelete(db.collection("bot_chats").doc(uid));
+    await db.collection("PosebniBedzevi").doc("prijatelj").update({ [uid]: FieldValue.delete() }).catch(() => null);
     await db.recursiveDelete(db.collection("Razgovori").doc(uid));
     // Učešće u izazovima
     for (const iz of (await db.collection("Izazovi").get()).docs) {

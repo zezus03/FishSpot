@@ -2,9 +2,12 @@
 // Korisnici/{uid}/bedzevi/{id} = { id, naziv, dobijen }. Bedž važi dok postoje ulovi koji ga
 // zaslužuju: posle brisanja ulova (ili uklanjanja zbog prijava) bedž se oduzima ako uslov više ne važi.
 // Kad korisnik osvoji nov bedž, dobija obaveštenje. Isti spisak (id, naziv) je u aplikaciji (Bedzevi.kt).
+// Jedinstveni bedževi se nikad ne oduzimaju automatski:
+//   pionir    - nalog napravljen do kraja 2026. (dodeljuje se sam)
+//   prijatelj - "Prijatelj FishSpot-a", dodeljuje ga admin (adminBedzPrijatelj); spisak je u PosebniBedzevi/prijatelj
 const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
-const { Timestamp } = require("firebase-admin/firestore");
+const { Timestamp, FieldValue } = require("firebase-admin/firestore");
 
 function vremeUlova(u) {
     if (u.objavljeno instanceof Timestamp) return u.objavljeno.toMillis();
@@ -62,6 +65,21 @@ const BEDZEVI = [
     { id: "fotograf", naziv: "Fotograf", uslov: (s) => s.aplikacija >= 10 },
 ];
 
+// ─── JEDINSTVENI BEDŽEVI ───
+const PIONIR = { id: "pionir", naziv: "Pionir" };
+const PRIJATELJ = { id: "prijatelj", naziv: "Prijatelj FishSpot-a" };
+// 1.1.2027. u 00:00 po beogradskom vremenu
+const ROK_PIONIR = Date.UTC(2026, 11, 31, 23, 0);
+
+async function nalogNapravljen(uid) {
+    try {
+        const u = await admin.auth().getUser(uid);
+        return Date.parse(u.metadata.creationTime) || null;
+    } catch (e) {
+        return null;
+    }
+}
+
 // Usklađuje bedževe korisnika sa ulovima: nove upisuje (uz obaveštenje), nezaslužene briše. Vraća nove.
 async function proveriBedzeve(uid, obavesti = true) {
     const db = admin.firestore();
@@ -75,6 +93,10 @@ async function proveriBedzeve(uid, obavesti = true) {
     const ima = new Set(imaSnap.docs.map((d) => d.id));
     const s = statistika(uloviSnap.docs.map((d) => d.data()));
     const novi = BEDZEVI.filter((b) => !ima.has(b.id) && b.uslov(s));
+    if (!ima.has(PIONIR.id)) {
+        const napravljen = await nalogNapravljen(uid);
+        if (napravljen && napravljen < ROK_PIONIR) novi.push(PIONIR);
+    }
     const oduzeti = BEDZEVI.filter((b) => ima.has(b.id) && !b.uslov(s));
     if (!novi.length && !oduzeti.length) return [];
 
@@ -114,6 +136,56 @@ exports.bedzeviPromenaUlova = functions.firestore
         return null;
     });
 
+// Admin: "Prijatelj FishSpot-a". akcija: "lista" | "trazi" (upit = početak korisničkog imena) | "dodeli" | "oduzmi"
+exports.adminBedzPrijatelj = functions.https.onCall(async (data, context) => {
+    const email = require("./admin")._interno.proveriAdmina(context);
+    const db = admin.firestore();
+    const spisakRef = db.collection("PosebniBedzevi").doc(PRIJATELJ.id);
+    const akcija = String(data?.akcija || "lista");
+
+    if (akcija === "trazi") {
+        const upit = String(data?.upit || "").trim().slice(0, 40);
+        if (!upit) return { korisnici: [] };
+        const snap = await db.collection("Korisnici").orderBy("userName").startAt(upit).endAt(upit + "\uf8ff").limit(10).get();
+        return {
+            korisnici: snap.docs.map((d) => ({
+                uid: d.id, ime: d.data().userName || "", imePrezime: d.data().imePrezime || "", slika: d.data().slikaURL || "",
+            })),
+        };
+    }
+
+    if (akcija === "dodeli" || akcija === "oduzmi") {
+        const uid = String(data?.uid || "");
+        const korisnik = uid ? await db.collection("Korisnici").doc(uid).get() : null;
+        if (!korisnik?.exists) throw new functions.https.HttpsError("not-found", "Korisnik ne postoji.");
+        const bedzRef = korisnik.ref.collection("bedzevi").doc(PRIJATELJ.id);
+        if (akcija === "dodeli") {
+            const sada = Date.now();
+            await bedzRef.set({ id: PRIJATELJ.id, naziv: PRIJATELJ.naziv, dobijen: sada });
+            await spisakRef.set({ [uid]: { ime: korisnik.data().userName || "Pecaroš", slika: korisnik.data().slikaURL || "", dobijen: sada } }, { merge: true });
+            const token = korisnik.data().fcmToken;
+            if (token) {
+                await admin.messaging().send({
+                    token,
+                    notification: { title: `Postao si ${PRIJATELJ.naziv} 💜`, body: "Hvala što podržavaš FishSpot! Bedž je na tvom profilu." },
+                    data: { tip: "bedz" },
+                    android: { notification: { channelId: "fishspot_obavestenja" } },
+                }).catch((e) => console.warn("Obaveštenje o bedžu nije poslato:", e.message));
+            }
+        } else {
+            await bedzRef.delete();
+            await spisakRef.update({ [uid]: FieldValue.delete() }).catch(() => null);
+        }
+        console.log(`Admin ${email}: ${akcija} bedž ${PRIJATELJ.id} korisniku ${uid}`);
+    }
+
+    const spisak = (await spisakRef.get()).data() || {};
+    return {
+        prijatelji: Object.entries(spisak).map(([uid, v]) => ({ uid, ime: v.ime || "", slika: v.slika || "", dobijen: v.dobijen || 0 }))
+            .sort((a, b) => b.dobijen - a.dobijen),
+    };
+});
+
 // Aplikacija poziva pri otvaranju profila: stari korisnici dobijaju bedževe za ranije ulove (bez obaveštenja)
 exports.osveziMojeBedzeve = functions.https.onCall(async (data, context) => {
     if (!context.auth) throw new functions.https.HttpsError("unauthenticated", "Moraš biti prijavljen.");
@@ -121,4 +193,4 @@ exports.osveziMojeBedzeve = functions.https.onCall(async (data, context) => {
     return { novih: novi.length };
 });
 
-exports._interno = { statistika, BEDZEVI, proveriBedzeve, satIMesec };
+exports._interno = { statistika, BEDZEVI, proveriBedzeve, satIMesec, ROK_PIONIR };

@@ -310,6 +310,7 @@ exports.adminObrisiIzazov = izazovi.adminObrisiIzazov;
 const bedzevi = require("./bedzevi");
 exports.bedzeviPromenaUlova = bedzevi.bedzeviPromenaUlova;
 exports.osveziMojeBedzeve = bedzevi.osveziMojeBedzeve;
+exports.adminBedzPrijatelj = bedzevi.adminBedzPrijatelj;
 
 // ─── SEZONA RANG LISTE (do 31.12.) ───
 exports.novaSezona = require("./sezona").novaSezona;
