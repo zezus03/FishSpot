@@ -24,7 +24,7 @@
 <main>
   <div class="oznaka">FishSpot</div>
   <h1>Politika privatnosti</h1>
-  <div class="datum">Poslednja izmena: 28. oktobar 2026.</div>
+  <div class="datum">Poslednja izmena: 2. novembar 2026.</div>
 
   <section>
     <h2>Ukratko</h2>
@@ -32,13 +32,20 @@
   </section>
 
   <section>
+    <h2>Ko stoji iza aplikacije</h2>
+    <p>FishSpot je samostalni projekat <strong>Đorđa Jovanovića</strong>, studenta Elektronskog fakulteta u Nišu. Iza aplikacije ne stoji nijedna firma, a sve troškove (serveri i servisi) autor finansira iz sopstvenog studentskog džepa. Autor je odgovoran za obradu tvojih podataka opisanu u ovoj politici.</p>
+  </section>
+
+  <section>
     <h2>Koje podatke prikupljamo</h2>
     <ul>
       <li><strong>Nalog:</strong> e-adresa, korisničko ime, ime i prezime (ako ga uneseš) i profilna slika. Ako se prijaviš preko Google naloga, od Google-a dobijamo ime, e-adresu i sliku profila.</li>
-      <li><strong>Ulovi:</strong> fotografija, vrsta, dužina i težina ribe, mamac, tehnika, opis, ocena mesta, lokacija ulova i vremenski uslovi u trenutku ulova. Ulove vide svi prijavljeni korisnici.</li>
+      <li><strong>Ulovi:</strong> do 5 fotografija, vrsta (kod čuvarke više vrsta i ukupna težina), naziv mesta, dužina i težina ribe, mamac, tehnika, opis, ocena mesta, lokacija ulova i vremenski uslovi u trenutku ulova. Ulove vide svi prijavljeni korisnici.</li>
       <li><strong>Lokacija:</strong> dok je aplikacija otvorena, tvoja trenutna lokacija se koristi za mapu, prognozu i obaveštenja o obližnjim vodama, i ostaje na tvom telefonu. Drugim korisnicima se prikazuje <strong>samo ako uključiš „Prikaži me na mapi“</strong> na profilu, i to samo dok je aplikacija otvorena. Kada je isključiš ili zatvoriš aplikaciju, tvoja lokacija se briše sa servera.</li>
       <li><strong>Poruke i komentari:</strong> komentari na ulovima (vidljivi svima), privatne poruke (vide ih samo dva učesnika razgovora) i pitanja koja postaviš asistentu Deda Peri.</li>
-      <li><strong>Poeni i rang lista:</strong> poeni koje dobijaš za ulove, izvor fotografije ulova i otisak fotografije (vidi „Poeni i provera fotografija“).</li>
+      <li><strong>Poeni i rang lista:</strong> poeni koje dobijaš za ulove, poeni iz ranijih sezona, izvor fotografije ulova i otisak fotografije (vidi „Poeni i provera fotografija“). Korisničko ime, profilna slika i poeni se vide na rang listi.</li>
+      <li><strong>Izazovi:</strong> kada se prijaviš na izazov, čuvamo tvoje korisničko ime, profilnu sliku, rezultat i spisak ulova koji se računaju (slika, vrsta, težina, datum). To vide svi korisnici u rang listi izazova.</li>
+      <li><strong>Bedževi:</strong> bedževi koje osvojiš i vreme osvajanja. Vide se na tvom profilu.</li>
       <li><strong>Prijave ulova:</strong> kada prijaviš neprikladan ulov, čuvamo razlog i ko je prijavio, da bi moderacija mogla da ga pregleda.</li>
       <li><strong>Tehnički podaci:</strong> token za obaveštenja i izveštaji o padu aplikacije (model telefona, verzija sistema, tok greške) preko Firebase Crashlytics.</li>
     </ul>
@@ -68,7 +75,8 @@
     </ul>
     <p><strong>Riba preko 5 kg</strong> (50 i više poena) dobija poene tek kada ulov pregleda administrator. Do tada su poeni na čekanju. Ako administrator proceni da fotografija ili podaci nisu verodostojni, ulov ostaje na mapi, ali bez poena.</p>
     <p>Ulov bez poena se i dalje objavljuje i vidi na mapi. Pre čuvanja ulova aplikacija ispod fotografije prikazuje da li ona donosi poene.</p>
-    <p>Kada izmeniš težinu, poeni se računaju ponovo. Kada obrišeš ulov, oduzimaju se tačno poeni koje je doneo. Ulov koji moderacija ukloni posle prijava gubi poene, a dobija ih nazad ako ga admin vrati.</p>
+    <p><strong>Sezona:</strong> poeni za rang listu se računaju do 31. decembra. Na početku nove godine poeni svih korisnika se vraćaju na nulu, a poeni iz prošle sezone i prvih 10 na rang listi se čuvaju kao istorija.</p>
+    <p>Podaci o ribi (vrsta, težina, dužina) mogu da se menjaju 30 minuta od objave ulova. Kada izmeniš težinu, poeni se računaju ponovo. Kada obrišeš ulov, oduzimaju se tačno poeni koje je doneo. Ulov koji moderacija ukloni posle prijava gubi poene, a dobija ih nazad ako ga admin vrati.</p>
     <p><strong>Kako se ovo proverava:</strong> aplikacija na tvom telefonu čita podatke iz fajla fotografije (vreme snimanja, marku i model telefona, ime fajla i folder, oznaku da je fotografiju napravila veštačka inteligencija). Na server se šalje samo rezultat, npr. „slikano u aplikaciji“ ili „snimak ekrana“. Server od svake objavljene fotografije pravi otisak, kratak niz brojeva po kome prepoznaje istu fotografiju. Iz otiska ne može da se dobije fotografija, a briše se zajedno sa ulovom.</p>
   </section>
 
@@ -77,10 +85,12 @@
     <p>Podaci se čuvaju na Google Firebase servisima (Authentication, Cloud Firestore, Cloud Storage, Cloud Functions, Cloud Messaging, Crashlytics). Pored toga koristimo:</p>
     <ul>
       <li><strong>Google Maps</strong> za prikaz mape,</li>
+      <li><strong>Google Geocoder</strong> (deo Android sistema) za naziv mesta ulova (šalju se samo koordinate),</li>
       <li><strong>OpenWeather</strong> za vremensku prognozu (šalju se samo koordinate),</li>
       <li><strong>Google Gemini</strong> za odgovore asistenta Deda Pere (šalje se tekst pitanja). Aplikacija koristi besplatni plan Gemini API-ja, pa Google pitanja može da koristi za unapređenje svojih usluga. Zato u pitanja Deda Peri ne upisuj lične podatke,</li>
       <li><strong>RHMZ Srbije</strong> kao izvor podataka o vodostaju (tvoji podaci se ne šalju).</li>
     </ul>
+    <p>Kartica za deljenje ulova na društvenim mrežama pravi se na tvom telefonu, i deli se samo kada ti to izabereš.</p>
     <p>Podatke ne delimo ni sa kim drugim, osim ako to zahteva zakon.</p>
   </section>
 
@@ -91,7 +101,7 @@
 
   <section>
     <h2>Brisanje naloga</h2>
-    <p>Nalog možeš sam da obrišeš u aplikaciji: <strong>Profil → Obriši nalog</strong>. Time se trajno brišu profil, profilna slika, svi ulovi sa slikama, komentari, privatne poruke, razgovor sa Deda Perom, prijave i poeni. Ako ne možeš da pristupiš aplikaciji, piši nam na adresu ispod i obrisaćemo nalog umesto tebe.</p>
+    <p>Nalog možeš sam da obrišeš u aplikaciji: <strong>Profil → Obriši nalog</strong>. Time se trajno brišu profil, profilna slika, svi ulovi sa slikama, komentari, privatne poruke i spisak razgovora, razgovor sa Deda Perom, prijave, poeni, bedževi i učešće u izazovima. Ako ne možeš da pristupiš aplikaciji, piši nam na adresu ispod i obrisaćemo nalog umesto tebe.</p>
   </section>
 
   <section>

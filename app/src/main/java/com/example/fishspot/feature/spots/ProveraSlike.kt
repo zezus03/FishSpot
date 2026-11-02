@@ -89,8 +89,8 @@ object ProveraSlike {
     const val NAJVISE_DANA = 3
     private const val DAN_MS = 24L * 60 * 60 * 1000
 
-    // PRIVREMENO ISKLJUČENO dok se testira sa starijim slikama. Pre objave na Play mora da bude true!
-    const val PROVERAVAJ_STAROST = false
+    // Slike iz galerije starije od NAJVISE_DANA ne dobijaju poene (za testiranje sa starim slikama: false)
+    const val PROVERAVAJ_STAROST = true
 
     // Imena kako ih aplikacije stvarno čuvaju na telefonu:
     // WhatsApp: IMG-20261022-WA0003.jpg, Viber: IMG-2aa845223bded79db36f42f452698749-V.jpg (ili viber_image_...),
