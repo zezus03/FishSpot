@@ -22,7 +22,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -56,7 +55,6 @@ fun RegisterScreen(
     var password by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
     var fullName by remember { mutableStateOf("") }
-    var phone by remember { mutableStateOf("") }
     var slikaBytes by remember { mutableStateOf<ByteArray?>(null) }
     var bitmap by remember { mutableStateOf<Bitmap?>(null) }
 
@@ -266,28 +264,6 @@ fun RegisterScreen(
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    OutlinedTextField(
-                        value = phone,
-                        onValueChange = { phone = it },
-                        label = { Text("Telefon") },
-                        leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                        singleLine = true,
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = Color.Black,
-                            unfocusedTextColor = Color.Black,
-                            focusedLabelColor = Color.Black.copy(alpha = 0.7f),
-                            unfocusedLabelColor = Color.Black.copy(alpha = 0.7f),
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = Color.Gray.copy(alpha = 0.5f),
-                            focusedLeadingIconColor = Color.Black.copy(alpha = 0.6f),
-                            unfocusedLeadingIconColor = Color.Black.copy(alpha = 0.6f)
-                        ),
-                        modifier = Modifier.fillMaxWidth()
-                    )
 
                     Spacer(modifier = Modifier.height(8.dp))
 
@@ -343,7 +319,7 @@ fun RegisterScreen(
                         onClick = {
                             scope.launch {
                                 val result = authRepository.registrujKorisnika(
-                                    email, password, username, fullName, phone, slikaBytes
+                                    email, password, username, fullName, slikaBytes
                                 )
                                 if (result.isSuccess) {
                                     onRegistrationSuccess()
@@ -419,6 +395,9 @@ fun RegisterScreen(
                             )
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+                    SaglasnostUslova(modifier = Modifier.fillMaxWidth())
                 }
             }
             Spacer(modifier = Modifier.height(32.dp))

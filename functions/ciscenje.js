@@ -4,6 +4,7 @@
 //      (ulovi koje je admin vratio zadržavaju zapis, da ih nove prijave ne bi ponovo uklonile)
 //   3. slike starije od 7 dana koje nisu deo nijednog ulova (prekinuto otpremanje, odustao od objave)
 //   4. razgovore sa Deda Perom starije od 30 dana
+//   5. e-adresu i telefon iz javnih profila (Korisnici), ako su ostali od starih naloga
 // Ulovi, slike ulova, poeni, bedževi, izazovi i privatne poruke se ne diraju.
 const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
@@ -96,11 +97,24 @@ async function ocistiDeduPeru(sada) {
     return poruka;
 }
 
+async function ocistiLicnePodatke() {
+    const db = admin.firestore();
+    const snap = await db.collection("Korisnici").get();
+    const zaCiscenje = snap.docs.filter((d) => "email" in d.data() || "telefon" in d.data());
+    for (let i = 0; i < zaCiscenje.length; i += 400) {
+        const paket = db.batch();
+        zaCiscenje.slice(i, i + 400).forEach((d) => paket.update(d.ref, { email: FieldValue.delete(), telefon: FieldValue.delete() }));
+        await paket.commit();
+    }
+    return zaCiscenje.length;
+}
+
 async function ocisti(sada = Date.now()) {
     const prijave = await ocistiPrijave(sada);
     const slika = await ocistiSlikeBezUlova(sada);
     const dedaPera = await ocistiDeduPeru(sada);
-    const rezultat = { uklonjenihUlova: prijave.ulova, zapisaPrijava: prijave.zapisa, slikaBezUlova: slika, porukaDedePere: dedaPera };
+    const profila = await ocistiLicnePodatke();
+    const rezultat = { uklonjenihUlova: prijave.ulova, zapisaPrijava: prijave.zapisa, slikaBezUlova: slika, porukaDedePere: dedaPera, profila };
     console.log("Nedeljno čišćenje:", JSON.stringify(rezultat));
     return rezultat;
 }
@@ -114,4 +128,4 @@ exports.nedeljnoCiscenje = functions
         return null;
     });
 
-exports._interno = { ocisti, osnovaSlike };
+exports._interno = { ocisti, osnovaSlike, ocistiLicnePodatke };

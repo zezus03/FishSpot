@@ -103,6 +103,7 @@ class BotChatViewModel : ViewModel() {
     // najviše PITANJA_DNEVNO pitanja u 24 sata, jer se svaki Gemini odgovor plaća
     fun sendQuestionToBot(text: String) {
         val userId = auth.currentUser?.uid ?: return
+        if (!com.example.fishspot.feature.auth.PotvrdaNaloga.proveri()) return
         val pitanje = text.trim().take(MAKS_DUZINA_PITANJA)
         if (pitanje.isBlank()) return
         _isThinking.value = true

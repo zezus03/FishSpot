@@ -38,7 +38,7 @@ class UploadWorker(appContext: Context, workerParams: WorkerParameters) : Corout
                 } catch (e: com.google.firebase.storage.StorageException) {
                     if (e.errorCode != com.google.firebase.storage.StorageException.ERROR_OBJECT_NOT_FOUND) throw e
                 }
-                ref.putFile(Uri.fromFile(fajl)).await()
+                ref.putFile(Uri.fromFile(fajl), com.example.fishspot.core.model.SLIKA_JPEG).await()
                 return ref.downloadUrl.await().toString()
             }
 

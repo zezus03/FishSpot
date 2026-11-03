@@ -64,6 +64,8 @@ class MainActivity : ComponentActivity() {
                     }
                     // Poruke u stilu aplikacije (umesto sistemskog Toast-a)
                     FishPorukaHost()
+                    // Prozor „Potvrdi e-adresu“ (kad nepotvrđen nalog pokuša da objavi)
+                    com.example.fishspot.feature.auth.PotvrdaNalogaHost()
                 }
             }
         }

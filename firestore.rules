@@ -13,6 +13,12 @@ service cloud.firestore {
       return prijavljen() && request.auth.uid == uid;
     }
 
+    // Potvrđena e-adresa (Google nalozi su uvek potvrđeni). Bez nje se može samo gledati:
+    // objava ulova, komentari, lajkovi, poruke, Deda Pera i prikaz na mapi traže potvrđen nalog.
+    function potvrdjen() {
+      return prijavljen() && request.auth.token.email_verified == true;
+    }
+
     // Tekstualno polje (ako postoji) nije duže od max znakova
     function tekstDo(polje, max) {
       return !(polje in request.resource.data)
@@ -33,9 +39,23 @@ service cloud.firestore {
       allow update: if jaSam(uid) && poeniIspravni() && profilIspravan();
 
       function profilIspravan() {
-        return tekstDo('userName', 60) && tekstDo('imePrezime', 100) && tekstDo('telefon', 30);
+        return tekstDo('userName', 60) && tekstDo('imePrezime', 100) && bezLicnihPodataka();
+      }
+      // E-adresa i telefon ne idu u javni profil (vide ga svi prijavljeni). Pri izmeni smeju samo da ostanu
+      // kakvi su bili kod starih naloga, dok ih nedeljno čišćenje ne obriše.
+      function bezLicnihPodataka() {
+        return request.resource.data.get('email', null) == (resource == null ? null : resource.data.get('email', null))
+          && request.resource.data.get('telefon', null) == (resource == null ? null : resource.data.get('telefon', null));
       }
       allow delete: if false;
+
+      // Korisnici koje je vlasnik blokirao (vidi i menja samo on)
+      match /blokirani/{drugi} {
+        allow read, delete: if jaSam(uid);
+        allow create, update: if jaSam(uid) && drugi != uid
+          && request.resource.data.keys().hasOnly(['ime', 'vreme'])
+          && tekstDo('ime', 60) && request.resource.data.vreme is int;
+      }
 
       function poeniIspravni() {
         // Poene i istoriju sezona menja samo server
@@ -54,7 +74,7 @@ service cloud.firestore {
     match /MestaZaPecanje/{spotId} {
       allow read: if prijavljen();
       // Izvor slike određuje aplikacija (ProveraSlike.kt); poene i otisak slike upisuje samo server
-      allow create: if prijavljen() && request.resource.data.authorId == request.auth.uid && ulovIspravan()
+      allow create: if potvrdjen() && request.resource.data.authorId == request.auth.uid && ulovIspravan()
         && request.resource.data.get('izvorSlike', '')
              in ['aplikacija', 'kamera', 'poslata', 'ai', 'screenshot', 'stara', 'nepoznata']
         && !request.resource.data.keys().hasAny(['poeni', 'proveraSlike', 'poeniNaCekanju', 'proveraAdmina'])
@@ -62,7 +82,7 @@ service cloud.firestore {
         && request.resource.data.get('objavljeno', null) == request.time;
       // Autor menja svoj ulov (npr. UploadWorker dodaje slikaUrl), ali ne sme da promeni autora,
       // izvor slike ni poene. Ostali smeju samo da dodaju ili uklone svoj lajk.
-      allow update: if prijavljen() && (
+      allow update: if potvrdjen() && (
         (resource.data.authorId == request.auth.uid
           && request.resource.data.authorId == resource.data.authorId
           && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['izvorSlike', 'poeni', 'proveraSlike', 'poeniNaCekanju', 'proveraAdmina', 'objavljeno'])
@@ -125,7 +145,7 @@ service cloud.firestore {
 
       match /komentari/{commentId} {
         allow read: if prijavljen();
-        allow create: if prijavljen() && request.resource.data.authorId == request.auth.uid
+        allow create: if potvrdjen() && request.resource.data.authorId == request.auth.uid
           && request.resource.data.text is string
           && request.resource.data.text.size() > 0
           && request.resource.data.text.size() <= 500;
@@ -141,11 +161,10 @@ service cloud.firestore {
       allow read: if prijavljen();
       allow write: if false;
 
+      // Spisak ulova po vrsti (rekordi) održava samo server, iz MestaZaPecanje (functions/ulovi.js)
       match /Ulovi/{ulovId} {
         allow read: if prijavljen();
-        allow create: if prijavljen() && request.resource.data.authorId == request.auth.uid;
-        allow update: if false;
-        allow delete: if prijavljen() && resource.data.authorId == request.auth.uid;
+        allow write: if false;
       }
     }
 
@@ -194,7 +213,8 @@ service cloud.firestore {
     // ─── AKTIVNI KORISNICI (lokacija uzivo) ───
     match /ActiveUsers/{uid} {
       allow read: if prijavljen();
-      allow write: if jaSam(uid);
+      allow create, update: if jaSam(uid) && potvrdjen();
+      allow delete: if jaSam(uid);
     }
 
     // ─── PRIVATNE PORUKE ───
@@ -218,14 +238,40 @@ service cloud.firestore {
       allow create, delete: if false;
     }
 
+    // Drugi učesnik razgovora (roomId je "uid1_uid2")
+    function drugiURazgovoru(roomId) {
+      let delovi = roomId.split('_');
+      return delovi[0] == request.auth.uid ? delovi[1] : delovi[0];
+    }
+    // Blokada u bilo kom smeru zabranjuje poruke
+    function blokiran(roomId) {
+      let drugi = drugiURazgovoru(roomId);
+      return exists(/databases/$(database)/documents/Korisnici/$(drugi)/blokirani/$(request.auth.uid))
+        || exists(/databases/$(database)/documents/Korisnici/$(request.auth.uid)/blokirani/$(drugi));
+    }
+
+    // Prijava korisnika ili poruke: upisuje prijavljeni korisnik, čita samo server (mail adminu)
+    match /PrijaveKorisnika/{prijavaId} {
+      allow create: if prijavljen()
+        && request.resource.data.keys().hasOnly(['prijavioId', 'prijavljeniId', 'razlog', 'opis', 'kontekst', 'vreme'])
+        && request.resource.data.prijavioId == request.auth.uid
+        && request.resource.data.prijavljeniId is string
+        && request.resource.data.prijavljeniId != request.auth.uid
+        && request.resource.data.razlog is string && request.resource.data.razlog.size() > 0 && request.resource.data.razlog.size() <= 100
+        && tekstDo('opis', 500) && tekstDo('kontekst', 1000)
+        && request.resource.data.vreme is int;
+      allow read, update, delete: if false;
+    }
+
     match /PrivateChats/{roomId}/Messages/{messageId} {
       allow read: if prijavljen() && request.auth.uid in roomId.split('_');
-      allow create: if prijavljen()
+      allow create: if potvrdjen()
         && request.auth.uid in roomId.split('_')
         && request.resource.data.senderId == request.auth.uid
         && request.resource.data.text is string
         && request.resource.data.text.size() > 0
         && request.resource.data.text.size() <= 1000
+        && !blokiran(roomId)
         // Primalac je drugi učesnik razgovora (starije verzije aplikacije ga ne šalju)
         && (!('primalacId' in request.resource.data)
             || (request.resource.data.primalacId in roomId.split('_')
@@ -244,7 +290,7 @@ service cloud.firestore {
     // a brojač dozvoljava najviše 30 pitanja u 24 sata, jer se svaki odgovor plaća.
     match /bot_chats/{uid}/messages/{messageId} {
       allow read: if jaSam(uid);
-      allow create: if jaSam(uid)
+      allow create: if jaSam(uid) && potvrdjen()
         && request.resource.data.keys().hasOnly(['prompt', 'timestamp'])
         && request.resource.data.prompt is string
         && request.resource.data.prompt.size() > 0
@@ -259,7 +305,7 @@ service cloud.firestore {
 
     match /BotLimit/{uid} {
       allow read: if jaSam(uid);
-      allow create, update: if jaSam(uid)
+      allow create, update: if jaSam(uid) && potvrdjen()
         && request.resource.data.keys().hasOnly(['broj', 'pocetak', 'poslednja'])
         && request.resource.data.poslednja is string
         && !exists(/databases/$(database)/documents/bot_chats/$(uid)/messages/$(request.resource.data.poslednja))

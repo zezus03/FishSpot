@@ -43,11 +43,16 @@ class SpotsViewModel : ViewModel() {
     private val storage = FirebaseStorage.getInstance()
 
     private val _spots = MutableStateFlow<List<FishSpot>>(emptyList())
+    // Ulovi bez onih od blokiranih korisnika (vidi Blokiranje)
+    private val vidljiviUlovi: StateFlow<List<FishSpot>> =
+        combine(_spots, com.example.fishspot.feature.chat.Blokiranje.uidovi) { spots, blokirani ->
+            if (blokirani.isEmpty()) spots else spots.filter { it.authorId !in blokirani }
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
     private val _filterState = zajednickiFilter
     val filterState = _filterState.asStateFlow()
 
     // Svi ulovi bez filtera (mapa); filter važi samo za listu ulova
-    val sviUlovi: StateFlow<List<FishSpot>> get() = _spots.asStateFlow()
+    val sviUlovi: StateFlow<List<FishSpot>> get() = vidljiviUlovi
 
     companion object {
         // Filter liste ulova se pamti dok je aplikacija otvorena
@@ -60,10 +65,13 @@ class SpotsViewModel : ViewModel() {
     private val _currentUserLocation = MutableStateFlow<Location?>(null)
 
     private val komentari = MutableStateFlow<List<Comment>>(emptyList())
-    val comments = komentari.asStateFlow()
+    val comments: StateFlow<List<Comment>> =
+        combine(komentari, com.example.fishspot.feature.chat.Blokiranje.uidovi) { lista, blokirani ->
+            if (blokirani.isEmpty()) lista else lista.filter { it.authorId !in blokirani }
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     val filteredSpots: StateFlow<List<FishSpot>> =
-        combine(_spots, _filterState, _currentUserLocation) { spots, filter, userLocation ->
+        combine(vidljiviUlovi, _filterState, _currentUserLocation) { spots, filter, userLocation ->
             spots.filter { spot ->
                 val autorFilterPassed = filter.autor.isBlank() || spot.authorUsername.contains(filter.autor, ignoreCase = true)
                 // Deo naziva je dovoljan ("dever" nalazi Deverika)
@@ -186,27 +194,8 @@ class SpotsViewModel : ViewModel() {
                     cuvarkaVrste = cuvarkaVrste.map { VrstaKratko(it.id, it.naziv, it.latinskiNaziv) }
                 )
 
-                // Ulov se čuva i pod svojom vrstom (VrsteRiba/{vrsta}/Ulovi) sa istim ID-jem,
-                // u jednom paketu sa glavnim upisom (Firestore rešava offline keširanje)
-                val ulovPoVrsti = mapOf(
-                    "authorId" to user.uid,
-                    "authorUsername" to username,
-                    "duzinaRibe" to duzinaRibe,
-                    "tezinaRibe" to tezinaRibe,
-                    "mamac" to mamac,
-                    "tehnika" to tehnika,
-                    "timestamp" to fishSpot.timestamp
-                )
-                // Čuvarka ne ulazi u spisak ulova po vrsti (rekordi), jer nije jedna riba
-                val paket = firestore.batch().set(docRef, fishSpot)
-                if (!cuvarka) {
-                    paket.set(
-                        firestore.collection("VrsteRiba").document(vrsta.id)
-                            .collection("Ulovi").document(spotId),
-                        ulovPoVrsti
-                    )
-                }
-                paket.commit()
+                // Zapis pod VrsteRiba/{vrsta}/Ulovi (rekordi) pravi server (funkcija noviUlov)
+                docRef.set(fishSpot)
                     .addOnFailureListener { Log.e("SpotsViewModel", "Greška pri upisu ulova", it) }
 
                 // Slike se smanjuju pre slanja (umesto 3-8 MB sa kamere šalje se oko 300 KB za glavnu
@@ -315,6 +304,7 @@ class SpotsViewModel : ViewModel() {
     }
 
     fun DodajKomentar(spotId: String, text: String, onResult: (Boolean) -> Unit) {
+        if (!com.example.fishspot.feature.auth.PotvrdaNaloga.proveri()) { onResult(false); return }
         viewModelScope.launch {
             val user = auth.currentUser
             if (user == null) {
@@ -422,7 +412,7 @@ class SpotsViewModel : ViewModel() {
                             sacuvajSmanjeno(context, uri, fajl, MAKS_STRANA_DODATNE, KVALITET_DODATNE)
                         }
                         val ref = storage.reference.child("${osnova}_e${System.currentTimeMillis()}_${i + 1}.jpg")
-                        ref.putFile(Uri.fromFile(fajl)).await()
+                        ref.putFile(Uri.fromFile(fajl), com.example.fishspot.core.model.SLIKA_JPEG).await()
                         fajl.delete()
                         ref.downloadUrl.await().toString()
                     }
@@ -473,6 +463,7 @@ class SpotsViewModel : ViewModel() {
     }
     fun toggleLike(spotId: String, isLiked: Boolean) {
         val user = auth.currentUser ?: return
+        if (!com.example.fishspot.feature.auth.PotvrdaNaloga.proveri()) return
         val spotRef = firestore.collection("MestaZaPecanje").document(spotId)
 
         if (isLiked) {

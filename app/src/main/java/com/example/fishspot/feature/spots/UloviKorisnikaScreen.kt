@@ -87,7 +87,10 @@ fun UloviKorisnikaScreen(
                 oznaka = "FishSpot • ulovi",
                 naslov = if (mojiUlovi) "Moji ulovi" else "Ulovi: ${ime ?: "…"}",
                 ikona = Icons.Default.SetMeal,
-                onNazad = onNavigateBack
+                onNazad = onNavigateBack,
+                akcija = if (mojiUlovi) null else {
+                    { com.example.fishspot.feature.chat.MeniKorisnika(uid = uid, ime = ime ?: "Pecaroš", kontekst = "Profil korisnika") }
+                }
             )
         }
 

@@ -271,7 +271,8 @@ class MapViewModel : ViewModel() {
             return
         }
 
-        // Jedno obaveštenje po proveri: najbliža reka, jezero ili akumulacija (potok samo ako nema većeg).
+        // Jedno obaveštenje po proveri sa do 3 najbliže vode (npr. potok pored tebe i reka 1 km dalje).
+        // Redosled je po udaljenosti; važnost samo malo pomera redosled (potok mora biti oko 600 m bliži od reke).
         // Jarkovi i odvodi se preskaču, a nazivi se pišu latinicom ("Крња Река" -> "Krnja Reka").
         data class Kandidat(val naziv: String, val tip: String, val vaznost: Int, val d: Float, val lat: Double, val lng: Double)
         val kandidati = vodeList.mapNotNull { voda ->
@@ -281,29 +282,38 @@ class MapViewModel : ViewModel() {
             val tagovi = voda.tags
             val ime = tagovi?.get("name")?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
             val (tip, vaznost) = when (tagovi["waterway"]) {
-                "river" -> "Reka" to 0
-                "canal" -> "Kanal" to 1
-                "stream" -> "Potok" to 2
+                "river" -> "reka" to 0
+                "canal" -> "kanal" to 1
+                "stream" -> "potok" to 2
                 "drain", "ditch" -> return@mapNotNull null
                 else -> when (tagovi["water"]) {
-                    "lake" -> "Jezero" to 0
-                    "reservoir" -> "Akumulacija" to 0
-                    "pond" -> "Bara" to 1
-                    else -> "Voda" to 1
+                    "lake" -> "jezero" to 0
+                    "reservoir" -> "akumulacija" to 0
+                    "pond" -> "bara" to 1
+                    "dock" -> return@mapNotNull null
+                    else -> "jezero" to 0 // stajaća voda bez bližeg opisa (u podacima za Srbiju uglavnom jezera)
                 }
             }
             val d = myLoc.distanceTo(Location("").apply { latitude = latVode; longitude = lngVode })
             if (d > 5000) return@mapNotNull null
             Kandidat(com.example.fishspot.feature.spots.NazivMesta.uLatinicu(ime), tip, vaznost, d, latVode, lngVode)
         }
+            // ista reka je u podacima često više delova: ostaje najbliži
+            .groupBy { it.naziv }.map { (_, delovi) -> delovi.minBy { it.d } }
             .filter { trenutnoVreme - (vremeObavestenjaVode[it.naziv] ?: 0L) > LIMIT_ZATISJA_MS }
-            .sortedWith(compareBy({ it.vaznost }, { it.d }))
+            .sortedBy { it.d + it.vaznost * 300f }
+            .take(3)
 
-        val voda = kandidati.firstOrNull() ?: return
-        val tekstUdaljenosti = if (voda.d >= 1000) String.format("%.1f km", voda.d / 1000f) else "${voda.d.toInt()} metara"
-        Log.d("USPEH_REKA", "Nađena voda: ${voda.naziv} (${voda.tip}) na $tekstUdaljenosti")
-        prikaziNotifikaciju("Na $tekstUdaljenosti od tebe je ${voda.naziv} (${voda.tip})", context, voda.lat, voda.lng)
-        vremeObavestenjaVode[voda.naziv] = trenutnoVreme
+        val najbliza = kandidati.firstOrNull() ?: return
+        fun udaljenost(d: Float) = if (d >= 1000) String.format(java.util.Locale.US, "%.1f km", d / 1000f).replace('.', ',') else "${d.toInt()} m"
+        val poruka = if (kandidati.size == 1) {
+            "Na ${udaljenost(najbliza.d)} od tebe je ${najbliza.naziv} (${najbliza.tip})"
+        } else {
+            "U blizini: " + kandidati.joinToString(" · ") { "${it.naziv} (${it.tip}) ${udaljenost(it.d)}" }
+        }
+        Log.d("USPEH_REKA", "Nađene vode: $poruka")
+        prikaziNotifikaciju(poruka, context, najbliza.lat, najbliza.lng)
+        kandidati.forEach { vremeObavestenjaVode[it.naziv] = trenutnoVreme }
     }
 
     // Vode van Srbije daje naša Cloud Function vodeUBlizini (Geoapify ključ je samo na serveru)
@@ -361,6 +371,7 @@ class MapViewModel : ViewModel() {
             .setColor(0xFF1B7A3E.toInt()) // zelena ikonica i naslov obaveštenja
             .setContentTitle("FishSpot obaveštenje")
             .setContentText(poruka)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(poruka)) // ceo spisak voda, ne samo prvi red
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)

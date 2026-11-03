@@ -77,6 +77,12 @@ fun PrivatniChat(
                     Text("na mapi u blizini", color = FishBoje.TekstSekundarni, fontSize = 13.sp)
                 }
             }
+            MeniKorisnika(
+                uid = sagovornik.userId,
+                ime = sagovornik.username.ifBlank { "Pecaroš" },
+                kontekst = poruke.filter { it.senderId == sagovornik.userId }.takeLast(5)
+                    .joinToString(" | ") { "• " + it.text }.take(1000)
+            )
         }
         HorizontalDivider(color = FishBoje.IvicaKartice)
 

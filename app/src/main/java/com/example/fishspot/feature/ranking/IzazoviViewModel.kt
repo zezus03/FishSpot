@@ -129,6 +129,7 @@ class IzazoviViewModel : ViewModel() {
     }
 
     fun pridruziSe(izazovId: String, gotovo: (String?) -> Unit) {
+        if (!com.example.fishspot.feature.auth.PotvrdaNaloga.proveri()) return
         _prijavljujem.value = true
         FirebaseFunctions.getInstance().getHttpsCallable("pridruziSeIzazovu").call(mapOf("izazovId" to izazovId))
             .addOnSuccessListener { _prijavljujem.value = false; gotovo(null) }

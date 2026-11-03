@@ -9,5 +9,7 @@ class FishSpotApp : Application() {
         super.onCreate()
         FirebaseApp.initializeApp(this)
         ukljuciAppCheck()
+        // Spisak blokiranih korisnika prati prijavljenog korisnika od pokretanja
+        com.example.fishspot.feature.chat.Blokiranje.pokreni()
     }
 }

@@ -20,7 +20,6 @@ class AuthRepository {
         sifra: String,
         userName: String,
         imePrezime: String,
-        telefon: String,
         slikaBytes: ByteArray?
     ): Result<Unit> {
         return try {
@@ -30,21 +29,21 @@ class AuthRepository {
             var slikaUrl = ""
             if (slikaBytes != null && slikaBytes.isNotEmpty()) {
                 val ref = storage.reference.child("profilne_slike/$uid.jpg")
-                ref.putBytes(slikaBytes).await()
+                ref.putBytes(slikaBytes, com.example.fishspot.core.model.SLIKA_JPEG).await()
                 slikaUrl = ref.downloadUrl.await().toString()
             }
 
             val korisnik = Korisnici(
                 id = uid,
-                email = email,
                 userName = userName,
                 imePrezime = imePrezime,
-                telefon = telefon,
                 slikaURL = slikaUrl,
                 poeni = 0
             )
 
             firestore.collection("Korisnici").document(uid).set(korisnik).await()
+            // Link za potvrdu e-adrese (bez potvrde se ne može objavljivati, vidi PotvrdaNaloga)
+            try { result.user?.sendEmailVerification()?.await() } catch (e: Exception) { Log.w("AuthRepo", "Link za potvrdu nije poslat", e) }
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e("AuthRepo", "Greška prilikom registracije: ${e.message}", e)

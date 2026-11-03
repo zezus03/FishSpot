@@ -182,4 +182,30 @@ exports.obavestiVelikiUlov = saKljucem.firestore.document("MestaZaPecanje/{spotI
     return null;
 });
 
+// Odmah kad neko prijavi korisnika ili poruku
+exports.obavestiPrijavuKorisnika = saKljucem.firestore.document("PrijaveKorisnika/{prijavaId}").onCreate(async (snap) => {
+    const p = snap.data();
+    const db = admin.firestore();
+    const [prijavio, prijavljen] = await Promise.all([
+        db.collection("Korisnici").doc(p.prijavioId).get(),
+        db.collection("Korisnici").doc(p.prijavljeniId).get(),
+    ]);
+    const ime = (s) => (s.exists ? (s.data().userName || s.data().imePrezime || "bez imena") : "nalog ne postoji");
+    const red = (naziv, vrednost) => `<tr><td style="color:#6B8078;padding:4px 12px 4px 0;vertical-align:top">${naziv}</td><td style="color:#fff;padding:4px 0">${vrednost}</td></tr>`;
+    const sadrzaj = `<div style="background:#132218;border:1px solid #1E3328;border-radius:12px;padding:16px">
+  <table style="border-collapse:collapse;font-size:14px">
+    ${red("Prijavljen", `${esc(ime(prijavljen))} <span style="color:#6B8078">(${esc(p.prijavljeniId)})</span>`)}
+    ${red("Prijavio", `${esc(ime(prijavio))} <span style="color:#6B8078">(${esc(p.prijavioId)})</span>`)}
+    ${red("Razlog", esc(p.razlog))}
+    ${p.opis ? red("Opis", esc(p.opis)) : ""}
+    ${p.kontekst ? red("Sadržaj", esc(p.kontekst)) : ""}
+    ${red("Vreme", datum(p.vreme))}
+  </table>
+</div>
+<p style="font-size:13px">Korisnika možeš da pregledaš u Firebase konzoli (Korisnici/${esc(p.prijavljeniId)}) i po potrebi ugasiš nalog u Authentication.</p>`;
+    await posaljiMail(`FishSpot: prijavljen korisnik ${ime(prijavljen)} (${p.razlog})`, omotac("Prijava korisnika", sadrzaj));
+    console.log(`Mail o prijavi korisnika ${p.prijavljeniId} poslat`);
+    return null;
+});
+
 exports._interno = { napraviDnevniPregled, napraviNedeljniPregled, esc };

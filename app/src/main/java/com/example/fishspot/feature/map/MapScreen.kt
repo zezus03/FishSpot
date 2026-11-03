@@ -587,7 +587,7 @@ fun MapScreen(
 
                 // ➕ TVOJE POSTOJEĆE DUGME ZA DODAVANJE ULOVA
                 FloatingActionButton(
-                    onClick = { isAddMode = true },
+                    onClick = { if (com.example.fishspot.feature.auth.PotvrdaNaloga.proveri()) isAddMode = true },
                     shape = CircleShape,
                     containerColor = FishBoje.Akcenat,
                     contentColor = FishBoje.Pozadina,
@@ -768,7 +768,7 @@ fun MapScreen(
                 WeatherScreen(
                     weatherData = fetchedWeather!!,
                     onDismiss = { fetchedWeather = null },
-                    onAddCatch = { isAddMode = true; fetchedWeather = null }
+                    onAddCatch = { if (com.example.fishspot.feature.auth.PotvrdaNaloga.proveri()) { isAddMode = true; fetchedWeather = null } }
                 )
             }
         }

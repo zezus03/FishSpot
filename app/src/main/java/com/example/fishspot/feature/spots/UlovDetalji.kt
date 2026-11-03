@@ -128,18 +128,29 @@ fun UlovDetalji(
                     )
                 }
                 // Pitaj autora nešto o ulovu, i kad nije na mapi (dobija obaveštenje)
-                if (!mojUlov && onPosaljiPoruku != null) {
-                    Spacer(modifier = Modifier.height(10.dp))
-                    OutlinedButton(
-                        onClick = onPosaljiPoruku,
-                        shape = RoundedCornerShape(12.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, FishBoje.AkcenatTamni),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = FishBoje.Akcenat)
-                    ) {
-                        Icon(Icons.Default.ChatBubbleOutline, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text("Pošalji poruku", fontWeight = FontWeight.SemiBold)
+                if (!mojUlov) Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth().padding(top = 10.dp)
+                ) {
+                    if (onPosaljiPoruku != null) {
+                        OutlinedButton(
+                            onClick = onPosaljiPoruku,
+                            shape = RoundedCornerShape(12.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, FishBoje.AkcenatTamni),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = FishBoje.Akcenat)
+                        ) {
+                            Icon(Icons.Default.ChatBubbleOutline, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text("Pošalji poruku", fontWeight = FontWeight.SemiBold)
+                        }
                     }
+                    Spacer(Modifier.weight(1f))
+                    // Prijava i blokiranje autora (traži Google Play za sadržaj korisnika)
+                    com.example.fishspot.feature.chat.MeniKorisnika(
+                        uid = spot.authorId,
+                        ime = autor?.userName?.takeIf { it.isNotBlank() } ?: spot.authorUsername,
+                        kontekst = "Ulov ${spot.id}"
+                    )
                 }
 
                 if (spot.naziv.isNotBlank()) {

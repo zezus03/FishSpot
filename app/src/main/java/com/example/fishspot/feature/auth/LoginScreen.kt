@@ -256,6 +256,9 @@ fun LoginScreen(
                             )
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+                    SaglasnostUslova(modifier = Modifier.fillMaxWidth())
                 }
             }
 

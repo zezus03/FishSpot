@@ -1,6 +1,8 @@
 package com.example.fishspot.feature.chat
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.stateIn
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -45,7 +47,11 @@ class ActiveUsersViewModel : ViewModel() {
     private val storage = FirebaseStorage.getInstance()
 
     private val _activeUsers = MutableStateFlow<List<ActiveUser>>(emptyList())
-    val activeUsers = _activeUsers.asStateFlow()
+    // Blokirani se ne vide na mapi ni u spisku razgovora
+    val activeUsers: kotlinx.coroutines.flow.StateFlow<List<ActiveUser>> =
+        kotlinx.coroutines.flow.combine(_activeUsers, Blokiranje.uidovi) { lista, blokirani ->
+            if (blokirani.isEmpty()) lista else lista.filter { it.userId !in blokirani }
+        }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, emptyList())
 
     private val _messagesMap = MutableStateFlow<Map<String, List<UserMessage>>>(emptyMap())
     val messagesMap = _messagesMap.asStateFlow()
@@ -68,7 +74,10 @@ class ActiveUsersViewModel : ViewModel() {
 
     // Spisak razgovora (ekran Poruke); upisuje ga server pri svakoj poruci
     private val _razgovori = MutableStateFlow<List<Razgovor>>(emptyList())
-    val razgovori = _razgovori.asStateFlow()
+    val razgovori: kotlinx.coroutines.flow.StateFlow<List<Razgovor>> =
+        kotlinx.coroutines.flow.combine(_razgovori, Blokiranje.uidovi) { lista, blokirani ->
+            if (blokirani.isEmpty()) lista else lista.filter { it.uid !in blokirani }
+        }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, emptyList())
     private var razgovoriRegistracija: ListenerRegistration? = null
 
     init {
@@ -166,9 +175,8 @@ class ActiveUsersViewModel : ViewModel() {
             mySlikaUrl = ""
         }
 
-        myUsername = user.displayName?.takeIf { it.isNotBlank() }
-            ?: user.email?.substringBefore("@")
-                    ?: "Pecaroš"
+        // Bez dela e-adrese: ime se vidi drugima na mapi
+        myUsername = user.displayName?.takeIf { it.isNotBlank() } ?: "Pecaroš"
     }
 
     // Poslednji upis lokacije, da se ne upisuje pri svakom malom pomeranju
@@ -176,6 +184,8 @@ class ActiveUsersViewModel : ViewModel() {
 
     fun updateMyLocationIfSharing(lat: Double, lng: Double, deli: Boolean) {
         val currentUser = auth.currentUser ?: return
+        // Nepotvrđen nalog se ne prikazuje drugima na mapi (bez prozora, ovo se poziva pri svakom pomeranju)
+        if (deli && !com.example.fishspot.feature.auth.PotvrdaNaloga.potvrdjen()) return
         if (!deli) {
             if (poslednjiUpis != null) removeMyLocation()
             return
@@ -265,6 +275,7 @@ class ActiveUsersViewModel : ViewModel() {
 
     fun sendPrivateMessage(targetUserId: String, text: String, senderUsername: String) {
         val myUid = auth.currentUser?.uid ?: return
+        if (!com.example.fishspot.feature.auth.PotvrdaNaloga.proveri()) return
         if (text.isBlank() || targetUserId == myUid) return
 
         val roomId = getChatRoomId(myUid, targetUserId)

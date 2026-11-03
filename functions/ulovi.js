@@ -111,6 +111,19 @@ async function obrisiSliku(url) {
     }
 }
 
+// ─── NOV ULOV ───
+// Zapis pod VrsteRiba/{vrsta}/Ulovi (rekordi) pravi server, da niko ne može da upiše lažan rekord.
+// Čuvarka ne ulazi u rekorde, jer nije jedna riba.
+exports.noviUlov = functions.firestore
+    .document("MestaZaPecanje/{spotId}")
+    .onCreate(async (snap, context) => {
+        const ulov = snap.data();
+        if (!ulov.vrstaId || ulov.cuvarka === true) return null;
+        await admin.firestore().collection("VrsteRiba").doc(ulov.vrstaId).collection("Ulovi").doc(context.params.spotId)
+            .set(ulovPoVrsti(ulov));
+        return null;
+    });
+
 // ─── BRISANJE ULOVA ───
 // Autor obriše ulov: brišu se komentari, zapis pod vrstom i slika, a poeni se oduzimaju.
 // Ulov koji je uklonila moderacija (status "uklonjen") se ne dira, jer admin može da ga vrati.
@@ -239,6 +252,10 @@ exports.obrisiNalog = functions.https.onCall(async (data, context) => {
     // 3. Komentari na tuđim ulovima
     const komentari = await db.collectionGroup("komentari").where("authorId", "==", uid).get();
     await Promise.all(komentari.docs.map((d) => d.ref.delete()));
+
+    // Prijave korisnika koje je on poslao
+    const prijaveKorisnika = await db.collection("PrijaveKorisnika").where("prijavioId", "==", uid).get();
+    await Promise.all(prijaveKorisnika.docs.map((d) => d.ref.delete()));
 
     // 4. Prijave koje je korisnik poslao
     const prijave = await db.collection("Prijave").where("prijavioId", "==", uid).get();

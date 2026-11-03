@@ -98,6 +98,9 @@ exports.izazoviPromenaUlova = functions.firestore
 
 exports.pridruziSeIzazovu = functions.https.onCall(async (data, context) => {
     if (!context.auth) throw new functions.https.HttpsError("unauthenticated", "Moraš biti prijavljen.");
+    if (context.auth.token.email_verified !== true) {
+        throw new functions.https.HttpsError("failed-precondition", "Prvo potvrdi e-adresu (link je u mailu).");
+    }
     const uid = context.auth.uid;
     const id = String(data?.izazovId || "");
     const db = admin.firestore();

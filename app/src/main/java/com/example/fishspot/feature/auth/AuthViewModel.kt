@@ -41,13 +41,12 @@ class AuthViewModel {
             .continueWithTask { task ->
                 val postoji = task.result?.exists() == true
                 if (postoji) {
-                    // Postojećem korisniku ne diramo ime i sliku koje je možda promenio na profilu
-                    korisnikRef.set(mapOf("email" to (user.email ?: "")), SetOptions.merge())
+                    // Postojećem korisniku ne diramo ništa (ime i sliku je možda promenio na profilu)
+                    com.google.android.gms.tasks.Tasks.forResult<Void?>(null)
                 } else {
                     // Ista polja kao kod registracije emailom (klasa Korisnici)
                     val noviKorisnik = Korisnici(
                         id = user.uid,
-                        email = user.email ?: "",
                         userName = user.displayName ?: "Pecaroš",
                         imePrezime = user.displayName ?: "",
                         slikaURL = user.photoUrl?.toString() ?: "",

@@ -51,6 +51,7 @@ import java.io.ByteArrayOutputStream
 
 // Stranica je u folderu hosting/ i objavljuje se sa "firebase deploy --only hosting"
 const val POLITIKA_PRIVATNOSTI_URL = "https://fishspot-52735.web.app/privatnost.html"
+const val USLOVI_KORISCENJA_URL = "https://fishspot-52735.web.app/uslovi.html"
 
 @Composable
 fun ProfileScreen(
@@ -375,7 +376,7 @@ fun ProfileScreen(
                     }
                     Switch(
                         checked = deliLokaciju,
-                        onCheckedChange = { upaljeno -> mapViewModel.setDeliLokaciju(context, upaljeno) },
+                        onCheckedChange = { upaljeno -> if (!upaljeno || com.example.fishspot.feature.auth.PotvrdaNaloga.proveri()) mapViewModel.setDeliLokaciju(context, upaljeno) },
                         colors = SwitchDefaults.colors(
                             checkedThumbColor = FishBoje.Pozadina,
                             checkedTrackColor = FishBoje.Akcenat,
@@ -438,7 +439,7 @@ fun ProfileScreen(
                                     val ref = storage.reference.child("profilne_slike/${user.uid}.jpg")
                                     val baos = ByteArrayOutputStream()
                                     newImageBitmap!!.compress(Bitmap.CompressFormat.JPEG, 80, baos)
-                                    ref.putBytes(baos.toByteArray()).await()
+                                    ref.putBytes(baos.toByteArray(), com.example.fishspot.core.model.SLIKA_JPEG).await()
 
                                     delay(2000)
                                     val resizedRef = storage.reference.child("profilne_slike/${user.uid}_200x200.jpg")
@@ -531,7 +532,16 @@ fun ProfileScreen(
                 }) {
                     Icon(Icons.Default.PrivacyTip, contentDescription = null, tint = FishBoje.TekstSekundarni, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(6.dp))
-                    Text("Politika privatnosti", color = FishBoje.TekstSekundarni)
+                    Text("Privatnost", color = FishBoje.TekstSekundarni)
+                }
+                TextButton(onClick = {
+                    context.startActivity(
+                        android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(USLOVI_KORISCENJA_URL))
+                    )
+                }) {
+                    Icon(Icons.Default.Gavel, contentDescription = null, tint = FishBoje.TekstSekundarni, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Uslovi", color = FishBoje.TekstSekundarni)
                 }
                 TextButton(onClick = { potvrdaBrisanjaNaloga = true }, enabled = !brisanjeNaloga) {
                     Icon(Icons.Default.PersonRemove, contentDescription = null, tint = FishBoje.Greska, modifier = Modifier.size(18.dp))
@@ -539,6 +549,16 @@ fun ProfileScreen(
                     Text("Obriši nalog", color = FishBoje.Greska)
                 }
             }
+
+            // Korisnici koje sam blokirao (poništavanje blokade)
+            var prikaziBlokirane by remember { mutableStateOf(false) }
+            val blokirani by com.example.fishspot.feature.chat.Blokiranje.spisak.collectAsState()
+            TextButton(onClick = { prikaziBlokirane = true }) {
+                Icon(Icons.Default.Block, contentDescription = null, tint = FishBoje.TekstSekundarni, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(6.dp))
+                Text("Blokirani korisnici (${blokirani.size})", color = FishBoje.TekstSekundarni)
+            }
+            if (prikaziBlokirane) com.example.fishspot.feature.chat.BlokiraniDialog { prikaziBlokirane = false }
 
             Spacer(Modifier.height(24.dp))
         }

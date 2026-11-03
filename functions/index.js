@@ -89,7 +89,7 @@ function podaciKorisnika(snap) {
     let prikaz = imePrezime && korisnickoIme && imePrezime !== korisnickoIme
         ? `${imePrezime} (${korisnickoIme})`
         : (imePrezime || korisnickoIme || "Nepoznat korisnik");
-    return { uid: snap.id, imePrezime, korisnickoIme, email: k.email || "", prikaz };
+    return { uid: snap.id, imePrezime, korisnickoIme, prikaz };
 }
 
 exports.obradiPrijavuUlova = functions.firestore
@@ -219,6 +219,7 @@ exports.detaljiStanice = vodostaji.detaljiStanice;
 
 // Izmena i brisanje ulova, brisanje naloga (functions/ulovi.js)
 const ulovi = require("./ulovi");
+exports.noviUlov = ulovi.noviUlov;
 exports.obrisanUlov = ulovi.obrisanUlov;
 exports.izmenjenUlov = ulovi.izmenjenUlov;
 exports.obrisiNalog = ulovi.obrisiNalog;
@@ -239,6 +240,7 @@ exports.dnevniPregledPrijava = izvestaji.dnevniPregledPrijava;
 exports.nedeljniPregled = izvestaji.nedeljniPregled;
 exports.obavestiUklonjenUlov = izvestaji.obavestiUklonjenUlov;
 exports.obavestiVelikiUlov = izvestaji.obavestiVelikiUlov;
+exports.obavestiPrijavuKorisnika = izvestaji.obavestiPrijavuKorisnika;
 
 // Admin panel u aplikaciji (functions/admin.js)
 const adminPanel = require("./admin");
