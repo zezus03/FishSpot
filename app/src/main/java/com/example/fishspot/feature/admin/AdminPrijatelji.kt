@@ -3,10 +3,13 @@ package com.example.fishspot.feature.admin
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -45,6 +48,7 @@ fun AdminPrijateljiOdeljak() {
     var rezultati by remember { mutableStateOf(emptyList<KorisnikZaBedz>()) }
     var prijatelji by remember { mutableStateOf(emptyList<KorisnikZaBedz>()) }
     var radi by remember { mutableStateOf(false) }
+    var prikaziSpisak by remember { mutableStateOf(false) } // spisak prijatelja se otvara na dodir
     var potvrda by remember { mutableStateOf<Pair<KorisnikZaBedz, Boolean>?>(null) } // (korisnik, dodeli?)
 
     fun pozovi(podaci: Map<String, Any>, posle: (Map<*, *>) -> Unit = {}) {
@@ -93,11 +97,23 @@ fun AdminPrijateljiOdeljak() {
             val vec = prijatelji.any { it.uid == k.uid }
             RedKorisnika(k, if (vec) "Već ima" else "Dodeli", enabled = !vec && !radi) { potvrda = k to true }
         }
-        Text(
-            if (prijatelji.isEmpty()) "Još niko nema ovaj bedž." else "Imaju bedž (${prijatelji.size})",
-            color = FishBoje.TekstSekundarni, fontSize = 13.sp, fontWeight = FontWeight.Bold
-        )
-        prijatelji.forEach { k -> RedKorisnika(k, "Oduzmi", enabled = !radi, opasno = true) { potvrda = k to false } }
+        if (prijatelji.isEmpty()) {
+            Text("Još niko nema ovaj bedž.", color = FishBoje.TekstSekundarni, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+        } else {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp))
+                    .clickable { prikaziSpisak = !prikaziSpisak }.padding(vertical = 6.dp)
+            ) {
+                Text("Ko sve ima bedž (${prijatelji.size})", color = FishBoje.TekstSekundarni, fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                Icon(if (prikaziSpisak) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = if (prikaziSpisak) "Sakrij spisak" else "Prikaži spisak", tint = FishBoje.Akcenat)
+            }
+            if (prikaziSpisak) {
+                prijatelji.forEach { k -> RedKorisnika(k, "Oduzmi", enabled = !radi, opasno = true) { potvrda = k to false } }
+            }
+        }
     }
 
     potvrda?.let { (k, dodeli) ->

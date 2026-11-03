@@ -16,6 +16,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -128,6 +129,17 @@ private fun IzazovForma(postojeci: Izazov?, sveVrste: List<VrstaRibe>, onZatvori
     var samoKamera by remember { mutableStateOf(postojeci?.samoKamera ?: true) }
     var biramDatum by remember { mutableStateOf<Boolean?>(null) } // true = početak, false = kraj
     var cuvam by remember { mutableStateOf(false) }
+    // Slika izazova: nova (JPEG, base64) ili uklanjanje postojeće
+    val kontekst = androidx.compose.ui.platform.LocalContext.current
+    var novaSlika by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+    var ukloniSliku by remember { mutableStateOf(false) }
+    val biracSlike = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri ?: return@rememberLauncherForActivityResult
+        novaSlika = try { com.example.fishspot.feature.fish.ucitajSlikuUspravno(kontekst, uri, 1080) } catch (e: Exception) { null }
+        if (novaSlika != null) ukloniSliku = false else FishPoruka.prikazi("Slika nije učitana")
+    }
     val greska = when {
         naziv.isBlank() -> "Unesi naziv"
         doKraja <= od -> "Kraj mora biti posle početka"
@@ -152,6 +164,26 @@ private fun IzazovForma(postojeci: Izazov?, sveVrste: List<VrstaRibe>, onZatvori
                         colors = fishPoljeBoje(), shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth())
                     OutlinedTextField(nagrada, { nagrada = it.take(120) }, label = { Text("Nagrada (opciono)") }, singleLine = true,
                         colors = fishPoljeBoje(), shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth())
+
+                    NaslovSekcije("Slika izazova (opciono)")
+                    val postojecaSlika = postojeci?.slikaUrl.orEmpty().takeIf { it.isNotBlank() && !ukloniSliku }
+                    if (novaSlika != null || postojecaSlika != null) {
+                        Box(Modifier.fillMaxWidth().height(160.dp).clip(RoundedCornerShape(14.dp))) {
+                            novaSlika?.let {
+                                androidx.compose.foundation.Image(it.asImageBitmap(), null,
+                                    contentScale = androidx.compose.ui.layout.ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                            } ?: coil.compose.AsyncImage(postojecaSlika, null,
+                                contentScale = androidx.compose.ui.layout.ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                        }
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        OutlinedButton(onClick = { biracSlike.launch("image/*") }, shape = RoundedCornerShape(12.dp)) {
+                            Text(if (novaSlika != null || postojecaSlika != null) "Promeni sliku" else "Izaberi sliku", color = FishBoje.TekstPrimarni)
+                        }
+                        if (novaSlika != null || postojecaSlika != null) {
+                            TextButton(onClick = { novaSlika = null; ukloniSliku = true }) { Text("Ukloni", color = FishBoje.Greska) }
+                        }
+                    }
 
                     NaslovSekcije("Trajanje")
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -213,6 +245,12 @@ private fun IzazovForma(postojeci: Izazov?, sveVrste: List<VrstaRibe>, onZatvori
                             "od" to od, "do" to doKraja, "merilo" to merilo, "vrste" to vrste.toList(), "samoKamera" to samoKamera
                         )
                         postojeci?.let { podaci["id"] = it.id }
+                        novaSlika?.let { b ->
+                            val izlaz = java.io.ByteArrayOutputStream()
+                            b.compress(android.graphics.Bitmap.CompressFormat.JPEG, 82, izlaz)
+                            podaci["slika"] = android.util.Base64.encodeToString(izlaz.toByteArray(), android.util.Base64.NO_WRAP)
+                        }
+                        if (ukloniSliku) podaci["ukloniSliku"] = true
                         FirebaseFunctions.getInstance().getHttpsCallable("adminSacuvajIzazov").call(podaci)
                             .addOnSuccessListener { FishPoruka.prikazi(if (postojeci == null) "Izazov je objavljen" else "Izazov je izmenjen"); onZatvori() }
                             .addOnFailureListener { cuvam = false; FishPoruka.prikazi("Čuvanje nije uspelo: ${it.message}", dugo = true) }

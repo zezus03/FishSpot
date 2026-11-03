@@ -49,11 +49,12 @@ fun RankingScreen(
     rankingViewModel: RankingViewModel = viewModel(),
     onNavigateBack: () -> Unit,
     onUserSelected: (userId: String) -> Unit,
-    onUlovSelected: (spotId: String) -> Unit = {}
+    onUlovSelected: (spotId: String) -> Unit = {},
+    pocetniIzazov: String? = null // iz obaveštenja: otvara karticu Izazovi i taj izazov
 ) {
     val userRanking by rankingViewModel.userRanking.collectAsState()
     val mojId = remember { FirebaseAuth.getInstance().currentUser?.uid }
-    var kartica by remember { mutableStateOf(0) } // 0 = opšta rang lista, 1 = izazovi
+    var kartica by remember { mutableStateOf(if (pocetniIzazov != null) 1 else 0) } // 0 = opšta rang lista, 1 = izazovi
     val izazoviViewModel: IzazoviViewModel = viewModel()
     val vrsteViewModel: com.example.fishspot.feature.fish.VrsteRibaViewModel = viewModel()
     val sveVrste by vrsteViewModel.vrste.collectAsState()
@@ -93,7 +94,7 @@ fun RankingScreen(
         }
 
         if (kartica == 1) {
-            IzazoviSadrzaj(izazoviViewModel, nazivVrste, onUlovSelected)
+            IzazoviSadrzaj(izazoviViewModel, nazivVrste, onUlovSelected, pocetniIzazov)
         } else LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(bottom = 24.dp)

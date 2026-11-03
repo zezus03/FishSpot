@@ -86,9 +86,19 @@ fun stanjeIzazova(iz: Izazov, sada: Long = System.currentTimeMillis()): String {
 
 // Kartica Izazovi na rang listi: aktivni, predstojeći i završeni izazovi
 @Composable
-fun IzazoviSadrzaj(vm: IzazoviViewModel, nazivVrste: (String) -> String, onUlovSelected: (String) -> Unit = {}) {
+fun IzazoviSadrzaj(
+    vm: IzazoviViewModel, nazivVrste: (String) -> String, onUlovSelected: (String) -> Unit = {},
+    pocetniIzazov: String? = null
+) {
     val izazovi by vm.izazovi.collectAsState()
     var otvoren by remember { mutableStateOf<Izazov?>(null) }
+    // Iz obaveštenja: čim se izazovi učitaju, otvara se taj izazov (samo jednom)
+    var pocetniOtvoren by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(izazovi, pocetniIzazov) {
+        if (!pocetniOtvoren && pocetniIzazov != null) {
+            izazovi.firstOrNull { it.id == pocetniIzazov }?.let { otvoren = it; pocetniOtvoren = true }
+        }
+    }
     val sada = System.currentTimeMillis()
     val aktivni = izazovi.filter { it.aktivan(sada) }.sortedBy { it.doKraja }
     val predstojeci = izazovi.filter { it.predstojeci(sada) }.sortedBy { it.od }
@@ -134,7 +144,10 @@ private fun KarticaIzazova(iz: Izazov, nazivVrste: (String) -> String, onClick: 
             .padding(14.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
+            if (iz.slikaUrl.isNotBlank()) {
+                AsyncImage(iz.slikaUrl, null, contentScale = ContentScale.Crop,
+                    modifier = Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)))
+            } else Box(
                 Modifier.size(40.dp).background((if (aktivan) ZLATNA else FishBoje.TekstPriguseni).copy(alpha = 0.18f), CircleShape),
                 contentAlignment = Alignment.Center
             ) { Icon(Icons.Default.EmojiEvents, null, tint = if (aktivan) ZLATNA else FishBoje.TekstPriguseni) }
@@ -196,13 +209,40 @@ private fun IzazovDetaljiDialog(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    if (iz.slikaUrl.isNotBlank()) item {
+                        AsyncImage(iz.slikaUrl, null, contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxWidth().height(170.dp).clip(RoundedCornerShape(16.dp)))
+                    }
                     item {
                         Column(
                             Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(FishBoje.Kartica).padding(14.dp),
                             verticalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Text(stanjeIzazova(iz), color = if (iz.aktivan()) FishBoje.Akcenat else FishBoje.TekstPriguseni,
-                                fontWeight = FontWeight.Bold)
+                            // Stanje levo, a dugme za učešće gore desno (uvek vidljivo, bez skrolovanja)
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(stanjeIzazova(iz), color = if (iz.aktivan()) FishBoje.Akcenat else FishBoje.TekstPriguseni,
+                                    fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                                if (mozeDaSePrijavi) {
+                                    Button(
+                                        onClick = {
+                                            vm.pridruziSe(iz.id) { greska ->
+                                                FishPoruka.prikazi(greska ?: "Prijavljen si! Tvoji ulovi iz ovog perioda se već računaju.", dugo = true)
+                                            }
+                                        },
+                                        enabled = !prijavljujem,
+                                        shape = RoundedCornerShape(12.dp),
+                                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = FishBoje.Akcenat, contentColor = FishBoje.Pozadina)
+                                    ) {
+                                        if (prijavljujem) CircularProgressIndicator(Modifier.size(18.dp), color = FishBoje.Pozadina, strokeWidth = 2.dp)
+                                        else Text("Učestvuj", fontWeight = FontWeight.Bold)
+                                    }
+                                } else if (ucestvujem) {
+                                    Text("✓ Učestvuješ", color = FishBoje.Akcenat, fontWeight = FontWeight.Bold, fontSize = 13.sp,
+                                        modifier = Modifier.clip(RoundedCornerShape(10.dp))
+                                            .background(FishBoje.Akcenat.copy(alpha = 0.15f)).padding(horizontal = 10.dp, vertical = 6.dp))
+                                }
+                            }
                             if (iz.opis.isNotBlank()) Text(iz.opis, color = FishBoje.TekstSekundarni, fontSize = 14.sp)
                             Pravilo(Icons.Default.EmojiEvents, opisMerila(iz.merilo))
                             Pravilo(Icons.Default.SetMeal, "Vrste: " + vrsteTekst(iz, nazivVrste))
@@ -232,22 +272,6 @@ private fun IzazovDetaljiDialog(
                     }
                     itemsIndexed(ucesnici, key = { _, u -> u.uid }) { i, u ->
                         RedUcesnika(i + 1, u, iz.merilo, u.uid == vm.mojUid) { izabraniUid = u.uid }
-                    }
-                }
-                if (mozeDaSePrijavi) {
-                    Button(
-                        onClick = {
-                            vm.pridruziSe(iz.id) { greska ->
-                                FishPoruka.prikazi(greska ?: "Prijavljen si! Tvoji ulovi iz ovog perioda se već računaju.", dugo = true)
-                            }
-                        },
-                        enabled = !prijavljujem,
-                        modifier = Modifier.fillMaxWidth().padding(16.dp).height(52.dp),
-                        shape = RoundedCornerShape(14.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = FishBoje.Akcenat, contentColor = FishBoje.Pozadina)
-                    ) {
-                        if (prijavljujem) CircularProgressIndicator(Modifier.size(22.dp), color = FishBoje.Pozadina, strokeWidth = 2.dp)
-                        else Text("Pridruži se izazovu", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     }
                 }
             }

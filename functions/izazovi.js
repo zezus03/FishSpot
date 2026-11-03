@@ -124,6 +124,28 @@ exports.pridruziSeIzazovu = functions.https.onCall(async (data, context) => {
 });
 
 // ─── ADMIN ───
+// Slika izazova stiže kao JPEG u base64 (najviše ~3 MB). Vraća link, "" ako se uklanja, ili undefined ako se ne menja.
+async function sacuvajSliku(id, data) {
+    const bucket = admin.storage().bucket();
+    const putanja = `izazovi/${id}.jpg`;
+    if (data?.ukloniSliku === true) {
+        await bucket.file(putanja).delete({ ignoreNotFound: true }).catch(() => null);
+        return "";
+    }
+    if (typeof data?.slika !== "string" || !data.slika) return undefined;
+    const bajtovi = Buffer.from(data.slika, "base64");
+    if (bajtovi.length < 100 || bajtovi.length > 3 * 1024 * 1024 || bajtovi[0] !== 0xFF || bajtovi[1] !== 0xD8) {
+        throw new functions.https.HttpsError("invalid-argument", "Slika mora biti JPEG do 3 MB.");
+    }
+    const token = require("crypto").randomUUID();
+    await bucket.file(putanja).save(bajtovi, {
+        contentType: "image/jpeg",
+        metadata: { metadata: { firebaseStorageDownloadTokens: token } },
+    });
+    const host = process.env.FIREBASE_STORAGE_EMULATOR_HOST ? `http://${process.env.FIREBASE_STORAGE_EMULATOR_HOST}` : "https://firebasestorage.googleapis.com";
+    return `${host}/v0/b/${bucket.name}/o/${encodeURIComponent(putanja)}?alt=media&token=${token}`;
+}
+
 function proveriAdmina(context) {
     return require("./admin")._interno.proveriAdmina(context);
 }
@@ -141,6 +163,7 @@ exports.adminSacuvajIzazov = functions.https.onCall(async (data, context) => {
     const id = String(data?.id || "") || db.collection("Izazovi").doc().id;
     const ref = db.collection("Izazovi").doc(id);
     const postoji = (await ref.get()).exists;
+    const slika = await sacuvajSliku(id, data);
     await ref.set({
         naziv,
         opis: String(data?.opis || "").trim().slice(0, 600),
@@ -148,6 +171,7 @@ exports.adminSacuvajIzazov = functions.https.onCall(async (data, context) => {
         od, do: kraj, merilo,
         vrste: (Array.isArray(data?.vrste) ? data.vrste : []).map(String).slice(0, 30),
         samoKamera: data?.samoKamera === true,
+        ...(slika !== undefined ? { slikaUrl: slika } : {}),
         ...(postoji ? {} : { brojUcesnika: 0, napravljeno: Date.now(), napravio: email }),
     }, { merge: true });
 
@@ -158,7 +182,7 @@ exports.adminSacuvajIzazov = functions.https.onCall(async (data, context) => {
     } else {
         await admin.messaging().send({
             topic: "izazovi",
-            notification: { title: `Novi izazov: ${naziv} 🏆`, body: "Pogledaj u Rang listi → Izazovi i prijavi se." },
+            notification: { title: `Novi izazov: ${naziv} 🏆`, body: "Dodirni da vidiš izazov i prijaviš se.", ...(slika ? { imageUrl: slika } : {}) },
             data: { tip: "izazov", IZAZOV: id },
             android: { notification: { channelId: "fishspot_obavestenja" } },
         }).catch((e) => console.warn("Obaveštenje o izazovu nije poslato:", e.message));
@@ -172,6 +196,7 @@ exports.adminObrisiIzazov = functions.https.onCall(async (data, context) => {
     const id = String(data?.id || "");
     if (!id) throw new functions.https.HttpsError("invalid-argument", "Nedostaje izazov.");
     await admin.firestore().recursiveDelete(admin.firestore().collection("Izazovi").doc(id));
+    await admin.storage().bucket().file(`izazovi/${id}.jpg`).delete({ ignoreNotFound: true }).catch(() => null);
     console.log(`Admin ${email} obrisao izazov ${id}`);
     return { ok: true };
 });

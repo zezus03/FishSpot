@@ -88,6 +88,7 @@ fun MapScreen(
     waterLevelViewModel: WaterLevelViewModel = viewModel(),
     focusOnUserCatch: String?,
     focusOnSpotId: String?,
+    otvoriChatSa: Pair<String, String>? = null, // (uid, ime) iz profila korisnika
     onLogout: () -> Unit,
     onNavigateToAddSpot: (Double, Double) -> Unit,
     onNavigateToList: () -> Unit,
@@ -239,16 +240,27 @@ fun MapScreen(
         }
     }
 
-    LaunchedEffect(focusOnSpotId) {
-        if (focusOnSpotId != null) {
+    LaunchedEffect(focusOnSpotId, spots.isNotEmpty()) {
+        if (focusOnSpotId != null && spots.isNotEmpty()) {
             val spotToFocus = spots.find { it.id == focusOnSpotId }
             spotToFocus?.let { spot ->
+                // Odmah se otvaraju detalji ulova, a mapa se pomera ka njemu
+                selectedSpotForComments = spot
+                spotsViewModel.loadComments(spot.id)
+                spotsViewModel.ucitajDetaljeUlova(spot)
+                scope.launch { sheetState.show() }
                 val spotLocation = LatLng(spot.lat, spot.lng)
                 cameraPositionState.animate(
                     update = com.google.android.gms.maps.CameraUpdateFactory.newLatLngZoom(spotLocation, 16f),
                     durationMs = 1500
                 )
             }
+            onFocusDone()
+        }
+    }
+    LaunchedEffect(otvoriChatSa) {
+        otvoriChatSa?.let { (uid, ime) ->
+            activeUsersViewModel.otvoriChatSa(uid, ime)
             onFocusDone()
         }
     }

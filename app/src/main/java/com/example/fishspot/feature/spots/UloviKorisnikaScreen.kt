@@ -54,6 +54,8 @@ import java.util.Locale
 fun UloviKorisnikaScreen(
     uid: String,
     onNavigateBack: () -> Unit,
+    onOtvoriUlov: (spotId: String) -> Unit = {},
+    onPosaljiPoruku: (uid: String, ime: String) -> Unit = { _, _ -> },
     viewModel: UloviKorisnikaViewModel = viewModel()
 ) {
     LaunchedEffect(uid) { viewModel.ucitaj(uid) }
@@ -89,7 +91,12 @@ fun UloviKorisnikaScreen(
                 ikona = Icons.Default.SetMeal,
                 onNazad = onNavigateBack,
                 akcija = if (mojiUlovi) null else {
-                    { com.example.fishspot.feature.chat.MeniKorisnika(uid = uid, ime = ime ?: "Pecaroš", kontekst = "Profil korisnika") }
+                    {
+                        com.example.fishspot.feature.chat.MeniKorisnika(
+                            uid = uid, ime = ime ?: "Pecaroš", kontekst = "Profil korisnika",
+                            onPosaljiPoruku = { onPosaljiPoruku(uid, ime ?: "Pecaroš") }
+                        )
+                    }
                 }
             )
         }
@@ -125,7 +132,8 @@ fun UloviKorisnikaScreen(
                 item { NaslovSekcije("Svi ulovi · ${ulovi.size}", Modifier.padding(start = 16.dp, top = 20.dp, bottom = 8.dp)) }
                 items(ulovi, key = { it.id }) { ulov ->
                     // Deliti se mogu samo sopstveni ulovi
-                    DetaljnaKarticaUlova(ulov, onPodeli = if (mojiUlovi) ({ ulovZaDeljenje = ulov }) else null)
+                    DetaljnaKarticaUlova(ulov, onPodeli = if (mojiUlovi) ({ ulovZaDeljenje = ulov }) else null,
+                        onClick = { onOtvoriUlov(ulov.id) })
                 }
             }
         }
@@ -228,7 +236,7 @@ private fun SpisakVrsta(poVrstama: List<BrojPoVrsti>) {
 
 // Kartica ulova sa svim podacima
 @Composable
-private fun DetaljnaKarticaUlova(ulov: FishSpot, onPodeli: (() -> Unit)? = null) {
+private fun DetaljnaKarticaUlova(ulov: FishSpot, onPodeli: (() -> Unit)? = null, onClick: () -> Unit = {}) {
     val datum = remember(ulov.timestamp) {
         SimpleDateFormat("dd.MM.yyyy. HH:mm", Locale.getDefault()).format(Date(ulov.timestamp))
     }
@@ -240,6 +248,7 @@ private fun DetaljnaKarticaUlova(ulov: FishSpot, onPodeli: (() -> Unit)? = null)
             .clip(RoundedCornerShape(20.dp))
             .background(FishBoje.Kartica)
             .border(1.dp, FishBoje.IvicaKartice, RoundedCornerShape(20.dp))
+            .clickable(onClick = onClick) // otvara ulov na mapi sa detaljima i komentarima
     ) {
         Box(
             modifier = Modifier

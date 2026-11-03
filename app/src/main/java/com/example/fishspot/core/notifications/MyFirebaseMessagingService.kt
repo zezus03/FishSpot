@@ -27,6 +27,11 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         val body = remoteMessage.notification?.body ?: "Neko je komentarisao tvoj ulov."
 
         // Dok je aplikacija otvorena: poruku već prikazuje balončić, a komentar ide kao poruka u aplikaciji
+        // Novi izazov je uvek pravo obaveštenje, i dok je aplikacija otvorena, da dodir otvori izazov
+        if (remoteMessage.data["tip"] == "izazov") {
+            prikaziNotifikaciju(title, body, remoteMessage.data)
+            return
+        }
         if (aplikacijaNaEkranu()) {
             if (remoteMessage.data["tip"] == "poruka") return
             FishPoruka.prikazi("$title\n$body", dugo = true)
@@ -59,6 +64,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             podaci["ZUMIRAJ_LNG"]?.let { putExtra("ZUMIRAJ_LNG", it) }
             podaci["OTVORI_CHAT"]?.let { putExtra("OTVORI_CHAT", it) }
             podaci["IME"]?.let { putExtra("IME", it) }
+            podaci["IZAZOV"]?.let { putExtra("IZAZOV", it) }
         }
         val pendingIntent = PendingIntent.getActivity(
             this, System.currentTimeMillis().toInt(), intent,

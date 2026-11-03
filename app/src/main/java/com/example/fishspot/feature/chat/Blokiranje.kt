@@ -10,6 +10,7 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Block
+import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Report
 import androidx.compose.material3.*
@@ -115,7 +116,10 @@ private val RAZLOZI_PRIJAVE_KORISNIKA = listOf(
  * kontekst: šta se prijavljuje (npr. tekst poruke ili ID ulova), da admin zna gde da gleda.
  */
 @Composable
-fun MeniKorisnika(uid: String, ime: String, kontekst: String = "", boja: Color = FishBoje.TekstSekundarni) {
+fun MeniKorisnika(
+    uid: String, ime: String, kontekst: String = "", boja: Color = FishBoje.TekstSekundarni,
+    onPosaljiPoruku: (() -> Unit)? = null
+) {
     val moj = FirebaseAuth.getInstance().currentUser?.uid
     if (uid.isBlank() || uid == moj) return
     val blokirani by Blokiranje.uidovi.collectAsState()
@@ -132,6 +136,11 @@ fun MeniKorisnika(uid: String, ime: String, kontekst: String = "", boja: Color =
             expanded = otvoren, onDismissRequest = { otvoren = false },
             modifier = Modifier.background(FishBoje.Kartica)
         ) {
+            if (onPosaljiPoruku != null && !blokiran) DropdownMenuItem(
+                text = { Text("Pošalji poruku", color = FishBoje.TekstPrimarni) },
+                leadingIcon = { Icon(Icons.Default.ChatBubbleOutline, null, tint = FishBoje.Akcenat) },
+                onClick = { otvoren = false; onPosaljiPoruku() }
+            )
             DropdownMenuItem(
                 text = { Text("Prijavi korisnika", color = FishBoje.TekstPrimarni) },
                 leadingIcon = { Icon(Icons.Default.Report, null, tint = FishBoje.Greska) },

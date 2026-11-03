@@ -87,6 +87,19 @@ fun UlovDetalji(
     var noviKomentar by remember { mutableStateOf("") }
     var prikaziPrijavu by remember { mutableStateOf(false) }
     var potvrdaBrisanja by remember { mutableStateOf(false) }
+    // Ceo tekst pločice (npr. dug opis mamca koji ne staje u red): (naslov, vrednost)
+    var punTekst by remember { mutableStateOf<Pair<String, String>?>(null) }
+    punTekst?.let { (naslov, vrednost) ->
+        AlertDialog(
+            onDismissRequest = { punTekst = null },
+            containerColor = FishBoje.Kartica,
+            titleContentColor = FishBoje.TekstPrimarni,
+            textContentColor = FishBoje.TekstPrimarni,
+            title = { Text(naslov, fontWeight = FontWeight.Bold) },
+            text = { Text(vrednost.replace(" · ", "\n").replace(", ", "\n"), fontSize = 17.sp) },
+            confirmButton = { TextButton(onClick = { punTekst = null }) { Text("Zatvori", color = FishBoje.Akcenat) } }
+        )
+    }
     val dateFormat = remember { SimpleDateFormat("dd.MM.yyyy. HH:mm", Locale.getDefault()) }
 
     var isLiked by remember(spot.likedBy) {
@@ -197,9 +210,11 @@ fun UlovDetalji(
                 Spacer(modifier = Modifier.height(10.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     PlocicaPodatka(Icons.Default.Phishing, "Tehnika", spot.tehnika.ifBlank { "—" },
-                        FishBoje.LjubicastaPlocica, Modifier.weight(1f))
+                        FishBoje.LjubicastaPlocica, Modifier.weight(1f),
+                        onClick = spot.tehnika.takeIf { it.isNotBlank() }?.let { { punTekst = "Tehnika" to it } })
                     PlocicaPodatka(Icons.Default.PestControl, "Mamac", spot.mamac.ifBlank { "—" },
-                        FishBoje.NarandzastaPlocica, Modifier.weight(1f))
+                        FishBoje.NarandzastaPlocica, Modifier.weight(1f),
+                        onClick = spot.mamac.takeIf { it.isNotBlank() }?.let { { punTekst = "Mamac" to it } })
                 }
 
                 // Vremenski uslovi u trenutku ulova (ako su zabeleženi)
@@ -558,12 +573,15 @@ private fun PlocicaPodatka(
     oznaka: String,
     vrednost: String,
     boje: Pair<Color, Color>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null // dodir prikazuje ceo tekst
 ) {
     val (pozadina, bojaIkone) = boje
     Row(
         modifier = modifier
+            .clip(RoundedCornerShape(16.dp))
             .background(pozadina, RoundedCornerShape(16.dp))
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

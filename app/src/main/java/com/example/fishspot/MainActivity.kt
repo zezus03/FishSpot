@@ -80,6 +80,20 @@ fun MainNavigation(navController: NavHostController, auth: FirebaseAuth) {
     val authRepository = remember { AuthRepository() }
     val authViewModel = remember { AuthViewModel() }
 
+    // Dodir na obaveštenje o izazovu (aplikacija zatvorena ili otvorena): rang lista -> Izazovi -> taj izazov
+    val aktivnost = androidx.compose.ui.platform.LocalContext.current as? androidx.activity.ComponentActivity
+    androidx.compose.runtime.DisposableEffect(aktivnost) {
+        val slusalac = androidx.core.util.Consumer<android.content.Intent> { namera ->
+            namera.getStringExtra("IZAZOV")?.takeIf { it.isNotBlank() && auth.currentUser != null }?.let { id ->
+                namera.removeExtra("IZAZOV")
+                navController.navigate("ranking?izazov=$id") { launchSingleTop = true }
+            }
+        }
+        aktivnost?.intent?.let { slusalac.accept(it) }
+        aktivnost?.addOnNewIntentListener(slusalac)
+        onDispose { aktivnost?.removeOnNewIntentListener(slusalac) }
+    }
+
     NavHost(navController = navController, startDestination = startDestination) {
 
         // ─── LOGIN EKRAN ───
@@ -116,10 +130,13 @@ fun MainNavigation(navController: NavHostController, auth: FirebaseAuth) {
             val spotIdToFocus by backStackEntry.savedStateHandle
                 .getLiveData<String>("spot_id_to_focus")
                 .observeAsState()
+            val chatUid by backStackEntry.savedStateHandle.getLiveData<String>("chat_uid").observeAsState()
+            val chatIme by backStackEntry.savedStateHandle.getLiveData<String>("chat_ime").observeAsState()
 
             MapScreen(
                 focusOnUserCatch = userIdToFocus,
                 focusOnSpotId = spotIdToFocus,
+                otvoriChatSa = chatUid?.let { it to (chatIme ?: "Pecaroš") },
                 onLogout = {
                     navController.navigate("login") { popUpTo(0) }
                 },
@@ -141,6 +158,8 @@ fun MainNavigation(navController: NavHostController, auth: FirebaseAuth) {
                 onFocusDone = {
                     backStackEntry.savedStateHandle.remove<String>("user_id_to_focus")
                     backStackEntry.savedStateHandle.remove<String>("spot_id_to_focus")
+                    backStackEntry.savedStateHandle.remove<String>("chat_uid")
+                    backStackEntry.savedStateHandle.remove<String>("chat_ime")
                 }
             )
         }
@@ -159,9 +178,13 @@ fun MainNavigation(navController: NavHostController, auth: FirebaseAuth) {
         }
 
         // ─── RANKING EKRAN ───
-        composable("ranking") {
+        composable(
+            route = "ranking?izazov={izazov}",
+            arguments = listOf(navArgument("izazov") { type = NavType.StringType; nullable = true; defaultValue = null })
+        ) { ulaz ->
             RankingScreen(
-                onNavigateBack = { navController.popBackStack() },
+                pocetniIzazov = ulaz.arguments?.getString("izazov"),
+                onNavigateBack = { if (!navController.popBackStack()) navController.navigate("map") },
                 // Dodir na korisnika otvara njegov profil sa ulovima
                 onUserSelected = { userId -> navController.navigate("ulovi_korisnika/$userId") },
                 // Ulov iz izazova se otvara na mapi, sa punim detaljima
@@ -212,9 +235,18 @@ fun MainNavigation(navController: NavHostController, auth: FirebaseAuth) {
             route = "ulovi_korisnika/{uid}",
             arguments = listOf(navArgument("uid") { type = NavType.StringType })
         ) { backStackEntry ->
+            // Ulov i razgovor se otvaraju na mapi (tamo su detalji ulova i ćaskanje)
+            fun naMapu(podesi: (androidx.lifecycle.SavedStateHandle) -> Unit) {
+                runCatching { navController.getBackStackEntry("map") }.getOrNull()?.let { mapa ->
+                    podesi(mapa.savedStateHandle)
+                    navController.popBackStack("map", inclusive = false)
+                }
+            }
             UloviKorisnikaScreen(
                 uid = backStackEntry.arguments?.getString("uid").orEmpty(),
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                onOtvoriUlov = { spotId -> naMapu { it["spot_id_to_focus"] = spotId } },
+                onPosaljiPoruku = { uid, ime -> naMapu { it["chat_uid"] = uid; it["chat_ime"] = ime } }
             )
         }
         // ─── ADMIN PANEL (samo za admin naloge; proveru radi i server) ───

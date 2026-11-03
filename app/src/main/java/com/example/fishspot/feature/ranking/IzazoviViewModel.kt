@@ -21,7 +21,8 @@ data class Izazov(
     val merilo: String, // najteza | ukupno | broj
     val vrste: List<String>,
     val samoKamera: Boolean,
-    val brojUcesnika: Long
+    val brojUcesnika: Long,
+    val slikaUrl: String = "" // slika izazova (opciono, postavlja admin)
 ) {
     fun aktivan(sada: Long = System.currentTimeMillis()) = sada in od..doKraja
     fun predstojeci(sada: Long = System.currentTimeMillis()) = sada < od
@@ -82,7 +83,8 @@ class IzazoviViewModel : ViewModel() {
                         merilo = d.getString("merilo") ?: "najteza",
                         vrste = vrste,
                         samoKamera = d.getBoolean("samoKamera") ?: false,
-                        brojUcesnika = d.getLong("brojUcesnika") ?: 0L
+                        brojUcesnika = d.getLong("brojUcesnika") ?: 0L,
+                        slikaUrl = d.getString("slikaUrl").orEmpty()
                     )
                 }
             }
