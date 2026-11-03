@@ -100,9 +100,14 @@ fun UlovDetalji(
     )
     val mojUlov = currentUserId != null && currentUserId == spot.authorId
 
+    // Detalji se otvaraju od vrha (slika, autor). Na komentare se skroluje samo kad korisnik pošalje svoj.
     val listState = rememberLazyListState()
+    var cekamSvojKomentar by remember(spot.id) { mutableStateOf(false) }
     LaunchedEffect(comments.size) {
-        if (comments.isNotEmpty()) listState.animateScrollToItem(comments.size)
+        if (cekamSvojKomentar && comments.isNotEmpty()) {
+            listState.animateScrollToItem(comments.size)
+            cekamSvojKomentar = false
+        }
     }
 
     Column(
@@ -333,6 +338,7 @@ fun UlovDetalji(
                 IconButton(
                     onClick = {
                         if (noviKomentar.isNotBlank()) {
+                            cekamSvojKomentar = true
                             onAddComment(noviKomentar)
                             noviKomentar = ""
                         }
