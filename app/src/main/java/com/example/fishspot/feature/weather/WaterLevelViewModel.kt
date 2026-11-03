@@ -42,6 +42,10 @@ class WaterLevelViewModel : ViewModel() {
     private val _merenje = MutableStateFlow<String?>(null)
     val merenje = _merenje.asStateFlow()
 
+    // Pre koliko sati je server poslednji put uspeo da preuzme podatke sa RHMZ-a (null = na vreme, do 6 h)
+    private val _kasniSati = MutableStateFlow<Long?>(null)
+    val kasniSati = _kasniSati.asStateFlow()
+
     private val _isLoading = MutableStateFlow(true)
     val isLoading = _isLoading.asStateFlow()
 
@@ -82,6 +86,9 @@ class WaterLevelViewModel : ViewModel() {
                 }
                 _greska.value = null
                 _merenje.value = snapshot.getString("merenje")
+                val preuzeto = snapshot.getTimestamp("azurirano")?.toDate()?.time
+                val sati = preuzeto?.let { (System.currentTimeMillis() - it) / 3_600_000L }
+                _kasniSati.value = sati?.takeIf { it >= 6 }
                 @Suppress("UNCHECKED_CAST")
                 val lista = snapshot.get("stanice") as? List<Map<String, Any?>> ?: emptyList()
                 _stanice.value = lista.mapNotNull { it.uStanicu() }

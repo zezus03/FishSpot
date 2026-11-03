@@ -60,6 +60,7 @@ private val VodaOpada = Color(0xFFFFA726)
 fun VodostajiScreen(viewModel: WaterLevelViewModel, onDismiss: () -> Unit) {
     val stanice by viewModel.stanice.collectAsState()
     val merenje by viewModel.merenje.collectAsState()
+    val kasniSati by viewModel.kasniSati.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val greska by viewModel.greska.collectAsState()
     val omiljene by viewModel.omiljene.collectAsState()
@@ -118,7 +119,7 @@ fun VodostajiScreen(viewModel: WaterLevelViewModel, onDismiss: () -> Unit) {
                 .navigationBarsPadding(),
             contentPadding = PaddingValues(bottom = 24.dp)
         ) {
-            item { Zaglavlje(merenje = merenje, onDismiss = onDismiss) }
+            item { Zaglavlje(merenje = merenje, kasniSati = kasniSati, onDismiss = onDismiss) }
 
             item { Sazetak(stanice) }
 
@@ -220,7 +221,7 @@ fun VodostajiScreen(viewModel: WaterLevelViewModel, onDismiss: () -> Unit) {
 }
 
 @Composable
-private fun Zaglavlje(merenje: String?, onDismiss: () -> Unit) {
+private fun Zaglavlje(merenje: String?, kasniSati: Long?, onDismiss: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -270,6 +271,24 @@ private fun Zaglavlje(merenje: String?, onDismiss: () -> Unit) {
                     Spacer(Modifier.width(6.dp))
                     Text("Merenje: $merenje", color = FishBoje.TekstPrimarni, fontSize = 12.sp,
                         fontWeight = FontWeight.Medium)
+                }
+            }
+            // RHMZ ne radi ili je promenio sajt: prikazuju se poslednji dobri podaci
+            if (kasniSati != null) {
+                Spacer(Modifier.height(8.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .background(FishBoje.Upozorenje.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
+                        .border(1.dp, FishBoje.Upozorenje.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                ) {
+                    Box(Modifier.size(7.dp).background(FishBoje.Upozorenje, CircleShape))
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        "Podaci RHMZ-a kasne (poslednje osvežavanje pre $kasniSati h). Prikazano je poslednje poznato stanje.",
+                        color = FishBoje.TekstPrimarni, fontSize = 12.sp
+                    )
                 }
             }
         }

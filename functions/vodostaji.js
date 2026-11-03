@@ -85,12 +85,49 @@ async function azurirajVodostaje(db = admin.firestore()) {
     return stanice.length;
 }
 
-exports.osveziVodostaje = functions.pubsub
-    .schedule("every 60 minutes")
+// ─── NADZOR: mail adminu kad RHMZ ne radi ili promeni format ───
+// Vodostaji/status: neuspehaZaredom, poslednjaGreska, poslednjiUspeh, javljeno (poslat mail o kvaru)
+const NEUSPEHA_ZA_MAIL = 3; // osvežava se jednom na sat, pa je to oko 3 sata kvara
+
+async function zabeleziIshod(greska, db = admin.firestore()) {
+    const { posaljiMail, omotac, esc } = require("./izvestaji")._interno;
+    const ref = db.collection("Vodostaji").doc("status");
+    const pre = (await ref.get()).data() || {};
+    const sada = Timestamp.now();
+    if (!greska) {
+        await ref.set({ neuspehaZaredom: 0, poslednjiUspeh: sada, javljeno: false }, { merge: true });
+        if (pre.javljeno) {
+            await posaljiMail("FishSpot: RHMZ ponovo radi",
+                omotac("Vodostaji se ponovo osvežavaju", `<p>Preuzimanje sa RHMZ-a je ponovo uspelo posle ${pre.neuspehaZaredom ?? "više"} neuspelih pokušaja.</p>`));
+        }
+        return "uspeh";
+    }
+    const neuspeha = (pre.neuspehaZaredom ?? 0) + 1;
+    const javi = neuspeha >= NEUSPEHA_ZA_MAIL && !pre.javljeno;
+    await ref.set({ neuspehaZaredom: neuspeha, poslednjaGreska: String(greska.message || greska).slice(0, 500), greskaVreme: sada, javljeno: pre.javljeno || javi }, { merge: true });
+    if (javi) {
+        await posaljiMail(`FishSpot: RHMZ ne radi već ${neuspeha} sata`, omotac("Vodostaji se ne osvežavaju",
+            `<p>Preuzimanje vodostaja sa RHMZ-a nije uspelo ${neuspeha} puta zaredom. Korisnici vide poslednje dobre podatke.</p>
+<p><strong>Greška:</strong> ${esc(String(greska.message || greska))}</p>
+<p>Ako piše „proveri format RHMZ XML-a“, RHMZ je verovatno promenio sajt i parser u <code>functions/vodostaji.js</code> treba prilagoditi. Ako je greška mrežna (timeout, 5xx), RHMZ je verovatno privremeno pao.</p>`));
+        return "javljeno";
+    }
+    return "greska";
+}
+
+exports.osveziVodostaje = functions
+    .runWith({ secrets: ["BREVO_API_KEY"] })
+    .pubsub.schedule("every 60 minutes")
     .timeZone("Europe/Belgrade")
     .onRun(async () => {
-        const broj = await azurirajVodostaje();
-        console.log(`Vodostaji osveženi: ${broj} stanica`);
+        try {
+            const broj = await azurirajVodostaje();
+            console.log(`Vodostaji osveženi: ${broj} stanica`);
+            await zabeleziIshod(null);
+        } catch (e) {
+            console.error("Vodostaji nisu osveženi:", e.message);
+            await zabeleziIshod(e).catch((g) => console.error("Nadzor vodostaja:", g.message));
+        }
         return null;
     });
 
@@ -124,4 +161,4 @@ exports.detaljiStanice = functions.https.onCall(async (data, context) => {
 });
 
 // Za testove i ručno pokretanje
-exports._interno = { parsirajStanjeVoda, parsirajMerenja, azurirajVodostaje };
+exports._interno = { parsirajStanjeVoda, parsirajMerenja, azurirajVodostaje, zabeleziIshod };

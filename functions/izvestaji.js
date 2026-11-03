@@ -208,4 +208,4 @@ exports.obavestiPrijavuKorisnika = saKljucem.firestore.document("PrijaveKorisnik
     return null;
 });
 
-exports._interno = { napraviDnevniPregled, napraviNedeljniPregled, esc };
+exports._interno = { napraviDnevniPregled, napraviNedeljniPregled, esc, posaljiMail, omotac };
