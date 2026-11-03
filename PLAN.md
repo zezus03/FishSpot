@@ -44,6 +44,10 @@ Razlozi da se korisnici vraćaju i van sezone.
 - [ ] **Mapa ribarskih područja**: Srbija je podeljena na 17 područja (Rešenje ministra, Sl. glasnik 90/2015), granice su opisane po opštinama i rekama. Aplikacija kaže „Nalaziš se u RP Južna Morava 1, dnevnu dozvolu izdaje …“, i upozori kad si u zaštićenom području (posebna dozvola, negde zabrana)
 - [ ] **Dozvole**: cene za tekuću godinu (2027: godišnja 9.000, dnevna 1.300, višednevna 2.600 din), ko je korisnik kog područja, gde se kupuje (adrese, telefoni, linkovi; onlajn gde postoji, npr. Ribolovački savez Vojvodine)
 - [ ] **Moja dozvola**: slikaš svoju dozvolu, aplikacija podseti pred istek
+- [ ] **Uplata dozvole preko IPS QR koda** (prvo JVP „Vode Vojvodine“, koje primaju uplatu na račun): aplikacija pravi NBS IPS QR sa računom, iznosom, svrhom i pozivom na broj, korisnik plaća svojom bankom, novac ide direktno korisniku područja (FishSpot ne dira novac, ne treba firma ni procesor).
+  - Zakon (čl. 41): **godišnja dozvola se kupuje u mestu prebivališta ili boravišta**, kod korisnika područja za tu opštinu. Pecaroš iz Niša ne kupuje godišnju od Voda Vojvodine, ali dnevnu i višednevnu za njihove vode može. Aplikacija mora da nudi godišnju samo prema mestu prebivališta.
+  - Dozvola je štampani dokument (štampa je korisnik), zakon ne pominje elektronsku dozvolu. Pre izrade od Voda Vojvodine (Služba za ribarstvo 021/4881-575) saznati: kako se posle uplate dobija dozvola (preuzimanje, pošta), da li potvrda o uplati važi na vodi, kako se dokazuje popust, koji model poziva na broj
+- [ ] **Evidencija ulova** (čl. 45): pecaroš je dužan da vodi evidenciju ulova na jedinstvenom obrascu i preda je korisniku do kraja godine, a bez nje ne dobija dozvolu za sledeću godinu. FishSpot već beleži ulove: izvoz u obliku obrasca (PDF za štampu) i podsetnik u decembru. Pitati korisnike područja da li prihvataju odštampan izvoz
 - [ ] Prvi korak: spisak korisnika svih 17 područja (ministarstvo, katastar ribolovnih voda, lokalni SRD-ovi)
 
 ## 2.0 – kad aplikacija stane na noge
