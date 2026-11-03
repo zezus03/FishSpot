@@ -41,7 +41,10 @@ Razlozi da se korisnici vraćaju i van sezone.
   - uslovi pri ulovu i naziv mesta se dopune kad stigne internet
   - oznaka „čeka slanje“ na ulovu
 - [ ] **Privatni ulovi i dnevnik**: ulov koji vidi samo autor, sa beleškama
-- [ ] **Ribolovna područja i dozvole**: koja dozvola važi na kojoj vodi
+- [ ] **Mapa ribarskih područja**: Srbija je podeljena na 17 područja (Rešenje ministra, Sl. glasnik 90/2015), granice su opisane po opštinama i rekama. Aplikacija kaže „Nalaziš se u RP Južna Morava 1, dnevnu dozvolu izdaje …“, i upozori kad si u zaštićenom području (posebna dozvola, negde zabrana)
+- [ ] **Dozvole**: cene za tekuću godinu (2027: godišnja 9.000, dnevna 1.300, višednevna 2.600 din), ko je korisnik kog područja, gde se kupuje (adrese, telefoni, linkovi; onlajn gde postoji, npr. Ribolovački savez Vojvodine)
+- [ ] **Moja dozvola**: slikaš svoju dozvolu, aplikacija podseti pred istek
+- [ ] Prvi korak: spisak korisnika svih 17 područja (ministarstvo, katastar ribolovnih voda, lokalni SRD-ovi)
 
 ## 2.0 – kad aplikacija stane na noge
 - [ ] **iPhone verzija**
@@ -49,6 +52,7 @@ Razlozi da se korisnici vraćaju i van sezone.
 - [ ] **Klubovi i timovi**: ekipna takmičenja, rang lista udruženja
 - [ ] **Region**: BiH, Crna Gora, Hrvatska (jezik, lovostaji, vode)
 - [ ] **Prihod**: sponzori izazova, partner jezera, dobrovoljna podrška (bez reklama)
+- [ ] **Prodaja dozvola u aplikaciji**: samo uz ugovor sa korisnikom ribarskog područja (npr. Srbijašume, Vode Vojvodine), registrovanu firmu, domaći procesor kartica i potvrdu ministarstva da elektronska dozvola važi na terenu
 
 ---
 
