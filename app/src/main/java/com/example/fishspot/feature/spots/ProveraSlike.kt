@@ -188,8 +188,12 @@ object ProveraSlike {
             kolona(MediaStore.MediaColumns.RELATIVE_PATH) as? String,
             kolona(MediaStore.Images.ImageColumns.BUCKET_DISPLAY_NAME) as? String
         ).joinToString("/")
+        // Birač dokumenata (kojim biramo slike, da bi se videlo pravo ime fajla) ne daje kolone MediaStore-a,
+        // ali daje svoju "poslednju izmenu" (u ms). Bez nje Viber i Messenger slike nemaju nikakav datum
+        // (nemaju ga ni u imenu, kao WhatsApp, a podatke kamere brišu), pa su ispadale "starije od 3 dana".
         val datum = (kolona(MediaStore.Images.ImageColumns.DATE_TAKEN) as? Long)?.takeIf { it > 0 }
             ?: (kolona(MediaStore.MediaColumns.DATE_MODIFIED) as? Long)?.takeIf { it > 0 }?.times(1000)
+            ?: (kolona(android.provider.DocumentsContract.Document.COLUMN_LAST_MODIFIED) as? Long)?.takeIf { it > 0 }
         return Fajl(ime, folder, datum)
     }
 
