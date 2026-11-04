@@ -53,6 +53,7 @@ import androidx.compose.ui.window.PopupProperties
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import com.google.ar.core.ArCoreApk
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -102,7 +103,11 @@ fun AddSpotScreen(
     var predlogMesta by remember { mutableStateOf<String?>(null) }
     var nazivRucno by remember { mutableStateOf(false) }
     LaunchedEffect(latitude, longitude) {
-        val predlog = NazivMesta.predlog(context, latitude, longitude)
+        // Mesto (Geocoder, traži internet) i najbliža voda (lokalna mapa) se traže istovremeno,
+        // pa se spoje: "Babušnica, Lužnica (reka)". Bilo koji deo može da izostane.
+        val voda = async { NajblizaVoda.nadji(context, latitude, longitude) }
+        val mesto = NazivMesta.predlog(context, latitude, longitude)
+        val predlog = listOfNotNull(mesto, voda.await()).joinToString(", ").take(100).takeIf { it.isNotBlank() }
         predlogMesta = predlog
         if (predlog != null && !nazivRucno && naziv.isBlank()) naziv = predlog
     }
