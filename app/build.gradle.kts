@@ -9,7 +9,7 @@ plugins {
 
 android {
     namespace = "com.example.fishspot"
-    compileSdk = 35
+    compileSdk = 36
 
     // Upload ključ za Google Play; putanja i lozinke su u local.properties (nije u gitu)
     val potpis = Properties().apply {
@@ -40,8 +40,8 @@ android {
     defaultConfig {
         applicationId = "rs.fishspot.app"
         minSdk = 24
-        targetSdk = 35
-        versionCode = 1
+        targetSdk = 36
+        versionCode = 2
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
