@@ -22,6 +22,13 @@ Poverenje i moderacija, pre razgovora sa jezerima i sponzorima.
 - [ ] **Zabrana korisnika** iz admin panela: gasi nalog, sklanja njegov sadržaj, pravila zabranjuju upis
 - [ ] **App Check uključen** za Firestore, Storage i funkcije (kad su svi korisnici na Play verziji)
 - [ ] **Bedževi izazova**: jedinstven bedž za svaki izazov, polje sponzor i logo na izazovu
+- [ ] **Obaveštenja u aplikaciji** (bez slanja na telefon, da ne smaramo ljude):
+  - na objavi klik na broj lajkova otvara spisak ko je lajkovao (slika, ime, klik vodi na profil)
+  - na kartici „Moj profil“, levo od promene slike, zvonce sa brojem nepročitanih; crvena tačkica na ikonici profila na mapi
+  - jedan red po ulovu: „Marko i još 3 korisnika su lajkovali tvoj ulov: Šaran 4,2 kg“, klik otvara ulov
+  - otvaranjem spiska nestaju broj i tačkica; upisuje server; ne broje se odlajk/ponovni lajk, svoj lajk i blokirani; brisanje posle 60 dana
+  - kasnije u isto mesto: osvojen bedž, novi komentar, odobren ulov preko 5 kg
+- [ ] **„Oceni FishSpot“**: Google-ov prozor za ocenu u aplikaciji, npr. posle trećeg ulova (Google sam ograničava koliko često se pojavljuje)
 - [ ] Manji APK: sažet model za prepoznavanje ribe (11 MB → ~3 MB)
 - [ ] Pristupačnost: opisi ikonica, kontrast sitnog teksta
 
