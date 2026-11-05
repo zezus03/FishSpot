@@ -149,8 +149,12 @@ fun BedzeviDialog(ime: String?, osvojeni: List<OsvojenBedz>, onZatvori: () -> Un
                     }
                     IconButton(onClick = onZatvori) { Icon(Icons.Default.Close, "Zatvori", tint = FishBoje.TekstPrimarni) }
                 }
+                // Na nekim telefonima prozor ide ispod donje trake sa dugmićima i poslednji bedž je bio
+                // isečen do pola, pa se ispod spiska dodaje i visina te trake
+                val donjaTraka = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
                 LazyColumn(
-                    contentPadding = PaddingValues(16.dp),
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 32.dp + donjaTraka),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(redosled, key = { it.id }) { b ->
