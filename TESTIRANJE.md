@@ -12,6 +12,9 @@ Ovo se koristi i za odgovore na „Apply for production“ (šta su testeri prij
 | 5.11. | 2 testera | Bedž „Fotograf“ se u spisku bedževa vidi samo do pola | Popravljeno u kodu (razmak na dnu spiska), ide u sledeću verziju |
 | 5.11. | tester | Crno-zelena tema je previše tamna | Za razmatranje: svetlija pozadina ili svetla tema |
 | 5.11. | tester | Slika ribe uz svaku vrstu u kalendaru lovostaja | Predlog: ide u verziju 1.3 (uz vrste ribe), upisano u PLAN.md |
+| 5.11. | tester | U komentarima nema profilne slike autora, samo prvo slovo | Za verziju 3: učitati profilne slike autora komentara |
+| 5.11. | tester | U chatu uvek piše „na mapi u blizini“, i kad sagovornik nije na mapi | Za verziju 3: „Aktivan sada“ samo kad je stvarno aktivan |
+| 5.11. | ja | „Drimska pastrmka“ ne postoji kao zasebna vrsta | Sklonjena iz kalendara lovostaja (ide u verziju 3); u bazi vrsta (VrsteRiba) ukloniti ručno |
 | 4.11. | ja | Opis vremena u prognozi je na ćirilici („Испрекидани облаци“), ostalo latinicom | Za sledeću verziju |
 
 ## Verzije u testiranju

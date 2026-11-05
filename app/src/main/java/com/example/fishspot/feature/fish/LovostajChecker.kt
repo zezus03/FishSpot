@@ -32,7 +32,6 @@ object LovostajChecker {
 
         // Pastrmke i zlatovčice (Zimski lovostaj 1.10. - 1.3. ili 28.2.)
         "Potocna pastrmka" to PraviloRibe(1001, 228, 25.0),
-        "Drimska pastrmka" to PraviloRibe(1001, 301, 25.0),
         "Duzicasta pastrmka" to PraviloRibe(1001, 301, 25.0),
         "Makedonska pastrmka" to PraviloRibe(1001, 301, 25.0),
         "Ohridska pastrmka" to PraviloRibe(1001, 228, 40.0),
