@@ -44,7 +44,10 @@ Razlozi da se korisnici vraćaju i van sezone.
 
 ## 1.3 – proleće 2027 (početak sezone)
 - [ ] **Prepoznavanje vrste ribe** sa slike (skup podataka je pripremljen)
-- [ ] **Slike riba** (predlog testera): slika uz svaku vrstu u kalendaru lovostaja, a iste slike i pri izboru vrste kod ulova. Samo slike sa slobodnom licencom (npr. Wikimedia) ili sopstvene, kao mali WebP (do ~1 MB ukupno)
+- [ ] **Slike i opisi riba** (predlog testera): sličica uz svaku vrstu u kalendaru lovostaja (i pri izboru vrste kod ulova); klik otvara prozor: velika slika, izgled i razlika od sličnih vrsta, stanište, prosečna i rekordna težina, najbolji mamci i tehnika, lovostaj i najmanja mera
+  - slike u aplikaciji (rade bez interneta), ~30 vrsta kao mali WebP, ukupno ~1 MB; samo slobodna licenca (Wikimedia Commons) ili sopstvene, uz ekran „Izvori slika“
+  - opisi u bazi (VrsteRiba), da se ispravljaju iz admin panela bez nove verzije
+  - procena: ~2 dana (pola dana kod, ostalo slike i opisi; opise pregleda Đorđe)
 - [ ] **Doterati rad bez interneta** (osnova već radi: ulov se čuva u telefonu, slike se šalju kad se pojavi signal):
   - bez čekanja od 10 s na proveru iste slike
   - uslovi pri ulovu i naziv mesta se dopune kad stigne internet
