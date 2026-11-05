@@ -26,5 +26,5 @@ Za mrest mu treba duga, brza reka u kojoj ikra plovi danima dok se ne izleže, p
 Obično 2–10 kg. Primerak preko 15 kg je trofej, a raste i preko 30 kg.
 
 ## Lovostaj i najmanja mera
-- **Lovostaj:** nema [proveri: pravila revira]
-- **Najmanja dužina:** nema [proveri]
+- **Lovostaj:** nema 
+- **Najmanja dužina:** nema 
