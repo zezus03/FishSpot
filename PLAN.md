@@ -48,6 +48,10 @@ Razlozi da se korisnici vraćaju i van sezone.
   - slike u aplikaciji (rade bez interneta), ~30 vrsta kao mali WebP, ukupno ~1 MB; samo slobodna licenca (Wikimedia Commons) ili sopstvene, uz ekran „Izvori slika“
   - opisi u bazi (VrsteRiba), da se ispravljaju iz admin panela bez nove verzije
   - procena: ~2 dana (pola dana kod, ostalo slike i opisi; opise pregleda Đorđe)
+  - opis po odeljcima: izgled (i razlika od sličnih), stanište, ishrana, razmnožavanje, način pecanja, veličina, lovostaj i mera (~2–4 KB po vrsti); primer: `sadrzaj/atlas_riba/saran.md`
+  - slike: stari crteži (Bloh i druge knjige, javno dobro) skinuti za sve domaće vrste, makedonska i ohridska pastrmka AI u istom stilu
+  - spojiti dvostruke nazive iste ribe: šljivar = nosara (*Vimba vimba*), potočna mrena = sapača (*Barbus meridionalis*)
+  - **alohtone (unete) vrste**, sa skicom i opisom kao domaće: babuška, amur, beli i sivi tolstolobik, crni amur, patuljasti somić, kanalski som, sunčanica, pastrmski grgeč (bas), čebačok; za njih uglavnom nema starih crteža, pa AI skice u istom stilu
 - [ ] **Doterati rad bez interneta** (osnova već radi: ulov se čuva u telefonu, slike se šalju kad se pojavi signal):
   - bez čekanja od 10 s na proveru iste slike
   - uslovi pri ulovu i naziv mesta se dopune kad stigne internet
