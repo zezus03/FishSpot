@@ -28,6 +28,7 @@ Poverenje i moderacija, pre razgovora sa jezerima i sponzorima.
   - jedan red po ulovu: „Marko i još 3 korisnika su lajkovali tvoj ulov: Šaran 4,2 kg“, klik otvara ulov
   - otvaranjem spiska nestaju broj i tačkica; upisuje server; ne broje se odlajk/ponovni lajk, svoj lajk i blokirani; brisanje posle 60 dana
   - kasnije u isto mesto: osvojen bedž, novi komentar, odobren ulov preko 5 kg
+- [ ] **Bedž „Plovkaš“**: 10 proverenih ulova sa tehnikom Plovak (kao Fiderista; nova slika bedža, ista pravila: samo ulovi sa poenima). Razmotriti i bedž za Dubinac, jedinu tehniku koja ostaje bez bedža
 - [ ] **„Oceni FishSpot“**: Google-ov prozor za ocenu u aplikaciji, npr. posle trećeg ulova (Google sam ograničava koliko često se pojavljuje)
 - [ ] Manji APK: sažet model za prepoznavanje ribe (11 MB → ~3 MB)
 - [ ] Pristupačnost: opisi ikonica, kontrast sitnog teksta
