@@ -20,7 +20,7 @@ Mresti se od **aprila do jula**, više puta godišnje, na bilju u plićaku. Ima 
 - **Tehnike:** plovak, feeder, dubinac.
 - **Mamci:** crvić, glista, kukuruz, hleb, testo.
 - **Kada:** cele godine. Grize i kad druge ribe ne grizu.
-- **Saveti:** zahvalna riba za početnike i decu. Kao invazivnu vrstu, bolje je **ne vraćati je u vodu** i nikako je ne prenositi u druge vode. [proveri: propis o vraćanju invazivnih vrsta]
+- **Saveti:** zahvalna riba za početnike i decu. Kao invazivnu vrstu, bolje je **ne vraćati je u vodu** i nikako je ne prenositi u druge vode. 
 
 ## Veličina
 Obično 0,2–0,8 kg, a retko preko 2 kg.
