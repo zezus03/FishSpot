@@ -25,5 +25,5 @@ Kao i amuru, za mrest mu treba duga, brza reka u kojoj ikra plovi. Mresti se let
 Obično 3–15 kg. Primerak preko 20 kg je trofej, a raste i preko 30 kg.
 
 ## Lovostaj i najmanja mera
-- **Lovostaj:** nema [proveri: pravila revira]
-- **Najmanja dužina:** nema [proveri]
+- **Lovostaj:** nema 
+- **Najmanja dužina:** nema 
