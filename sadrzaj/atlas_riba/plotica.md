@@ -23,7 +23,7 @@ Mresti se u **aprilu i maju** na šljunku u struji, a jata tada idu uzvodno. Lov
 - **Saveti:** za svoju veličinu je jak borac i dobro koristi struju. Koristi tanak predvez, ali jaku udicu.
 
 ## Veličina
-Obično 0,3–1 kg. Primerak preko 1,5 kg je trofej. [proveri: najveći primerci u našim vodama]
+Obično 0,3–1 kg. Primerak preko 1,5 kg je trofej.
 
 ## Lovostaj i najmanja mera
 - **Lovostaj:** 15. april – 31. maj
