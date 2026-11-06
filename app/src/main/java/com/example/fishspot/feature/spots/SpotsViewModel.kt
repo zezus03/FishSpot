@@ -317,7 +317,7 @@ class SpotsViewModel : ViewModel() {
         }
     }
 
-    fun DodajKomentar(spotId: String, text: String, onResult: (Boolean) -> Unit) {
+    fun DodajKomentar(spotId: String, text: String, odgovorNa: Comment? = null, onResult: (Boolean) -> Unit) {
         if (!com.example.fishspot.feature.auth.PotvrdaNaloga.proveri()) { onResult(false); return }
         viewModelScope.launch {
             val user = auth.currentUser
@@ -333,7 +333,9 @@ class SpotsViewModel : ViewModel() {
                     authorId = user.uid,
                     authorUsername = username,
                     text = text,
-                    timestamp = System.currentTimeMillis()
+                    timestamp = System.currentTimeMillis(),
+                    odgovorNaId = odgovorNa?.id.orEmpty(),
+                    odgovorNaIme = odgovorNa?.authorUsername.orEmpty().take(60)
                 )
 
                 firestore.collection("MestaZaPecanje").document(spotId)
@@ -346,6 +348,13 @@ class SpotsViewModel : ViewModel() {
                 onResult(false)
             }
         }
+    }
+
+    // Komentar briše njegov autor ili vlasnik ulova (pravila baze)
+    fun obrisiKomentar(spotId: String, komentarId: String) {
+        firestore.collection("MestaZaPecanje").document(spotId).collection("komentari").document(komentarId).delete()
+            .addOnSuccessListener { com.example.fishspot.core.theme.FishPoruka.prikazi("Komentar je obrisan") }
+            .addOnFailureListener { com.example.fishspot.core.theme.FishPoruka.prikazi("Komentar nije obrisan") }
     }
 
     fun clearComments() {

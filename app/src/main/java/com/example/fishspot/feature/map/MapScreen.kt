@@ -425,7 +425,7 @@ fun MapScreen(
 
                 // Crvena tačkica na profilu kad ima nepročitanih obaveštenja
                 val neprocitano by com.example.fishspot.feature.profile.Obavestenja.neprocitano.collectAsState()
-                BadgedBox(badge = { if (neprocitano > 0) Badge(containerColor = FishBoje.Greska) }) {
+                Box {
                     IconButton(
                         onClick = onNavigateToProfile,
                         modifier = iconModifier
@@ -436,6 +436,12 @@ fun MapScreen(
                             tint = bojaIkone
                         )
                     }
+                    // Tačkica na samoj ikonici, u gornjem desnom delu kruga
+                    if (neprocitano > 0) Box(
+                        Modifier.align(Alignment.TopEnd).padding(top = 6.dp, end = 6.dp).size(11.dp)
+                            .background(FishBoje.Greska, CircleShape)
+                            .border(1.5.dp, FishBoje.Kartica, CircleShape)
+                    )
                 }
 
                 IconButton(
@@ -833,10 +839,12 @@ fun MapScreen(
                             FishPoruka.prikazi(if (uspeh) "Ulov je prijavljen. Hvala!" else "Greška pri prijavi ulova")
                         }
                     },
-                    onAddComment = { text ->
+                    onObrisiKomentar = { id -> spotsViewModel.obrisiKomentar(azuriraniSpot.id, id) },
+                    onAddComment = { text, odgovorNa ->
                         spotsViewModel.DodajKomentar(
                             azuriraniSpot.id,
-                            text
+                            text,
+                            odgovorNa
                         ) { success ->
                             if (!success) {
                                 FishPoruka.prikazi("Greška pri slanju komentara")

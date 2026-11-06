@@ -77,15 +77,32 @@ fun UlovDetalji(
     comments: List<Comment>,
     currentUserId: String?,
     vecPrijavljen: Boolean,
-    onAddComment: (String) -> Unit,
+    onAddComment: (tekst: String, odgovorNa: Comment?) -> Unit,
     onToggleLike: (String, Boolean) -> Unit,
     onPrijavi: (razlog: String, opis: String) -> Unit,
     onAutorKlik: () -> Unit = {},
     onIzmeni: () -> Unit = {},
     onObrisi: () -> Unit = {},
     onPosaljiPoruku: (() -> Unit)? = null,
-    onKorisnikKlik: (uid: String) -> Unit = {}
+    onKorisnikKlik: (uid: String) -> Unit = {},
+    onObrisiKomentar: (komentarId: String) -> Unit = {}
 ) {
+    var odgovorNa by remember { mutableStateOf<Comment?>(null) }
+    var komentarZaBrisanje by remember { mutableStateOf<Comment?>(null) }
+    komentarZaBrisanje?.let { k ->
+        AlertDialog(
+            onDismissRequest = { komentarZaBrisanje = null },
+            containerColor = FishBoje.Kartica,
+            title = { Text("Obrisati komentar?", color = FishBoje.TekstPrimarni, fontWeight = FontWeight.Bold) },
+            text = { Text("„" + k.text.take(80) + "“", color = FishBoje.TekstSekundarni) },
+            confirmButton = {
+                Button(onClick = { onObrisiKomentar(k.id); komentarZaBrisanje = null },
+                    colors = ButtonDefaults.buttonColors(containerColor = FishBoje.Greska, contentColor = Color.White)
+                ) { Text("Obriši", fontWeight = FontWeight.Bold) }
+            },
+            dismissButton = { TextButton(onClick = { komentarZaBrisanje = null }) { Text("Otkaži", color = FishBoje.TekstSekundarni) } }
+        )
+    }
     var noviKomentar by remember { mutableStateOf("") }
     var prikaziLajkove by remember { mutableStateOf(false) }
     if (prikaziLajkove) LajkoviDialog(spot.likedBy, onZatvori = { prikaziLajkove = false }) { uid ->
@@ -341,7 +358,14 @@ fun UlovDetalji(
                 }
             } else {
                 items(comments, key = { it.id.ifBlank { "${it.authorId}_${it.timestamp}" } }) { comment ->
-                    KomentarMehur(comment, dateFormat.format(Date(comment.timestamp)))
+                    // Komentar briše njegov autor ili vlasnik ulova
+                    val mozeBrisanje = currentUserId != null && comment.id.isNotBlank() &&
+                        (comment.authorId == currentUserId || spot.authorId == currentUserId)
+                    KomentarMehur(
+                        comment, dateFormat.format(Date(comment.timestamp)),
+                        onOdgovori = if (currentUserId != null && comment.authorId != currentUserId) ({ odgovorNa = comment }) else null,
+                        onObrisi = if (mozeBrisanje) ({ komentarZaBrisanje = comment }) else null
+                    )
                 }
             }
             item { Spacer(modifier = Modifier.height(8.dp)) }
@@ -354,12 +378,23 @@ fun UlovDetalji(
                 .background(FishBoje.Kartica)
         ) {
             HorizontalDivider(color = FishBoje.IvicaKartice)
+            Column(Modifier.fillMaxWidth().imePadding().navigationBarsPadding()) {
+            odgovorNa?.let { k ->
+                Row(
+                    Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("↪ Odgovaraš: ", color = FishBoje.TekstPriguseni, fontSize = 13.sp)
+                    Text(k.authorUsername, color = FishBoje.Akcenat, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                    IconButton(onClick = { odgovorNa = null }, modifier = Modifier.size(32.dp)) {
+                        Icon(Icons.Default.Close, "Otkaži odgovor", tint = FishBoje.TekstPriguseni, modifier = Modifier.size(18.dp))
+                    }
+                }
+            }
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .imePadding()
-                    .navigationBarsPadding()
                     .padding(horizontal = 12.dp, vertical = 10.dp)
             ) {
                 OutlinedTextField(
@@ -376,8 +411,9 @@ fun UlovDetalji(
                     onClick = {
                         if (noviKomentar.isNotBlank()) {
                             cekamSvojKomentar = true
-                            onAddComment(noviKomentar)
+                            onAddComment(noviKomentar, odgovorNa)
                             noviKomentar = ""
+                            odgovorNa = null
                         }
                     },
                     enabled = noviKomentar.isNotBlank(),
@@ -394,6 +430,7 @@ fun UlovDetalji(
                         tint = if (noviKomentar.isNotBlank()) FishBoje.Pozadina else FishBoje.TekstPriguseni
                     )
                 }
+            }
             }
         }
     }
@@ -677,7 +714,7 @@ private object SlikeAutora {
 }
 
 @Composable
-private fun KomentarMehur(comment: Comment, vreme: String) {
+private fun KomentarMehur(comment: Comment, vreme: String, onOdgovori: (() -> Unit)? = null, onObrisi: (() -> Unit)? = null) {
     val slika by produceState(SlikeAutora.poznata(comment.authorId), comment.authorId) { value = SlikeAutora.slika(comment.authorId) }
     Row(modifier = Modifier.padding(vertical = 6.dp)) {
         Avatar(ime = comment.authorUsername, slikaUrl = slika, velicina = 32)
@@ -699,8 +736,20 @@ private fun KomentarMehur(comment: Comment, vreme: String) {
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(vreme, color = FishBoje.TekstPriguseni, fontSize = 11.sp)
             }
+            if (comment.odgovorNaIme.isNotBlank()) {
+                Text("↪ " + comment.odgovorNaIme, color = FishBoje.Akcenat, fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(top = 2.dp))
+            }
             Spacer(modifier = Modifier.height(2.dp))
             Text(comment.text, color = FishBoje.TekstSekundarni, fontSize = 14.sp)
+            if (onOdgovori != null || onObrisi != null) {
+                Row(Modifier.padding(top = 4.dp)) {
+                    if (onOdgovori != null) Text("Odgovori", color = FishBoje.TekstPriguseni, fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                        modifier = Modifier.clickable(onClick = onOdgovori).padding(end = 16.dp, top = 2.dp, bottom = 2.dp))
+                    if (onObrisi != null) Text("Obriši", color = FishBoje.Greska.copy(alpha = 0.8f), fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                        modifier = Modifier.clickable(onClick = onObrisi).padding(top = 2.dp, bottom = 2.dp))
+                }
+            }
         }
     }
 }

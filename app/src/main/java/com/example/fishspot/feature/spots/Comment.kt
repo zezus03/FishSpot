@@ -5,5 +5,8 @@ data class Comment(
     val authorId: String = "",
     val authorUsername: String = "",
     val text: String = "",
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    // Odgovor na komentar: kome se odgovara (prazno = običan komentar)
+    val odgovorNaId: String = "",
+    val odgovorNaIme: String = ""
 )

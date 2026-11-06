@@ -171,9 +171,13 @@ service cloud.firestore {
         allow create: if potvrdjen() && request.resource.data.authorId == request.auth.uid
           && request.resource.data.text is string
           && request.resource.data.text.size() > 0
-          && request.resource.data.text.size() <= 500;
+          && request.resource.data.text.size() <= 500
+          // Odgovor na komentar: kome se odgovara
+          && tekstDo('odgovorNaIme', 60) && tekstDo('odgovorNaId', 40);
         allow update: if false;
-        allow delete: if prijavljen() && resource.data.authorId == request.auth.uid;
+        // Briše ga autor komentara ili vlasnik ulova
+        allow delete: if prijavljen() && (resource.data.authorId == request.auth.uid
+          || get(/databases/$(database)/documents/MestaZaPecanje/$(spotId)).data.authorId == request.auth.uid);
       }
     }
 
