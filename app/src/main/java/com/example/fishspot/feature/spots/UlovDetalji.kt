@@ -185,6 +185,15 @@ fun UlovDetalji(
                         Text(spot.naziv, color = FishBoje.TekstPrimarni, fontSize = 15.sp, fontWeight = FontWeight.Medium)
                     }
                 }
+                if (spot.skrivenaLokacija) {
+                    Text(
+                        if (spot.authorId == com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid)
+                            "Tačna lokacija je sakrivena od drugih. Oni vide samo krug od oko 3 km."
+                        else "Autor je sakrio tačnu lokaciju. Na mapi je približno mesto (krug od oko 3 km).",
+                        color = FishBoje.TekstPriguseni, fontSize = 12.sp,
+                        modifier = Modifier.padding(top = 4.dp, start = 36.dp)
+                    )
+                }
                 if (spot.opis.isNotBlank()) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(spot.opis, color = FishBoje.TekstSekundarni, fontSize = 14.sp)

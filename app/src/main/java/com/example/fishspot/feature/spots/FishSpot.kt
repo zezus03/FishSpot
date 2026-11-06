@@ -57,7 +57,9 @@ data class FishSpot(
     val cuvarkaVrste: List<VrstaKratko> = emptyList(),
     // Vreme objave po satu servera (upisuje ga Firestore); podaci o ribi mogu da se menjaju 30 min posle toga
     @com.google.firebase.firestore.ServerTimestamp val objavljeno: java.util.Date? = null,
-    val likedBy: List<String> = emptyList() // <-- OVO DODAJ!
+    val likedBy: List<String> = emptyList(),
+    // Autor je sakrio tačnu lokaciju: lat/lng su približni (SkrivenaLokacija.kt)
+    val skrivenaLokacija: Boolean = false
 )
 // Ponuđeni mamci i tehnike (dodavanje i izmena ulova)
 object OpcijeUlova {

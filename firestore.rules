@@ -143,6 +143,17 @@ service cloud.firestore {
           && stari.difference(novi).hasOnly([request.auth.uid]);
       }
 
+      // Tačna lokacija ulova kad je autor sakrije (SkrivenaLokacija.kt): čita je i menja samo autor.
+      // Brisanje ulova ili naloga je briše na serveru (obrisanUlov).
+      match /privatno/{docId} {
+        allow read, delete: if prijavljen()
+          && get(/databases/$(database)/documents/MestaZaPecanje/$(spotId)).data.authorId == request.auth.uid;
+        allow create, update: if potvrdjen() && docId == 'lokacija'
+          && getAfter(/databases/$(database)/documents/MestaZaPecanje/$(spotId)).data.authorId == request.auth.uid
+          && request.resource.data.keys().hasOnly(['lat', 'lng'])
+          && request.resource.data.lat is number && request.resource.data.lng is number;
+      }
+
       match /komentari/{commentId} {
         allow read: if prijavljen();
         allow create: if potvrdjen() && request.resource.data.authorId == request.auth.uid

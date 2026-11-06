@@ -162,6 +162,7 @@ fun AddSpotScreen(
     val fishDetector = remember { FishDetector(context) }
     var showLovostajUpozorenje by remember { mutableStateOf<String?>(null) }
     var zasticenaUpozorenje by remember { mutableStateOf<String?>(null) }
+    var sakrijLokaciju by remember { mutableStateOf(false) }
 
     // Gašenje modela kada se ekran zatvori
     DisposableEffect(Unit) {
@@ -447,7 +448,8 @@ fun AddSpotScreen(
                                 temperatura = temperatura,
                                 pritisak = pritisak,
                                 vetar = vetar,
-                                izvorSlike = izvorSlike?.kod ?: IzvorSlike.NEPOZNATA.kod
+                                izvorSlike = izvorSlike?.kod ?: IzvorSlike.NEPOZNATA.kod,
+                                sakrijLokaciju = sakrijLokaciju
                             ) { result ->
                                 if (result.isSuccess) {
                                     val kg = tezinaRibe.replace(',', '.').toDoubleOrNull() ?: 0.0
@@ -775,6 +777,7 @@ fun AddSpotScreen(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(14.dp)
                 )
+                PrekidacSakrijLokaciju(sakrijLokaciju) { sakrijLokaciju = it }
                 OutlinedTextField(
                     value = opis,
                     onValueChange = { opis = it },

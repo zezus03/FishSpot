@@ -152,6 +152,7 @@ class SpotsViewModel : ViewModel() {
         izvorSlike: String,
         cuvarka: Boolean = false,
         cuvarkaVrste: List<VrstaRibe> = emptyList(),
+        sakrijLokaciju: Boolean = false,
         onResult: (Result<Unit>) -> Unit
     ) {
         viewModelScope.launch {
@@ -179,8 +180,10 @@ class SpotsViewModel : ViewModel() {
                     ocena = ocena,
                     opis = opis,
                     slikaUrl = null, // Šalje se naknadno
-                    lat = location.latitude,
-                    lng = location.longitude,
+                    // Sakrivena lokacija: javno samo približno mesto, tačno ide u privatni deo
+                    lat = if (sakrijLokaciju) SkrivenaLokacija.priblizno(location.latitude, location.longitude).latitude else location.latitude,
+                    lng = if (sakrijLokaciju) SkrivenaLokacija.priblizno(location.latitude, location.longitude).longitude else location.longitude,
+                    skrivenaLokacija = sakrijLokaciju,
                     timestamp = System.currentTimeMillis(),
                     duzinaRibe = duzinaRibe,
                     tezinaRibe = tezinaRibe,
@@ -195,8 +198,19 @@ class SpotsViewModel : ViewModel() {
                 )
 
                 // Zapis pod VrsteRiba/{vrsta}/Ulovi (rekordi) pravi server (funkcija noviUlov)
-                docRef.set(fishSpot)
-                    .addOnFailureListener { Log.e("SpotsViewModel", "Greška pri upisu ulova", it) }
+                if (sakrijLokaciju) {
+                    // Ulov i tačna lokacija zajedno (radi i bez interneta)
+                    firestore.batch()
+                        .set(docRef, fishSpot)
+                        .set(SkrivenaLokacija.privatnoRef(spotId), mapOf("lat" to location.latitude, "lng" to location.longitude))
+                        .commit()
+                        .addOnFailureListener { Log.e("SpotsViewModel", "Greška pri upisu ulova", it) }
+                    mojeTacneLokacije.value = mojeTacneLokacije.value +
+                        (spotId to com.google.android.gms.maps.model.LatLng(location.latitude, location.longitude))
+                } else {
+                    docRef.set(fishSpot)
+                        .addOnFailureListener { Log.e("SpotsViewModel", "Greška pri upisu ulova", it) }
+                }
 
                 // Slike se smanjuju pre slanja (umesto 3-8 MB sa kamere šalje se oko 300 KB za glavnu
                 // i oko 120 KB za dodatnu), pa se predaju WorkManager-u koji ih šalje kad ima interneta
@@ -422,12 +436,44 @@ class SpotsViewModel : ViewModel() {
                 if (!spot.ribaMozeDaSeMenja) {
                     izmene.keys.removeAll(listOf("vrstaRibe", "vrstaId", "latinskiNaziv", "duzinaRibe", "tezinaRibe", "cuvarka", "cuvarkaVrste"))
                 }
+                promeniSakrivanje(spot, izmena.sakrijLokaciju, izmene)
                 firestore.collection("MestaZaPecanje").document(spot.id).update(izmene).await()
                 onResult(true)
             } catch (e: Exception) {
                 Log.e("SpotsViewModel", "Greška pri izmeni ulova", e)
                 onResult(false)
             }
+        }
+    }
+
+    // Tačne lokacije sopstvenih ulova sa sakrivenom lokacijom (za pin na tačnom mestu na mapi)
+    val mojeTacneLokacije = kotlinx.coroutines.flow.MutableStateFlow<Map<String, com.google.android.gms.maps.model.LatLng>>(emptyMap())
+
+    fun ucitajMojeTacneLokacije(spotovi: List<FishSpot>) {
+        val moj = auth.currentUser?.uid ?: return
+        val fale = spotovi.filter { it.skrivenaLokacija && it.authorId == moj && it.id !in mojeTacneLokacije.value }
+        if (fale.isEmpty()) return
+        viewModelScope.launch {
+            val nove = fale.mapNotNull { s -> SkrivenaLokacija.tacna(s.id)?.let { s.id to it } }
+            mojeTacneLokacije.value = mojeTacneLokacije.value + nove
+        }
+    }
+
+    // Uključivanje ili isključivanje sakrivene lokacije na postojećem ulovu
+    private suspend fun promeniSakrivanje(spot: FishSpot, sakrij: Boolean, izmene: MutableMap<String, Any>) {
+        if (sakrij == spot.skrivenaLokacija) return
+        val privatno = SkrivenaLokacija.privatnoRef(spot.id)
+        if (sakrij) {
+            privatno.set(mapOf("lat" to spot.lat, "lng" to spot.lng)).await()
+            val p = SkrivenaLokacija.priblizno(spot.lat, spot.lng)
+            izmene["lat"] = p.latitude; izmene["lng"] = p.longitude; izmene["skrivenaLokacija"] = true
+            mojeTacneLokacije.value = mojeTacneLokacije.value + (spot.id to com.google.android.gms.maps.model.LatLng(spot.lat, spot.lng))
+        } else {
+            val tacna = mojeTacneLokacije.value[spot.id] ?: SkrivenaLokacija.tacna(spot.id)
+            if (tacna != null) { izmene["lat"] = tacna.latitude; izmene["lng"] = tacna.longitude }
+            izmene["skrivenaLokacija"] = false
+            privatno.delete()
+            mojeTacneLokacije.value = mojeTacneLokacije.value - spot.id
         }
     }
 

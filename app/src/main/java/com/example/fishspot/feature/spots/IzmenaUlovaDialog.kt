@@ -49,7 +49,8 @@ data class IzmenaUlova(
     val dodatneSlike: List<String>, // zadržane dodatne slike (linkovi)
     val noveSlike: List<android.net.Uri> = emptyList(), // nove dodatne slike sa telefona
     val cuvarka: Boolean = false,
-    val cuvarkaVrste: List<VrstaRibe> = emptyList()
+    val cuvarkaVrste: List<VrstaRibe> = emptyList(),
+    val sakrijLokaciju: Boolean = false
 )
 
 @Composable
@@ -122,6 +123,7 @@ fun IzmenaUlovaDialog(
         }
     }
 
+    var sakrijLokaciju by remember { mutableStateOf(spot.skrivenaLokacija) }
     val duzinaBroj = duzina.replace(',', '.').toDoubleOrNull()
     val tezinaBroj = tezina.replace(',', '.').toDoubleOrNull()
     val greska = when {
@@ -321,6 +323,7 @@ fun IzmenaUlovaDialog(
                         shape = RoundedCornerShape(14.dp),
                         modifier = Modifier.fillMaxWidth()
                     )
+                    PrekidacSakrijLokaciju(sakrijLokaciju) { sakrijLokaciju = it }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         (1..5).forEach { zvezda ->
                             IconButton(onClick = { ocena = zvezda.toFloat() }, modifier = Modifier.size(44.dp)) {
@@ -365,7 +368,8 @@ fun IzmenaUlovaDialog(
                                     dodatneSlike = zadrzane,
                                     noveSlike = nove,
                                     cuvarka = cuvarka,
-                                    cuvarkaVrste = if (cuvarka) vrsteCuvarke else emptyList()
+                                    cuvarkaVrste = if (cuvarka) vrsteCuvarke else emptyList(),
+                                    sakrijLokaciju = sakrijLokaciju
                                 )
                             )
                         },

@@ -250,8 +250,9 @@ fun MapScreen(
                 spotsViewModel.ucitajDetaljeUlova(spot)
                 scope.launch { sheetState.show() }
                 val spotLocation = LatLng(spot.lat, spot.lng)
+                // Sakrivena lokacija: mapa se ne zumira previše, da se vidi ceo krug
                 cameraPositionState.animate(
-                    update = com.google.android.gms.maps.CameraUpdateFactory.newLatLngZoom(spotLocation, 16f),
+                    update = com.google.android.gms.maps.CameraUpdateFactory.newLatLngZoom(spotLocation, if (spot.skrivenaLokacija) 12f else 16f),
                     durationMs = 1500
                 )
             }
@@ -268,7 +269,10 @@ fun MapScreen(
 
     LaunchedEffect(spots) {
         delay(50)
+        spotsViewModel.ucitajMojeTacneLokacije(spots)
     }
+    val mojeTacneLokacije by spotsViewModel.mojeTacneLokacije.collectAsState()
+    val mojUid = remember { com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid }
 
     Box(modifier = Modifier.fillMaxSize()) {
         GoogleMap(
@@ -320,13 +324,25 @@ fun MapScreen(
                 }
 
                 for (spot in spots) {
-                    val spotPosition = LatLng(spot.lat, spot.lng)
+                    // Sakrivena lokacija: autor vidi tačan pin, ostali krug oko približnog mesta
+                    val skriven = spot.skrivenaLokacija && spot.authorId != mojUid
+                    val spotPosition = mojeTacneLokacije[spot.id] ?: LatLng(spot.lat, spot.lng)
                     key(spot.id) {
+                        if (skriven) {
+                            com.google.maps.android.compose.Circle(
+                                center = spotPosition,
+                                radius = com.example.fishspot.feature.spots.SkrivenaLokacija.RADIJUS_M,
+                                fillColor = FishBoje.Akcenat.copy(alpha = 0.12f),
+                                strokeColor = FishBoje.Akcenat.copy(alpha = 0.6f),
+                                strokeWidth = 3f
+                            )
+                        }
                         Marker(
-                            state = rememberMarkerState(key = spot.id, position = spotPosition),
+                            state = rememberMarkerState(key = "${spot.id}@${spotPosition.latitude},${spotPosition.longitude}", position = spotPosition),
                             title = spot.naziv,
-                            snippet = "Riba: ${spot.nazivVrsta}, Klikni za komentar",
+                            snippet = if (skriven) "Približna lokacija · ${spot.nazivVrsta}" else "Riba: ${spot.nazivVrsta}, Klikni za komentar",
                             icon = pinUlova,
+                            alpha = if (skriven) 0.75f else 1f,
                             onClick = {
                                 selectedSpotForComments = spot
                                 spotsViewModel.loadComments(spot.id)
