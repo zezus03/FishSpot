@@ -39,7 +39,11 @@ service cloud.firestore {
       allow update: if jaSam(uid) && poeniIspravni() && profilIspravan();
 
       function profilIspravan() {
-        return tekstDo('userName', 60) && tekstDo('imePrezime', 100) && bezLicnihPodataka();
+        return tekstDo('userName', 60) && tekstDo('imePrezime', 100) && bezLicnihPodataka() && youtubeNepromenjen();
+      }
+      // Link YouTube kanala upisuje samo admin (functions/admin.js, adminYoutube)
+      function youtubeNepromenjen() {
+        return request.resource.data.get('youtube', null) == (resource == null ? null : resource.data.get('youtube', null));
       }
       // E-adresa i telefon ne idu u javni profil (vide ga svi prijavljeni). Pri izmeni smeju samo da ostanu
       // kakvi su bili kod starih naloga, dok ih nedeljno čišćenje ne obriše.

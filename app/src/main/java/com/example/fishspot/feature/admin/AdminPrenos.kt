@@ -23,7 +23,7 @@ import com.example.fishspot.core.theme.FishPoruka
 import com.example.fishspot.core.theme.fishPoljeBoje
 import com.google.firebase.functions.FirebaseFunctions
 
-private data class Nalog(val uid: String, val ime: String, val opis: String)
+internal data class Nalog(val uid: String, val ime: String, val opis: String)
 
 // Odeljak u admin panelu: svi ulovi sa jednog naloga prelaze na drugi (npr. sa probnog naloga na pravi).
 // Server (adminPrebaciUlove) prebacuje i poene, a bedževe i izazove računa ponovo za oba naloga.
@@ -120,7 +120,7 @@ fun AdminPrenosOdeljak() {
 
 // Polje za izbor naloga: pretraga po korisničkom imenu (isto kao za bedž Prijatelj)
 @Composable
-private fun IzborNaloga(naslov: String, izabran: Nalog?, onIzbor: (Nalog?) -> Unit) {
+internal fun IzborNaloga(naslov: String, izabran: Nalog?, onIzbor: (Nalog?) -> Unit) {
     var upit by remember { mutableStateOf("") }
     var rezultati by remember { mutableStateOf(emptyList<Nalog>()) }
 

@@ -322,3 +322,4 @@ exports.nedeljnoCiscenje = require("./ciscenje").nedeljnoCiscenje;
 
 // ─── ADMIN: PREBACIVANJE ULOVA SA NALOGA NA NALOG (functions/prenos.js) ───
 exports.adminPrebaciUlove = require("./prenos").adminPrebaciUlove;
+exports.adminYoutube = require("./admin").adminYoutube;

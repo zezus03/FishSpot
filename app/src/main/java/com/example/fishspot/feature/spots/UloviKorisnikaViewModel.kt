@@ -36,6 +36,10 @@ class UloviKorisnikaViewModel : ViewModel() {
     private val _album = MutableStateFlow<List<VrstaUAlbumu>>(emptyList())
     val album = _album.asStateFlow()
 
+    // Link YouTube kanala (upisuje ga samo admin); prazno = nema dugmeta
+    private val _youtube = MutableStateFlow("")
+    val youtube = _youtube.asStateFlow()
+
     private val _imeKorisnika = MutableStateFlow<String?>(null)
     val imeKorisnika = _imeKorisnika.asStateFlow()
 
@@ -51,7 +55,10 @@ class UloviKorisnikaViewModel : ViewModel() {
         slusalac?.remove()
 
         firestore.collection("Korisnici").document(uid).get()
-            .addOnSuccessListener { doc -> _imeKorisnika.value = doc.getString("userName") }
+            .addOnSuccessListener { doc ->
+                _imeKorisnika.value = doc.getString("userName")
+                _youtube.value = doc.getString("youtube").orEmpty()
+            }
 
         // Sortiramo u aplikaciji, da za upit ne treba poseban indeks (authorId + timestamp)
         slusalac = firestore.collection("MestaZaPecanje").whereEqualTo("authorId", uid)

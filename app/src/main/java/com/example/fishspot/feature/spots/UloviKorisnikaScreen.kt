@@ -31,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontStyle
@@ -63,6 +64,7 @@ fun UloviKorisnikaScreen(
     val ulovi by viewModel.ulovi.collectAsState()
     val poVrstama by viewModel.poVrstama.collectAsState()
     val album by viewModel.album.collectAsState()
+    val youtube by viewModel.youtube.collectAsState()
     val ime by viewModel.imeKorisnika.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val mojiUlovi = remember(uid) { FirebaseAuth.getInstance().currentUser?.uid == uid }
@@ -101,6 +103,9 @@ fun UloviKorisnikaScreen(
                 }
             )
         }
+
+        // Dugme za YouTube kanal (pecaroš koji podržava FishSpot; link dodaje admin)
+        if (youtube.isNotBlank()) item { DugmeYoutube(youtube) }
 
         when {
             isLoading -> item {
@@ -401,4 +406,30 @@ private fun formatBroj(vrednost: Double, jedinica: String): String {
     val tekst = if (vrednost % 1.0 == 0.0) vrednost.toInt().toString()
     else String.format(Locale.getDefault(), "%.2f", vrednost).trimEnd('0').trimEnd(',', '.')
     return "$tekst $jedinica"
+}
+
+@Composable
+private fun DugmeYoutube(link: String) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 16.dp, bottom = 12.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(Color(0xFFE62117))
+            .clickable {
+                try {
+                    context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(link)))
+                } catch (_: Exception) {
+                    com.example.fishspot.core.theme.FishPoruka.prikazi("Nije moguće otvoriti YouTube")
+                }
+            }
+            .padding(vertical = 12.dp)
+    ) {
+        Icon(Icons.Default.PlayArrow, contentDescription = null, tint = Color.White, modifier = Modifier.size(22.dp))
+        Spacer(Modifier.width(8.dp))
+        Text("YouTube kanal", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+    }
 }

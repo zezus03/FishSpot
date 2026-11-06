@@ -2,7 +2,7 @@
 // jedan od admin naloga sa potvrđenom e-adresom. PrijavljeniUlovi aplikacija ne može da čita direktno.
 const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
-const { Timestamp } = require("firebase-admin/firestore");
+const { Timestamp, FieldValue } = require("firebase-admin/firestore");
 const { nazivVrsta } = require("./ulovi")._interno;
 
 // Admin adrese su u functions/.env (ADMIN_EMAILS=adresa1,adresa2); taj fajl se objavljuje, ali nije na GitHub-u
@@ -70,6 +70,30 @@ function trebaOdluka(p) {
     }
     return true;
 }
+
+// Link YouTube kanala na profilu korisnika (npr. pecaroš koji reklamira FishSpot). Prazan link uklanja dugme.
+// Prihvataju se samo linkovi kanala: youtube.com/@ime, /channel/..., /c/..., /user/...
+const YOUTUBE_KANAL = /^https:\/\/(www\.|m\.)?youtube\.com\/(@[\w.\-]{3,100}|channel\/[\w-]{10,40}|c\/[\w.\-]{1,100}|user\/[\w.\-]{1,100})\/?$/;
+
+function sredjenYoutube(link) {
+    let l = String(link || "").trim();
+    if (!l) return "";
+    if (!/^https?:\/\//i.test(l)) l = "https://" + l;
+    l = l.replace(/^http:\/\//i, "https://").split("?")[0];
+    return YOUTUBE_KANAL.test(l) ? l : null;
+}
+
+exports.adminYoutube = functions.https.onCall(async (data, context) => {
+    const email = proveriAdmina(context);
+    const uid = String(data?.uid || "");
+    const link = sredjenYoutube(data?.link);
+    if (link === null) throw new functions.https.HttpsError("invalid-argument", "To nije link YouTube kanala (npr. youtube.com/@ImeKanala).");
+    const ref = admin.firestore().collection("Korisnici").doc(uid);
+    if (!uid || !(await ref.get()).exists) throw new functions.https.HttpsError("not-found", "Korisnik ne postoji.");
+    await ref.update({ youtube: link ? link : FieldValue.delete() });
+    console.log(`Admin ${email}: YouTube za ${uid} = ${link || "(uklonjen)"}`);
+    return { youtube: link };
+});
 
 // Aplikacija pita da li da prikaže ulaz u admin panel (adrese nisu u aplikaciji)
 exports.jesamLiAdmin = functions.https.onCall(async (data, context) => {
@@ -180,4 +204,4 @@ exports.adminVelikiUlov = functions.https.onCall(async (data, context) => {
     return { ok: true, poeni: dodato };
 });
 
-exports._interno = { ADMINI, proveriAdmina, zaAplikaciju, trebaOdluka, velikiZaAplikaciju };
+exports._interno = { ADMINI, proveriAdmina, zaAplikaciju, trebaOdluka, velikiZaAplikaciju, sredjenYoutube };
