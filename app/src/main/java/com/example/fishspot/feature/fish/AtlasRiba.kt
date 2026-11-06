@@ -68,9 +68,16 @@ object AtlasRiba {
 
     // Id vrste u bazi (VrsteRiba), gde su i narodni nazivi, kad se razlikuje od id-a u atlasu
     private val idUBazi = mapOf(
-        "smudj_kamenjar" to "smud-kamenjar", "cverglan" to "patuljasti-som",
+        "smudj" to "smud", "smudj_kamenjar" to "smud-kamenjar", "cverglan" to "patuljasti-som",
         "sljivar" to "nosara", "zlatni_karas" to "karas"
     )
+
+    // Vrsta iz atlasa za id vrste iz baze (ulovi): "smud" -> smudj, "crni-patuljasti-som" -> cverglan
+    fun poIdUBazi(context: Context, vrstaId: String): VrstaAtlasa? {
+        if (vrstaId == "crni-patuljasti-som") return poId(context, "cverglan")
+        val atlasId = idUBazi.entries.firstOrNull { it.value == vrstaId }?.key ?: vrstaId.replace("-", "_")
+        return poId(context, atlasId)
+    }
 
     fun sve(context: Context): List<VrstaAtlasa> = vrste ?: synchronized(this) {
         vrste ?: ucitaj(context).also { vrste = it }
