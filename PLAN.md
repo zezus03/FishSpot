@@ -51,6 +51,8 @@ Razlozi da se korisnici vraćaju i van sezone.
   - opis po odeljcima: izgled (i razlika od sličnih), stanište, ishrana, razmnožavanje, način pecanja, veličina, lovostaj i mera (~2–4 KB po vrsti); primer: `sadrzaj/atlas_riba/saran.md`
   - slike: stari crteži (Bloh i druge knjige, javno dobro) skinuti za sve domaće vrste, makedonska i ohridska pastrmka AI u istom stilu
   - spojiti dvostruke nazive iste ribe: šljivar = nosara (*Vimba vimba*), potočna mrena = sapača (*Barbus meridionalis*)
+  - **vrste u trajnoj zabrani ulova** (20): kečiga, moruna, sim, pastruga, dunavska i atlantska jesetra, veliki i mali vretenar, linjak, zlatni karaš, drimski šaradan, čikov, svetlica, crnka, crnomorska i dunavska haringa, glavatica, paklara, potočni i rečni rak; opis umesto „Način pecanja“ ima „Zašto je zaštićena“ i „Ako je slučajno uhvatiš“
+  - **upozorenje pri ulovu**: kad se izabere vrsta u trajnoj zabrani, crvena poruka „Trajna zabrana ulova, pusti ribu“; takav ulov ne donosi poene (server); u kalendaru lovostaja poseban odeljak „Trajna zabrana“
   - **alohtone (unete) vrste**, sa skicom i opisom kao domaće: babuška, amur, beli i sivi tolstolobik, cverglan, kanalski som, sunčanica, pastrmski grgeč (bas), čebačok; za njih uglavnom nema starih crteža, pa AI skice u istom stilu
 - [ ] **Doterati rad bez interneta** (osnova već radi: ulov se čuva u telefonu, slike se šalju kad se pojavi signal):
   - bez čekanja od 10 s na proveru iste slike
