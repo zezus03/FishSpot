@@ -3,9 +3,9 @@
 **Porodica grgeča** (Percidae) · **Domaća vrsta**, endem Dunavskog sliva · **TRAJNA ZABRANA ULOVA**
 
 ## Izgled
-Telo je izduženo i valjkasto, kao vreteno, sa dugim i tankim repnim drškom. Ima **dva odvojena leđna peraja**, prvo bodljikavo. Usta su ispod njuške. Boja je žućkastosmeđa, sa 4–5 nejasnih tamnih kosih pruga.
+Telo je izduženo i valjkasto, kao vreteno, koje se ispred repa sužava u dug i tanak deo. Ima **dva odvojena leđna peraja**, prvo bodljikavo. Usta su ispod njuške. Boja je žućkastosmeđa, sa 4–5 nejasnih tamnih kosih pruga.
 
-**Kako da ga ne pomešaš:** mali vretenar je manji i ima tanji repni drške, sa oštrim, jasnim tamnim prugama.
+**Kako da ga ne pomešaš:** mali vretenar je manji, deo tela ispred repa mu je tanji, a ima oštre, jasne tamne pruge.
 
 ## Stanište
 Živi samo u slivu Dunava. Kod nas u Dunavu, Savi, Tisi, Drini i Velikoj Moravi, na dnu dubljih delova reke sa strujom i šljunkovitim ili peskovitim dnom. Aktivan je noću.
