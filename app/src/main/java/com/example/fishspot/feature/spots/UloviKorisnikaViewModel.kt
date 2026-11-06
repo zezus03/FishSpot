@@ -10,6 +10,10 @@ import kotlinx.coroutines.flow.asStateFlow
 // Album vrsta: koliko proverenih ulova korisnik ima od jedne vrste i koliko je bila najveća riba
 data class VrstaUAlbumu(val vrstaId: String, val naziv: String, val broj: Int, val najvecaKg: Double)
 
+// Ulovi upisani pre izlaska verzije 1.1 (kad album nije postojao) računaju se u album i bez provere,
+// da niko ne izgubi ono što je već upecao. PRE OBJAVE 1.1 postaviti na dan objave (1.12.2026. je okvirno).
+const val ALBUM_PROVERA_OD = 1_796_079_600_000L // 1.12.2026. 00:00 po beogradskom vremenu
+
 // Koliko je korisnik ulovio od jedne vrste ("Deverika" x 2)
 data class BrojPoVrsti(val vrsta: String, val latinskiNaziv: String, val broj: Int)
 
@@ -28,7 +32,7 @@ class UloviKorisnikaViewModel : ViewModel() {
     private val _potvrdjeni = MutableStateFlow<Set<String>>(emptySet())
     val potvrdjeni = _potvrdjeni.asStateFlow()
 
-    // Samo provereni ulovi (sa poenima), isto kao za bedž Kolekcionar
+    // Provereni ulovi (sa poenima), isto kao za bedž Kolekcionar, i svi ulovi iz verzije 1.0
     private val _album = MutableStateFlow<List<VrstaUAlbumu>>(emptyList())
     val album = _album.asStateFlow()
 
@@ -66,7 +70,11 @@ class UloviKorisnikaViewModel : ViewModel() {
                         (d.getLong("poeni") ?: 0L) > 0L && d.getString("proveraAdmina") != "ceka"
                 }.map { it.id }.toSet()
                 _album.value = snapshot?.documents.orEmpty()
-                    .filter { d -> (d.getLong("poeni") ?: 0L) > 0L && d.getString("proveraAdmina") != "ceka" }
+                    .filter { d ->
+                        val proveren = (d.getLong("poeni") ?: 0L) > 0L && d.getString("proveraAdmina") != "ceka"
+                        val izVerzije10 = (d.getLong("timestamp") ?: Long.MAX_VALUE) < ALBUM_PROVERA_OD
+                        proveren || izVerzije10
+                    }
                     .mapNotNull { it.toObject(FishSpot::class.java)?.razdvojenLatinskiNaziv() }
                     .flatMap { u ->
                         // Čuvarka se broji kod svake vrste u njoj, ali nije jedna riba, pa ne ulazi u najveću

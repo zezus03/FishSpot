@@ -16,6 +16,8 @@ Samo popravke, bez novih funkcija.
 - [ ] Probati dodavanje ulova bez interneta (režim „avion“) na pravom telefonu
 
 ## 1.1 – 2 do 4 nedelje posle javne objave
+**Pre objave 1.1:** u `UloviKorisnikaViewModel.kt` postaviti `ALBUM_PROVERA_OD` na dan objave (ulovi pre tog dana ulaze u album i bez provere).
+
 Poverenje i moderacija, pre razgovora sa jezerima i sponzorima.
 
 - [ ] **Sakrij tačnu lokaciju**: drugi vide krug od ~3 km i naziv vode, tačno mesto vidi samo autor (i admin)

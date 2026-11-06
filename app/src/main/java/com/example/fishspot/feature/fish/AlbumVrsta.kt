@@ -60,7 +60,7 @@ fun AlbumVrsta(album: List<VrstaUAlbumu>, modifier: Modifier = Modifier) {
             Text(" od $ukupno vrsta", color = FishBoje.TekstSekundarni, fontSize = 15.sp, modifier = Modifier.padding(bottom = 4.dp))
         }
         Text(
-            "Broje se samo provereni ulovi. Dodirni vrstu za opis.",
+            "Broje se provereni ulovi i svi ulovi iz prve verzije. Dodirni vrstu za opis.",
             color = FishBoje.TekstPriguseni, fontSize = 12.sp, modifier = Modifier.padding(bottom = 10.dp)
         )
         stavke.chunked(3).forEach { red ->
