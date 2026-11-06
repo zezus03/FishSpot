@@ -20,7 +20,7 @@ Samo popravke, bez novih funkcija.
 
 Poverenje i moderacija, pre razgovora sa jezerima i sponzorima.
 
-- [ ] **Sakrij tačnu lokaciju**: drugi vide krug od ~3 km i naziv vode, tačno mesto vidi samo autor (i admin)
+- [x] **Sakrij tačnu lokaciju**: drugi vide krug od ~3 km i naziv vode, tačno mesto vidi samo autor (i admin)
 - [ ] **Zabrana korisnika** iz admin panela: gasi nalog, sklanja njegov sadržaj, pravila zabranjuju upis
 - [ ] **App Check uključen** za Firestore, Storage i funkcije (kad su svi korisnici na Play verziji)
 - [ ] **Bedževi izazova**: jedinstven bedž za svaki izazov, polje sponzor i logo na izazovu
@@ -31,11 +31,18 @@ Poverenje i moderacija, pre razgovora sa jezerima i sponzorima.
   - otvaranjem spiska nestaju broj i tačkica; upisuje server; ne broje se odlajk/ponovni lajk, svoj lajk i blokirani; brisanje posle 60 dana
   - kasnije u isto mesto: osvojen bedž, novi komentar, odobren ulov preko 5 kg
 - [ ] **Bedž „Plovkaš“**: 10 proverenih ulova sa tehnikom Plovak (kao Fiderista; nova slika bedža, ista pravila: samo ulovi sa poenima). Razmotriti i bedž za Dubinac, jedinu tehniku koja ostaje bez bedža
-- [ ] **Prijavi grešku** (predlog testera): u profilu dugme „Prijavi grešku ili predlog“, kratak opis + opciono snimak ekrana; stiže adminu (mail i admin panel), sa modelom telefona i verzijom aplikacije
+- [ ] **Prijavi grešku** (predlog testera): osnovno dugme (mail sa podacima o telefonu) je u 1.0.1; u 1.1 prijave da stižu i u admin panel
 - [ ] **Prijava komentara** (predlog testera): na komentaru „Prijavi“ (uvredljiv, spam), kao prijava ulova; admin ga u panelu briše ili ostavlja
 - [ ] **„Oceni FishSpot“**: Google-ov prozor za ocenu u aplikaciji, npr. posle trećeg ulova (Google sam ograničava koliko često se pojavljuje)
 - [ ] Manji APK: sažet model za prepoznavanje ribe (11 MB → ~3 MB)
 - [ ] Pristupačnost: opisi ikonica, kontrast sitnog teksta
+
+- [x] **Atlas riba** (65 vrsta: slike i opisi) u kalendaru lovostaja, sa odeljcima Trajna zabrana i Unesene vrste
+- [x] **Album vrsta** na profilu (upecane vrste u boji)
+- [x] **Zaštićene vrste**: ulov ne može da se objavi, server ne daje poene (prebačeno i u 1.0.1)
+- [x] **Admin: prebacivanje ulova** sa naloga na nalog
+- [x] **YouTube dugme** na profilu (link dodaje admin)
+- [x] **DEV verzija** (rs.fishspot.app.dev) za testiranje pored Play verzije
 
 ## 1.2 – zima 2026/27
 Razlozi da se korisnici vraćaju i van sezone.
