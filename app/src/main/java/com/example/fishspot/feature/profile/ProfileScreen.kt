@@ -520,6 +520,20 @@ fun ProfileScreen(
 
             Spacer(Modifier.height(8.dp))
 
+            // Prijava greške ili predloga: otvara mail sa podacima o telefonu i verziji aplikacije
+            OutlinedButton(
+                onClick = { prijaviGresku(context, username) },
+                modifier = Modifier.fillMaxWidth().height(48.dp),
+                shape = RoundedCornerShape(14.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, FishBoje.IvicaKartice)
+            ) {
+                Icon(Icons.Default.BugReport, contentDescription = null, tint = FishBoje.Akcenat, modifier = Modifier.size(20.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Prijavi grešku ili predlog", color = FishBoje.TekstPrimarni, fontWeight = FontWeight.SemiBold)
+            }
+
+            Spacer(Modifier.height(8.dp))
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -859,5 +873,35 @@ fun ChangePasswordDialog(
                 }
             }
         }
+    }
+}
+
+// Mail za prijavu greške ili predloga, sa podacima koji pomažu da se greška pronađe
+private fun prijaviGresku(context: android.content.Context, korisnik: String?) {
+    val verzija = try {
+        context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "?"
+    } catch (_: Exception) { "?" }
+    val telo = """
+        |Šta se desilo (ili šta predlažeš):
+        |
+        |
+        |Šta si radio pre toga:
+        |
+        |
+        |—
+        |Korisnik: ${korisnik ?: "?"}
+        |Telefon: ${android.os.Build.MANUFACTURER} ${android.os.Build.MODEL}
+        |Android: ${android.os.Build.VERSION.RELEASE}
+        |FishSpot: $verzija
+    """.trimMargin()
+    val intent = android.content.Intent(android.content.Intent.ACTION_SENDTO, android.net.Uri.parse("mailto:")).apply {
+        putExtra(android.content.Intent.EXTRA_EMAIL, arrayOf("fishspot.rs@gmail.com"))
+        putExtra(android.content.Intent.EXTRA_SUBJECT, "FishSpot: prijava greške ili predlog")
+        putExtra(android.content.Intent.EXTRA_TEXT, telo)
+    }
+    try {
+        context.startActivity(intent)
+    } catch (_: Exception) {
+        com.example.fishspot.core.theme.FishPoruka.prikazi("Nema aplikacije za mail. Piši nam na fishspot.rs@gmail.com", dugo = true)
     }
 }

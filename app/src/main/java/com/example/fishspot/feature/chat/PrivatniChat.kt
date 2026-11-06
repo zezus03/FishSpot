@@ -43,6 +43,17 @@ fun PrivatniChat(
     onZatvori: () -> Unit
 ) {
     var novaPoruka by remember { mutableStateOf("") }
+    // "Na mapi u blizini" samo kad sagovornik stvarno deli lokaciju i bio je aktivan u poslednjih 5 minuta
+    // (dokument u ActiveUsers postoji samo dok je deljenje lokacije uključeno)
+    val naMapi by produceState(false, sagovornik.userId) {
+        val reg = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+            .collection("ActiveUsers").document(sagovornik.userId)
+            .addSnapshotListener { doc, _ ->
+                val poslednji = doc?.getLong("lastActive") ?: 0L
+                value = doc?.exists() == true && System.currentTimeMillis() - poslednji < 5 * 60 * 1000
+            }
+        awaitDispose { reg.remove() }
+    }
     val listState = rememberLazyListState()
 
     LaunchedEffect(poruke.size) {
@@ -71,7 +82,7 @@ fun PrivatniChat(
             Column(modifier = Modifier.weight(1f)) {
                 Text(sagovornik.username.ifBlank { "Pecaroš" }, color = FishBoje.TekstPrimarni,
                     fontSize = 19.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                if (naMapi) Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.size(7.dp).background(FishBoje.Akcenat, CircleShape))
                     Spacer(Modifier.width(6.dp))
                     Text("na mapi u blizini", color = FishBoje.TekstSekundarni, fontSize = 13.sp)

@@ -34,6 +34,7 @@ import androidx.compose.material.icons.filled.Straighten
 import androidx.compose.material.icons.filled.Thermostat
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import kotlinx.coroutines.tasks.await
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -643,10 +644,29 @@ private fun Tablet(
     }
 }
 
+// Profilne slike autora komentara: učitavaju se jednom po korisniku i pamte dok je aplikacija otvorena
+private object SlikeAutora {
+    private val poznate = java.util.concurrent.ConcurrentHashMap<String, String>()
+    fun poznata(uid: String): String? = poznate[uid]
+    suspend fun slika(uid: String): String? {
+        if (uid.isBlank()) return null
+        poznate[uid]?.let { return it }
+        return try {
+            val d = com.google.firebase.firestore.FirebaseFirestore.getInstance().collection("Korisnici").document(uid).get()
+                .await()
+            (d.getString("slikaURL") ?: d.getString("fotoUrl"))?.takeIf { it.isNotBlank() && it != "null" }
+                ?.also { poznate[uid] = it }
+        } catch (_: Exception) {
+            null
+        }
+    }
+}
+
 @Composable
 private fun KomentarMehur(comment: Comment, vreme: String) {
+    val slika by produceState(SlikeAutora.poznata(comment.authorId), comment.authorId) { value = SlikeAutora.slika(comment.authorId) }
     Row(modifier = Modifier.padding(vertical = 6.dp)) {
-        Avatar(ime = comment.authorUsername, slikaUrl = null, velicina = 32)
+        Avatar(ime = comment.authorUsername, slikaUrl = slika, velicina = 32)
         Spacer(modifier = Modifier.width(10.dp))
         Column(
             modifier = Modifier

@@ -749,7 +749,8 @@ fun MapScreen(
                                 fetchedWeather = ForecastDisplayData(
                                     city = currentResponse.name,
                                     currentTemp = currentResponse.main.temp.toInt(),
-                                    currentDesc = currentResponse.weather.firstOrNull()?.description ?: "",
+                                    // OpenWeather vraća srpski opis ćirilicom, a aplikacija je latinicom
+                                    currentDesc = com.example.fishspot.feature.spots.NazivMesta.uLatinicu(currentResponse.weather.firstOrNull()?.description ?: "").replaceFirstChar { it.uppercase() },
                                     currentPressure = currentResponse.main.pressure,
                                     windInfo = "${currentResponse.wind.speed} m/s, ${pretvoriStepenUStraneSveta(currentResponse.wind.deg)}",
                                     windDirection = pretvoriStepenUStraneSveta(currentResponse.wind.deg),

@@ -106,7 +106,7 @@ fun IzazoviSadrzaj(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         if (izazovi.isEmpty()) item {
@@ -204,9 +204,11 @@ private fun IzazovDetaljiDialog(
                     }
                     IconButton(onClick = onZatvori) { Icon(Icons.Default.Close, "Zatvori", tint = FishBoje.TekstPrimarni) }
                 }
+                // Ispod spiska i visina donje trake sa dugmićima, da se vide i poslednji učesnici
                 LazyColumn(
                     modifier = Modifier.weight(1f),
-                    contentPadding = PaddingValues(16.dp),
+                    contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp,
+                        bottom = 32.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     if (iz.slikaUrl.isNotBlank()) item {
@@ -327,7 +329,8 @@ private fun UloviUcesnikaDialog(
                 }
                 LazyColumn(
                     modifier = Modifier.weight(1f),
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp,
+                        bottom = 32.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(u.ulovi, key = { it.id }) { ulov -> RedUlova(ulov) { onUlov(ulov.id) } }
