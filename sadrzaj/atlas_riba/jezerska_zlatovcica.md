@@ -8,7 +8,7 @@ Vitko telo sa sitnim krljuštima i masnim perajem. Za razliku od pastrmki, ima *
 **Kako da je ne pomešaš:** pastrmke imaju tamne tačke na svetloj podlozi. Potočna zlatovčica ima crvolike šare na leđima i crvene tačke sa plavim prstenom.
 
 ## Stanište
-Hladna, duboka i čista planinska jezera. Prirodno živi u Alpima, a kod nas se može naći samo gde je unesena poribljavanjem. [proveri: u kojim našim jezerima je ima]
+Hladna, duboka i čista planinska jezera. Prirodno živi u Alpima, a kod nas se može naći samo gde je unesena poribljavanjem.
 
 ## Ishrana
 Zooplankton, larve, rakovi, a krupni primerci i sitna riba.

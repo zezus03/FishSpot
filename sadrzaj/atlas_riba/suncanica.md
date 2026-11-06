@@ -20,7 +20,7 @@ Mresti se od **maja do jula**. Mužjak u plićaku napravi okruglo gnezdo u pesku
 - **Tehnike:** plovak sa sitnom udicom.
 - **Mamci:** crvić, komadić gliste, hleb.
 - **Kada:** leto, preko dana.
-- **Saveti:** grize odmah i stalno, pa je omiljena kod dece. Kao invazivnu vrstu, bolje je **ne vraćati je u vodu**. [proveri: propis o vraćanju invazivnih vrsta]
+- **Saveti:** grize odmah i stalno, pa je omiljena kod dece. Kao invazivnu vrstu, bolje je **ne vraćati je u vodu**.
 
 ## Veličina
 Obično 8–15 cm, retko do 20 cm.

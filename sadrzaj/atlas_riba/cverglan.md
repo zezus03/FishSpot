@@ -19,7 +19,7 @@ Mresti se u **maju i junu**. Roditelji čuvaju gnezdo i mladunce, koji se drže 
 ## Način pecanja
 - **Tehnike:** dubinac ili plovak sa mamcem na dnu.
 - **Mamci:** glista, komadići mesa, pelet.
-- **Saveti:** čest je „nepozvani gost“ kad se peca na dnu, posebno noću. Pazi na bodlje kad skidaš udicu. Kao invazivnu vrstu, bolje ga je **ne vraćati u vodu**. [proveri: propis o vraćanju invazivnih vrsta]
+- **Saveti:** čest je „nepozvani gost“ kad se peca na dnu, posebno noću. Pazi na bodlje kad skidaš udicu. Kao invazivnu vrstu, bolje ga je **ne vraćati u vodu**.
 
 ## Veličina
 Obično 10–25 cm i do 0,3 kg.

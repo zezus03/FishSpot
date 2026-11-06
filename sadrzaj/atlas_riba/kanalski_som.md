@@ -8,7 +8,7 @@ Vitkiji od domaćeg soma, bez krljušti, sa **osam brkova** i malim masnim peraj
 **Kako da ga ne pomešaš:** cverglan je tamniji, manji i ima ravan rep. Domaći som ima šest brkova i nema masno peraje.
 
 ## Stanište
-Kod nas je unesen u pojedine ribnjake, a odatle povremeno dospeva u kanale i reke. Voli toplu vodu sa peskovitim ili muljevitim dnom. [proveri: gde se kod nas lovi]
+Kod nas je unesen u pojedine ribnjake, a odatle povremeno dospeva u kanale i reke. Voli toplu vodu sa peskovitim ili muljevitim dnom.
 
 ## Ishrana
 Svaštojed: larve, rakovi, sitna riba, biljni delovi, pelet u ribnjacima.
@@ -26,5 +26,5 @@ Mresti se leti, kad voda dostigne 24–29 °C, u dupljama i zaklonima. Mužjak �
 Obično 1–3 kg, a retko i preko 5 kg.
 
 ## Lovostaj i najmanja mera
-- **Lovostaj:** nema [proveri]
-- **Najmanja dužina:** nema [proveri]
+- **Lovostaj:** nema
+- **Najmanja dužina:** nema

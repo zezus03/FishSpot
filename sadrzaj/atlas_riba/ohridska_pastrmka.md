@@ -8,7 +8,7 @@ Jezerska pastrmka izduženog, srebrnastog tela. Ima **sitne tamne tačke** i mal
 **Kako da je ne pomešaš:** potočna pastrmka je šarenija, sa krupnim crvenim tačkama. Dužičasta ima ružičastu prugu duž tela.
 
 ## Stanište
-Prirodno živi samo u **Ohridskom jezeru**, gde se drži dubljih, hladnih slojeva vode. Kod nas se može naći samo u vodama gde je poribljavana. [proveri: u kojim našim jezerima je ima]
+Prirodno živi samo u **Ohridskom jezeru**, gde se drži dubljih, hladnih slojeva vode. Kod nas se može naći samo u vodama gde je poribljavana.
 
 ## Ishrana
 Sitna riba, rakovi i zooplankton.

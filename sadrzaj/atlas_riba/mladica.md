@@ -8,7 +8,14 @@ Najveća pastrmka Dunavskog sliva, poznata i kao „dunavski losos“. Telo je d
 **Kako da je ne pomešaš:** potočna pastrmka je mnogo manja i ima crvene tačke.
 
 ## Stanište
-Velike, hladne i čiste planinske reke sa dubokim virovima i brzacima. Kod nas najviše **Drina i Lim**, a ima je i u njihovim pritokama i akumulacijama. [proveri: tačni reviri]
+Velike, hladne i čiste planinske reke sa dubokim virovima i brzacima, gde se drži skobalj, njena glavna hrana. Najpoznatija mesta kod nas:
+- **Drina**, glavno stanište i najveće šanse za kapitalce od 15–20 kg:
+  - od Bajine Bašte nizvodno do Ljubovije (Perućac, Okletac, prema ušću Gračaničke reke i Crnči), srce „mladičarskog“ ribolova;
+  - donji tok kod Loznice: Krivića ada, Jelav, Branjevo. U jakim zimama krupne mladice silaze sve do ušća u Savu, za jatima bele ribe.
+  - Vodostaj Drine jako varira zbog rada hidroelektrana, pa prati promene i prilagodi mesto.
+- **Lim**, od Brodareva do granice sa Crnom Gorom. Primerci od 70–80 cm su ovde redovni, a najbolje je u kasnu jesen.
+- **Gornji Ibar**, uzvodno od jezera Gazivode, blizu granice sa Crnom Gorom. Često se ulovi usput (1–3 kg) dok se peca pastrmka i lipljen, a u dubokim virovima ima i preko 10 kg.
+- **Đetinja**, manja reka, omiljena kod mušičara koji mladicu love krupnim strimerima na lakši pribor.
 
 ## Ishrana
 Grabljivac koji lovi ribu (skobalj, klen, lipljen, pastrmka), a mlade jedu i larve i rakove.

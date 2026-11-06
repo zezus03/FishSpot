@@ -8,7 +8,7 @@ Snažno, izduženo telo zelene boje sa tamnom, isprekidanom **prugom duž bokova
 **Kako da ga ne pomešaš:** grgeč ima poprečne pruge i crvena peraja. Smuđ ima staklaste oči i očnjake.
 
 ## Stanište
-Tople, bistre vode sa dosta bilja i potopljenih grana: jezera, akumulacije, mirni rukavci. Kod nas ga ima u malom broju voda gde je unesen. [proveri: gde se kod nas lovi]
+Tople, bistre vode sa dosta bilja i potopljenih grana: jezera, akumulacije, mirni rukavci. Kod nas ga ima u malom broju voda gde je unesen.
 
 ## Ishrana
 Grabljivac: sitna riba, žabe, rakovi, krupni insekti. Napada iz zasede u bilju.
@@ -26,5 +26,5 @@ Mresti se od **maja do juna**, kad voda pređe 16–18 °C. Mužjak napravi gnez
 Obično 0,5–1,5 kg. Primerak preko 3 kg je trofej.
 
 ## Lovostaj i najmanja mera
-- **Lovostaj:** nema [proveri]
-- **Najmanja dužina:** nema [proveri]
+- **Lovostaj:** nema
+- **Najmanja dužina:** nema
