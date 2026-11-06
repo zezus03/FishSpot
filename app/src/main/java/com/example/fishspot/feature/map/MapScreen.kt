@@ -423,15 +423,19 @@ fun MapScreen(
                     .clip(CircleShape)
                 val bojaIkone = FishBoje.Akcenat
 
-                IconButton(
-                    onClick = onNavigateToProfile,
-                    modifier = iconModifier
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = "Profil",
-                        tint = bojaIkone
-                    )
+                // Crvena tačkica na profilu kad ima nepročitanih obaveštenja
+                val neprocitano by com.example.fishspot.feature.profile.Obavestenja.neprocitano.collectAsState()
+                BadgedBox(badge = { if (neprocitano > 0) Badge(containerColor = FishBoje.Greska) }) {
+                    IconButton(
+                        onClick = onNavigateToProfile,
+                        modifier = iconModifier
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = if (neprocitano > 0) "Profil, ima novih obaveštenja" else "Profil",
+                            tint = bojaIkone
+                        )
+                    }
                 }
 
                 IconButton(
@@ -851,6 +855,14 @@ fun MapScreen(
                         }
                     },
                     onIzmeni = { ulovZaIzmenu = azuriraniSpot },
+                    // Iz spiska ko je lajkovao: profil tog korisnika
+                    onKorisnikKlik = { uid ->
+                        scope.launch { sheetState.hide() }.invokeOnCompletion {
+                            selectedSpotForComments = null
+                            spotsViewModel.clearComments()
+                            onNavigateToUloviKorisnika(uid)
+                        }
+                    },
                     onPosaljiPoruku = {
                         val uid = azuriraniSpot.authorId
                         val ime = autorUlova?.userName?.takeIf { it.isNotBlank() } ?: azuriraniSpot.authorUsername

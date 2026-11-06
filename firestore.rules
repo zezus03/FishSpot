@@ -67,6 +67,14 @@ service cloud.firestore {
           && request.resource.data.get('sezone', {}) == resource.data.get('sezone', {});
       }
 
+      // Obaveštenja u aplikaciji (functions/obavestenja.js): vidi ih samo vlasnik i sme samo da ih označi pročitanim
+      match /obavestenja/{id} {
+        allow read: if jaSam(uid);
+        allow update: if jaSam(uid) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['procitano'])
+          && request.resource.data.procitano == true;
+        allow create, delete: if false;
+      }
+
       // Bedževi: vide ih svi prijavljeni, upisuje ih samo server (functions/bedzevi.js)
       match /bedzevi/{bedzId} {
         allow read: if prijavljen();

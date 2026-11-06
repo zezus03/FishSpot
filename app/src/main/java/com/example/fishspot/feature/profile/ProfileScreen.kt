@@ -60,6 +60,7 @@ fun ProfileScreen(
     onPrikaziUlove: (uid: String) -> Unit = {},
     onPogledajUvod: () -> Unit = {},
     onAdminPanel: () -> Unit = {},
+    onOtvoriUlov: (spotId: String) -> Unit = {},
     mapViewModel: MapViewModel = viewModel()
 ) {
     val context = LocalContext.current
@@ -181,7 +182,8 @@ fun ProfileScreen(
                 com.example.fishspot.feature.bedzevi.BedzeviDialog(ime = null, osvojeni = mojiBedzevi, onZatvori = { prikaziBedzeve = false })
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
-            Spacer(Modifier.width(76.dp)) // da slika ostane na sredini
+            // Levo od slike zvonce sa obaveštenjima (iste širine kao bedževi desno, da slika ostane na sredini)
+            ZvonceObavestenja(onOtvoriUlov = onOtvoriUlov, modifier = Modifier.width(76.dp))
             Box(contentAlignment = Alignment.BottomEnd) {
                 Box(
                     modifier = Modifier

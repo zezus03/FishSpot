@@ -114,7 +114,8 @@ async function ocisti(sada = Date.now()) {
     const slika = await ocistiSlikeBezUlova(sada);
     const dedaPera = await ocistiDeduPeru(sada);
     const profila = await ocistiLicnePodatke();
-    const rezultat = { uklonjenihUlova: prijave.ulova, zapisaPrijava: prijave.zapisa, slikaBezUlova: slika, porukaDedePere: dedaPera, profila };
+    const obavestenja = await require("./obavestenja")._interno.ocistiObavestenja(sada);
+    const rezultat = { uklonjenihUlova: prijave.ulova, zapisaPrijava: prijave.zapisa, slikaBezUlova: slika, porukaDedePere: dedaPera, profila, obavestenja };
     console.log("Nedeljno čišćenje:", JSON.stringify(rezultat));
     return rezultat;
 }

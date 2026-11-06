@@ -227,7 +227,14 @@ fun MainNavigation(navController: NavHostController, auth: FirebaseAuth) {
                 },
                 onPrikaziUlove = { uid -> navController.navigate("ulovi_korisnika/$uid") },
                 onPogledajUvod = { navController.navigate("uvod") },
-                onAdminPanel = { navController.navigate("admin") }
+                onAdminPanel = { navController.navigate("admin") },
+                // Obaveštenje otvara ulov na mapi
+                onOtvoriUlov = { spotId ->
+                    runCatching { navController.getBackStackEntry("map") }.getOrNull()?.let { mapa ->
+                        mapa.savedStateHandle["spot_id_to_focus"] = spotId
+                        navController.popBackStack("map", inclusive = false)
+                    }
+                }
             )
         }
         // ─── ULOVI JEDNOG KORISNIKA (iz profila) ───

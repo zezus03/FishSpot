@@ -155,6 +155,8 @@ exports.obrisanUlov = functions.firestore
 
         await Promise.all([
             db.recursiveDelete(db.collection("MestaZaPecanje").doc(spotId).collection("komentari")),
+            // Obaveštenje autoru o lajkovima ovog ulova
+            ulov.authorId ? db.collection("Korisnici").doc(ulov.authorId).collection("obavestenja").doc(spotId).delete() : Promise.resolve(),
             // Tačna lokacija sakrivenog ulova (SkrivenaLokacija.kt)
             db.recursiveDelete(db.collection("MestaZaPecanje").doc(spotId).collection("privatno")),
             ulov.vrstaId

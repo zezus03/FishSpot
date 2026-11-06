@@ -11,5 +11,7 @@ class FishSpotApp : Application() {
         ukljuciAppCheck()
         // Spisak blokiranih korisnika prati prijavljenog korisnika od pokretanja
         com.example.fishspot.feature.chat.Blokiranje.pokreni()
+        // Obaveštenja u aplikaciji (zvonce u profilu, tačkica na mapi)
+        com.example.fishspot.feature.profile.Obavestenja.pokreni()
     }
 }

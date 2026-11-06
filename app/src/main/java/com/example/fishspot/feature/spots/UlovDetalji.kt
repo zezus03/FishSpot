@@ -83,9 +83,15 @@ fun UlovDetalji(
     onAutorKlik: () -> Unit = {},
     onIzmeni: () -> Unit = {},
     onObrisi: () -> Unit = {},
-    onPosaljiPoruku: (() -> Unit)? = null
+    onPosaljiPoruku: (() -> Unit)? = null,
+    onKorisnikKlik: (uid: String) -> Unit = {}
 ) {
     var noviKomentar by remember { mutableStateOf("") }
+    var prikaziLajkove by remember { mutableStateOf(false) }
+    if (prikaziLajkove) LajkoviDialog(spot.likedBy, onZatvori = { prikaziLajkove = false }) { uid ->
+        prikaziLajkove = false
+        onKorisnikKlik(uid)
+    }
     var prikaziPrijavu by remember { mutableStateOf(false) }
     var potvrdaBrisanja by remember { mutableStateOf(false) }
     // Ceo tekst pločice (npr. dug opis mamca koji ne staje u red): (naslov, vrednost)
@@ -252,6 +258,8 @@ fun UlovDetalji(
                         bojaIkone = if (isLiked) FishBoje.Greska else FishBoje.TekstSekundarni,
                         velikoSlovo = true,
                         ikonaModifier = Modifier.scale(heartScale),
+                        // Dodir na broj otvara spisak ko je lajkovao
+                        onTekstClick = { if (spot.likedBy.isNotEmpty()) prikaziLajkove = true },
                         onClick = {
                             if (currentUserId != null) {
                                 isLiked = !isLiked
@@ -620,7 +628,8 @@ private fun Tablet(
     bojaIkone: Color = FishBoje.Akcenat,
     velikoSlovo: Boolean = false,
     ikonaModifier: Modifier = Modifier,
-    onClick: (() -> Unit)? = null
+    onClick: (() -> Unit)? = null,
+    onTekstClick: (() -> Unit)? = null // poseban dodir na broj (npr. ko je lajkovao)
 ) {
     Row(
         modifier = Modifier
@@ -636,6 +645,7 @@ private fun Tablet(
         Spacer(modifier = Modifier.width(6.dp))
         Text(
             tekst,
+            modifier = if (onTekstClick != null) Modifier.clickable(onClick = onTekstClick).padding(horizontal = 4.dp) else Modifier,
             color = if (velikoSlovo) FishBoje.TekstPrimarni else FishBoje.TekstSekundarni,
             fontSize = if (velikoSlovo) 15.sp else 12.sp,
             fontWeight = if (velikoSlovo) FontWeight.Bold else FontWeight.Medium,
@@ -767,4 +777,50 @@ private fun formatBroj(vrednost: Double, jedinica: String): String {
     val tekst = if (vrednost % 1.0 == 0.0) vrednost.toInt().toString()
     else String.format(Locale.getDefault(), "%.2f", vrednost).trimEnd('0').trimEnd(',', '.')
     return "$tekst $jedinica"
+}
+
+// Ko je lajkovao ulov: slika i ime, dodir otvara profil (blokirani se ne prikazuju)
+private data class Lajkovao(val uid: String, val ime: String, val slika: String)
+
+@Composable
+private fun LajkoviDialog(uidovi: List<String>, onZatvori: () -> Unit, onKorisnik: (String) -> Unit) {
+    val blokirani by com.example.fishspot.feature.chat.Blokiranje.uidovi.collectAsState()
+    val korisnici by produceState<List<Lajkovao>?>(null, uidovi) {
+        value = try {
+            val db = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+            uidovi.distinct().take(100).chunked(10).flatMap { deo ->
+                db.collection("Korisnici").whereIn(com.google.firebase.firestore.FieldPath.documentId(), deo).get().await().documents
+            }.map { d ->
+                Lajkovao(d.id, d.getString("userName").orEmpty().ifBlank { "Pecaroš" },
+                    (d.getString("slikaURL") ?: "").takeIf { it != "null" }.orEmpty())
+            }.sortedBy { uidovi.indexOf(it.uid) }.reversed() // najnoviji lajk prvi
+        } catch (_: Exception) { emptyList() }
+    }
+    androidx.compose.ui.window.Dialog(onDismissRequest = onZatvori) {
+        Column(
+            Modifier.fillMaxWidth().heightIn(max = 520.dp).clip(RoundedCornerShape(20.dp)).background(FishBoje.Pozadina)
+                .border(1.dp, FishBoje.IvicaKartice, RoundedCornerShape(20.dp)).padding(16.dp)
+        ) {
+            Text("Lajkovali (${uidovi.size})", color = FishBoje.TekstPrimarni, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(10.dp))
+            val lista = korisnici
+            if (lista == null) {
+                Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = FishBoje.Akcenat) }
+            } else {
+                androidx.compose.foundation.lazy.LazyColumn(Modifier.weight(1f, fill = false)) {
+                    items(lista.filter { it.uid !in blokirani }, key = { it.uid }) { k ->
+                        Row(
+                            Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { onKorisnik(k.uid) }.padding(vertical = 8.dp, horizontal = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Avatar(ime = k.ime, slikaUrl = k.slika.ifBlank { null }, velicina = 36)
+                            Spacer(Modifier.width(10.dp))
+                            Text(k.ime, color = FishBoje.TekstPrimarni, fontSize = 15.sp, modifier = Modifier.weight(1f))
+                            Icon(Icons.Default.Favorite, null, tint = FishBoje.Greska, modifier = Modifier.size(16.dp))
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
