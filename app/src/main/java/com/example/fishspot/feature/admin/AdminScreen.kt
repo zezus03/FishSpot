@@ -86,6 +86,7 @@ fun AdminScreen(onNavigateBack: () -> Unit, viewModel: AdminViewModel = viewMode
             }
             item { AdminIzazoviOdeljak(izazovi, sveVrste) }
             item { AdminPrijateljiOdeljak() }
+            item { AdminPrenosOdeljak() }
             if (veliki.isNotEmpty()) {
                 item {
                     Text("Veliki ulovi čekaju odobrenje (${veliki.size})", color = FishBoje.Upozorenje,

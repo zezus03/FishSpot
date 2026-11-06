@@ -319,3 +319,6 @@ exports.novaSezona = require("./sezona").novaSezona;
 
 // ─── NEDELJNO ČIŠĆENJE (stare prijave, slike bez ulova, Deda Pera) ───
 exports.nedeljnoCiscenje = require("./ciscenje").nedeljnoCiscenje;
+
+// ─── ADMIN: PREBACIVANJE ULOVA SA NALOGA NA NALOG (functions/prenos.js) ───
+exports.adminPrebaciUlove = require("./prenos").adminPrebaciUlove;
