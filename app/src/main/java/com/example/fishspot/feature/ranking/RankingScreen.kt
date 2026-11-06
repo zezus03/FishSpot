@@ -97,7 +97,7 @@ fun RankingScreen(
             IzazoviSadrzaj(izazoviViewModel, nazivVrste, onUlovSelected, pocetniIzazov)
         } else LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 24.dp)
+            contentPadding = PaddingValues(bottom = 24.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
         ) {
             item { TrajanjeSezone() }
             if (userRanking.isNotEmpty()) {

@@ -82,7 +82,7 @@ fun UloviKorisnikaScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(FishBoje.Pozadina),
-        contentPadding = PaddingValues(bottom = 24.dp)
+        contentPadding = PaddingValues(bottom = 24.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
     ) {
         item {
             FishZaglavlje(
