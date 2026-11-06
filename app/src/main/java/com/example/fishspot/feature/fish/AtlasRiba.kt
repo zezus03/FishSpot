@@ -22,6 +22,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -138,12 +140,16 @@ object AtlasRiba {
 private val Papir = Color(0xFFF3EBD3)
 
 @Composable
-fun SlikaVrste(id: String, modifier: Modifier = Modifier, contentScale: ContentScale = ContentScale.Fit) {
+fun SlikaVrste(id: String, modifier: Modifier = Modifier, contentScale: ContentScale = ContentScale.Fit, siva: Boolean = false) {
     val context = LocalContext.current
     val slika by produceState<Bitmap?>(null, id) { value = AtlasRiba.slika(context, id) }
     Box(modifier.background(Papir), contentAlignment = Alignment.Center) {
         slika?.let {
-            Image(it.asImageBitmap(), contentDescription = null, contentScale = contentScale, modifier = Modifier.fillMaxSize().padding(2.dp))
+            Image(
+                it.asImageBitmap(), contentDescription = null, contentScale = contentScale,
+                colorFilter = if (siva) ColorFilter.colorMatrix(ColorMatrix().apply { setToSaturation(0f) }) else null,
+                modifier = Modifier.fillMaxSize().padding(2.dp)
+            )
         }
     }
 }

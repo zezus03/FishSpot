@@ -55,6 +55,9 @@ object OgranicenjaRibe {
     )
     private val PODRAZUMEVANO = Granica(300.0, 150.0)
 
+    // Sve vrste koje se mogu izabrati kod ulova (id iz VrsteRiba), bez "Ostalo"
+    val sveVrste: Set<String> get() = GRANICE.keys - "ostalo"
+
     fun granica(vrstaId: String?): Granica = GRANICE[vrstaId] ?: PODRAZUMEVANO
 
     /**

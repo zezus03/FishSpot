@@ -62,6 +62,7 @@ fun UloviKorisnikaScreen(
 
     val ulovi by viewModel.ulovi.collectAsState()
     val poVrstama by viewModel.poVrstama.collectAsState()
+    val album by viewModel.album.collectAsState()
     val ime by viewModel.imeKorisnika.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val mojiUlovi = remember(uid) { FirebaseAuth.getInstance().currentUser?.uid == uid }
@@ -126,8 +127,8 @@ fun UloviKorisnikaScreen(
                         modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp)
                     )
                 }
-                item { NaslovSekcije("Ulovljene vrste", Modifier.padding(start = 16.dp, top = 20.dp, bottom = 8.dp)) }
-                item { SpisakVrsta(poVrstama) }
+                item { NaslovSekcije("Album vrsta", Modifier.padding(start = 16.dp, top = 20.dp, bottom = 8.dp)) }
+                item { com.example.fishspot.feature.fish.AlbumVrsta(album, Modifier.padding(horizontal = 16.dp)) }
 
                 item { NaslovSekcije("Svi ulovi · ${ulovi.size}", Modifier.padding(start = 16.dp, top = 20.dp, bottom = 8.dp)) }
                 items(ulovi, key = { it.id }) { ulov ->
