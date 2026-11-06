@@ -2,6 +2,7 @@ package com.example.fishspot.feature.fish
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -12,12 +13,15 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -48,6 +52,11 @@ private data class StavkaLovostaja(
 @Composable
 fun LovostajScreen(onNavigateBack: () -> Unit) {
     var pretraga by remember { mutableStateOf("") }
+    val context = LocalContext.current
+    var otvorenaVrsta by remember { mutableStateOf<VrstaAtlasa?>(null) }
+    otvorenaVrsta?.let { AtlasDialog(it, onZatvori = { otvorenaVrsta = null }) }
+    val atlas = remember { AtlasRiba.sve(context) }
+    val uAtlasu: (String) -> VrstaAtlasa? = remember { { naziv -> AtlasRiba.poNazivu(context, naziv) } }
 
     val danas = remember { Calendar.getInstance() }
     val danasBroj = (danas.get(Calendar.MONTH) + 1) * 100 + danas.get(Calendar.DAY_OF_MONTH)
@@ -77,6 +86,14 @@ fun LovostajScreen(onNavigateBack: () -> Unit) {
         "Dozvoljen ulov" to filtrirano.filter { it.status == Status.DOZVOLJENO }.sortedBy { it.dana },
         "Bez lovostaja, samo minimalna mera" to filtrirano.filter { it.status == Status.SAMO_MERA }.sortedBy { it.propis.naziv }
     ).filter { it.second.isNotEmpty() }
+
+    // Vrste iz atlasa koje nemaju lovostaj ni meru: zaštićene i unesene (amur, babuška, tolstolobici...)
+    val saPropisom = remember { sveStavke.mapNotNull { uAtlasu(it.propis.naziv)?.id }.toSet() }
+    val odgovara: (VrstaAtlasa) -> Boolean = { v ->
+        trazeno.isEmpty() || listOf(v.naziv, v.drugoIme, v.latinski).any { LovostajChecker.normalizujTekst(it).contains(trazeno) }
+    }
+    val zasticene = atlas.filter { it.status == StatusVrste.ZABRANA && odgovara(it) }
+    val unesene = atlas.filter { it.status == StatusVrste.UNESENA && it.id !in saPropisom && odgovara(it) }
 
     Column(modifier = Modifier.fillMaxSize().background(FishBoje.Pozadina)) {
         FishZaglavlje(
@@ -121,7 +138,7 @@ fun LovostajScreen(onNavigateBack: () -> Unit) {
                 )
             }
 
-            if (grupe.isEmpty()) {
+            if (grupe.isEmpty() && zasticene.isEmpty() && unesene.isEmpty()) {
                 item {
                     Text(
                         "Nema vrste koja odgovara pretrazi.",
@@ -137,12 +154,32 @@ fun LovostajScreen(onNavigateBack: () -> Unit) {
                     NaslovSekcije(naslov, modifier = Modifier.padding(top = 8.dp))
                 }
                 if (stavke.first().status == Status.SAMO_MERA) {
-                    item(key = "$naslov-lista") { KarticaSamoMera(stavke) }
+                    item(key = "$naslov-lista") { KarticaSamoMera(stavke, uAtlasu) { otvorenaVrsta = it } }
                 } else {
                     items(stavke, key = { it.propis.naziv }) { stavka ->
-                        KarticaVrste(stavka, tekuciMesec)
+                        KarticaVrste(stavka, tekuciMesec, uAtlasu(stavka.propis.naziv)) { otvorenaVrsta = it }
                     }
                 }
+            }
+
+            if (zasticene.isNotEmpty()) {
+                item(key = "zabrana-naslov") {
+                    Column {
+                        NaslovSekcije("Trajna zabrana ulova", modifier = Modifier.padding(top = 8.dp))
+                        Text(
+                            "Ove vrste se nikad ne smeju loviti. Ako neku slučajno uhvatiš, odmah je pusti u vodu.",
+                            color = FishBoje.TekstSekundarni, fontSize = 13.sp, lineHeight = 18.sp,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+                }
+                item(key = "zabrana-lista") { KarticaAtlasa(zasticene, FishBoje.Greska) { otvorenaVrsta = it } }
+            }
+            if (unesene.isNotEmpty()) {
+                item(key = "unesene-naslov") {
+                    NaslovSekcije("Unesene vrste, bez lovostaja", modifier = Modifier.padding(top = 8.dp))
+                }
+                item(key = "unesene-lista") { KarticaAtlasa(unesene, FishBoje.IvicaKartice) { otvorenaVrsta = it } }
             }
 
             item {
@@ -197,7 +234,7 @@ private fun Sazetak(brojULovostaju: Int) {
 }
 
 @Composable
-private fun KarticaVrste(stavka: StavkaLovostaja, tekuciMesec: Int) {
+private fun KarticaVrste(stavka: StavkaLovostaja, tekuciMesec: Int, vrsta: VrstaAtlasa?, onOtvori: (VrstaAtlasa) -> Unit) {
     val p = stavka.propis.pravilo
     val (boja, oznaka) = when (stavka.status) {
         Status.U_LOVOSTAJU -> FishBoje.Greska to (if (stavka.dana == 0) "Ističe danas" else "Još ${daniTekst(stavka.dana)}")
@@ -211,9 +248,14 @@ private fun KarticaVrste(stavka: StavkaLovostaja, tekuciMesec: Int) {
             .clip(RoundedCornerShape(16.dp))
             .background(FishBoje.Kartica)
             .border(1.dp, if (stavka.status == Status.U_LOVOSTAJU) boja.copy(alpha = 0.5f) else FishBoje.IvicaKartice, RoundedCornerShape(16.dp))
+            .then(if (vrsta != null) Modifier.clickable { onOtvori(vrsta) } else Modifier)
             .padding(14.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
+            if (vrsta != null) {
+                SlicicaVrste(vrsta, sirina = 56.dp) { onOtvori(vrsta) }
+                Spacer(Modifier.width(10.dp))
+            }
             Text(
                 stavka.propis.naziv,
                 color = FishBoje.TekstPrimarni,
@@ -273,7 +315,7 @@ private fun TrakaMeseci(pravilo: LovostajChecker.PraviloRibe, tekuciMesec: Int, 
 }
 
 @Composable
-private fun KarticaSamoMera(stavke: List<StavkaLovostaja>) {
+private fun KarticaSamoMera(stavke: List<StavkaLovostaja>, uAtlasu: (String) -> VrstaAtlasa?, onOtvori: (VrstaAtlasa) -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -283,11 +325,15 @@ private fun KarticaSamoMera(stavke: List<StavkaLovostaja>) {
             .padding(horizontal = 14.dp, vertical = 6.dp)
     ) {
         stavke.forEachIndexed { i, stavka ->
+            val vrsta = uAtlasu(stavka.propis.naziv)
             Row(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                modifier = Modifier.fillMaxWidth()
+                    .then(if (vrsta != null) Modifier.clickable { onOtvori(vrsta) } else Modifier)
+                    .padding(vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(Modifier.size(6.dp).background(FishBoje.Akcenat, CircleShape))
+                if (vrsta != null) SlicicaVrste(vrsta, sirina = 48.dp) { onOtvori(vrsta) }
+                else Box(Modifier.size(6.dp).background(FishBoje.Akcenat, CircleShape))
                 Spacer(Modifier.width(10.dp))
                 Text(stavka.propis.naziv, color = FishBoje.TekstPrimarni, fontSize = 15.sp, modifier = Modifier.weight(1f))
                 Text(
@@ -297,6 +343,35 @@ private fun KarticaSamoMera(stavke: List<StavkaLovostaja>) {
                 )
             }
             if (i < stavke.lastIndex) HorizontalDivider(color = FishBoje.IvicaKartice)
+        }
+    }
+}
+
+// Spisak vrsta iz atlasa (zaštićene, unesene): sličica, naziv, latinski naziv; dodir otvara opis
+@Composable
+private fun KarticaAtlasa(vrste: List<VrstaAtlasa>, ivica: Color, onOtvori: (VrstaAtlasa) -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(FishBoje.Kartica)
+            .border(1.dp, if (ivica == FishBoje.IvicaKartice) ivica else ivica.copy(alpha = 0.5f), RoundedCornerShape(16.dp))
+            .padding(horizontal = 14.dp, vertical = 6.dp)
+    ) {
+        vrste.forEachIndexed { i, vrsta ->
+            Row(
+                modifier = Modifier.fillMaxWidth().clickable { onOtvori(vrsta) }.padding(vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                SlicicaVrste(vrsta, sirina = 48.dp) { onOtvori(vrsta) }
+                Spacer(Modifier.width(10.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(vrsta.naziv, color = FishBoje.TekstPrimarni, fontSize = 15.sp)
+                    Text(vrsta.latinski, color = FishBoje.TekstPriguseni, fontSize = 12.sp, fontStyle = FontStyle.Italic)
+                }
+                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = FishBoje.TekstPriguseni)
+            }
+            if (i < vrste.lastIndex) HorizontalDivider(color = FishBoje.IvicaKartice)
         }
     }
 }
