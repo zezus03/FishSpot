@@ -52,6 +52,54 @@
           ]
         }
       }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:154890695958:android:d4f721690a5f5497750c37",
+        "android_client_info": {
+          "package_name": "rs.fishspot.app.dev"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "154890695958-3pni28gpvopo6t3878rn5o3930dkp34h.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "rs.fishspot.app.dev",
+            "certificate_hash": "0e3a5b90f0e7f1c9084abd36cc1e6d8731206c4c"
+          }
+        },
+        {
+          "client_id": "154890695958-bfl3dn9qdsfq3glbcam8vnhnjqvd3q04.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "rs.fishspot.app.dev",
+            "certificate_hash": "9ced69e976571c6f814d99b8b4e5d9e437c6d7e8"
+          }
+        },
+        {
+          "client_id": "154890695958-dacld07urlmn7rcsgn3eloopsokk3tpl.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBOX1-FFqcL5MMWkwERPzyBhxzj0cxC3xc"
+        },
+        {
+          "current_key": "AIzaSyB4HJpV155YTGjA7ZkTzqMckmkKDFWa5C0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "154890695958-dacld07urlmn7rcsgn3eloopsokk3tpl.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
     }
   ],
   "configuration_version": "1"

@@ -27,6 +27,11 @@ android {
         }
     }
     buildTypes {
+        // DEV verzija za testiranje novih funkcija: drugi paket, pa stoji na telefonu pored Play verzije
+        debug {
+            applicationIdSuffix = ".dev"
+            versionNameSuffix = "-dev"
+        }
         release {
             signingConfigs.findByName("upload")?.let { signingConfig = it }
             isMinifyEnabled = true
