@@ -1,6 +1,6 @@
 # Cverglan (*Ameiurus* sp.)
 
-**Porodica:** američki somovi (Ictaluridae) · **Invazivna unesena vrsta** (iz Severne Amerike)
+**Porodica američkih somova** (Ictaluridae) · **Invazivna unesena vrsta** (iz Severne Amerike)
 
 ## Izgled
 Mala, tamna riba bez krljušti, sa **osam brkova** (četiri na donjoj vilici). Ima malo masno peraje na leđima. Prvi zrak leđnog i grudnih peraja je **oštra bodlja** koja bolno uboda. Rep je zasečen ravno ili blago udubljeno. Boja je tamnosmeđa do crna, a trbuh svetliji.

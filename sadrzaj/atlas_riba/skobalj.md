@@ -1,6 +1,6 @@
 # Skobalj (*Chondrostoma nasus*)
 
-**Porodica:** šaranke (Cyprinidae) · **Domaća vrsta**
+**Porodica šarana** (Cyprinidae) · **Domaća vrsta**
 
 ## Izgled
 Izdužena riba sa tupom, istaknutom njuškom („nosom“). Ispod nje su poprečna usta sa oštrom, rožnatom donjom usnom. Leđa su sivoplava, bokovi srebrnasti, a peraja narandžastocrvena. Trbušna duplja je iznutra crna.

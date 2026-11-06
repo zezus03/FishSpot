@@ -1,6 +1,6 @@
 # Čebačok (*Pseudorasbora parva*)
 
-**Porodica:** šaranke (Cyprinidae) · **Invazivna unesena vrsta** (iz istočne Azije)
+**Porodica šarana** (Cyprinidae) · **Invazivna unesena vrsta** (iz istočne Azije)
 
 ## Izgled
 Sićušna srebrnasta riba, retko duža od 10 cm. Usta su mala i **okrenuta nagore**, a duž tela ima tamnu prugu. Krljušti imaju tamne ivice, pa telo izgleda mrežasto. Mužjaci u mrestu potamne i dobiju kvržice na glavi.

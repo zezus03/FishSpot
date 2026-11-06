@@ -1,6 +1,6 @@
 # Šljivar (*Vimba vimba*)
 
-**Porodica:** šaranke (Cyprinidae) · **Domaća vrsta** · Drugo ime: nosara
+**Porodica šarana** (Cyprinidae) · **Domaća vrsta** · Drugo ime: nosara
 
 ## Izgled
 Vitka riba sa istaknutom, mesnatom njuškom („nosom“) ispod koje su potkovičasta usta. Leđa su sivoplava, a bokovi srebrnasti. U mrestu se mužjaci jako promene: leđa i glava potamne skoro do crne, a trbuh i donja peraja postanu **narandžastocrveni**, otuda ime šljivar. Analno peraje je dugačko.

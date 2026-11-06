@@ -1,6 +1,6 @@
 # Šaran (*Cyprinus carpio*)
 
-**Porodica:** šaranke (Cyprinidae) · **Domaća vrsta**
+**Porodica šarana** (Cyprinidae) · **Domaća vrsta**
 
 ## Izgled
 Telo je zdepasto i visoko, pokriveno krupnim krljuštima. Leđa su maslinasta do tamnobronzana, bokovi zlatasti, a trbuh žućkastobeo. Na gornjoj usni ima **dva para brkova**, kratak i duži, po čemu se najlakše razlikuje od sličnih riba. Leđno peraje je dugačko, a prvi zrak mu je tvrd i nazubljen.

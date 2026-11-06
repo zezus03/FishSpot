@@ -1,6 +1,6 @@
 # Rečna školjka (*Unio* sp.)
 
-**Porodica:** slatkovodne školjke (Unionidae) · **Domaća vrsta**
+**Porodica slatkovodnih školjki** (Unionidae) · **Domaća vrsta**
 
 ## Izgled
 Školjka sa dve izdužene ljušture, obično duga 6–12 cm. Spolja je mrkozelena do smeđa, sa linijama rasta, a iznutra sedefasto bela.

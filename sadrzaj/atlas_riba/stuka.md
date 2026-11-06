@@ -1,6 +1,6 @@
 # Štuka (*Esox lucius*)
 
-**Porodica:** štuke (Esocidae) · **Domaća vrsta**
+**Porodica štuka** (Esocidae) · **Domaća vrsta**
 
 ## Izgled
 Izduženo, strelasto telo sa pljosnatom njuškom nalik pačjem kljunu. Usta su puna oštrih zuba okrenutih unazad. Leđno peraje je daleko pozadi, iznad analnog, pa riba izgleda kao strela. Boja je zelena do maslinasta, sa svetlim pegama i prugama po bokovima, odlična za skrivanje u bilju.

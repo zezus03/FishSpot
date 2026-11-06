@@ -1,6 +1,6 @@
 # Mladica (*Hucho hucho*)
 
-**Porodica:** pastrmke (Salmonidae) · **Domaća vrsta**, ugrožena
+**Porodica pastrmki** (Salmonidae) · **Domaća vrsta**, ugrožena
 
 ## Izgled
 Najveća pastrmka Dunavskog sliva, poznata i kao „dunavski losos“. Telo je dugo i valjkasto, glava velika, a usta široka i puna zuba. Leđa su tamna, zelenkastosiva, bokovi srebrni sa bakarnocrvenim odsjajem, a po telu su sitne tamne tačke, često u obliku slova X. Ima masno peraje.

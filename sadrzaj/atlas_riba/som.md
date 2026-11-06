@@ -1,6 +1,6 @@
 # Som (*Silurus glanis*)
 
-**Porodica:** somovi (Siluridae) · **Domaća vrsta**
+**Porodica somova** (Siluridae) · **Domaća vrsta**
 
 ## Izgled
 Najveća slatkovodna riba Evrope. Koža je bez krljušti, glatka i sluzava. Glava je ogromna i spljoštena, a usta široka, sa sitnim zubićima nalik turpiji. Na gornjoj vilici su **dva duga brka**, a na donjoj četiri kratka. Leđno peraje je sićušno, a analno vrlo dugačko i spaja se skoro do repa. Boja je tamna, maslinasta do crnkasta, sa mramornim šarama, a trbuh svetao.

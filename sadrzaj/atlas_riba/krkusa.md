@@ -1,6 +1,6 @@
 # Krkuša (*Gobio gobio*)
 
-**Porodica:** šaranke (Cyprinidae) · **Domaća vrsta**
+**Porodica šarana** (Cyprinidae) · **Domaća vrsta**
 
 ## Izgled
 Mala riba izduženog, valjkastog tela sa ravnim trbuhom, prilagođena životu na dnu. Usta su ispod njuške, sa **jednim parom brkova** u uglovima. Duž bokova ima niz tamnih mrlja, a leđna i repna peraja su sitno tačkasta. Boja je peskovita do zelenkastosmeđa.

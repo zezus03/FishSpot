@@ -1,6 +1,6 @@
 # Smuđ kamenjar (*Sander volgensis*)
 
-**Porodica:** grgeči (Percidae) · **Domaća vrsta**
+**Porodica grgeča** (Percidae) · **Domaća vrsta**
 
 ## Izgled
 Liči na smuđa, ali je manji i zdepastiji. **Nema izražene očnjake**, a tamne poprečne pruge na bokovima su šire i jasnije. Krljušti su krupnije, a glava kraća.

@@ -1,6 +1,6 @@
 # Potočna pastrmka (*Salmo trutta*)
 
-**Porodica:** pastrmke (Salmonidae) · **Domaća vrsta**
+**Porodica pastrmki** (Salmonidae) · **Domaća vrsta**
 
 ## Izgled
 Vitko, snažno telo sa sitnim krljuštima. Po bokovima su **crne i crvene tačke**, često okružene svetlim prstenom. Na leđima, između leđnog peraja i repa, ima malo **masno peraje** bez zrakova. Boja zavisi od vode: od zlatnožute do tamnomaslinaste.

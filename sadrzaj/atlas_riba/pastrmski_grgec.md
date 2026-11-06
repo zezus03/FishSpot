@@ -1,6 +1,6 @@
 # Pastrmski grgeč (*Micropterus salmoides*)
 
-**Porodica:** sunčanice (Centrarchidae) · **Unesena vrsta** (iz Severne Amerike) · Drugo ime: bas
+**Porodica sunčanica** (Centrarchidae) · **Unesena vrsta** (iz Severne Amerike) · Drugo ime: bas
 
 ## Izgled
 Snažno, izduženo telo zelene boje sa tamnom, isprekidanom **prugom duž bokova**. **Usta su ogromna**, a gornja vilica seže iza oka. Leđno peraje je skoro podeljeno na dva dela: prednji bodljikav i zadnji mek.

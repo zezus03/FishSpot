@@ -1,6 +1,6 @@
 # Sivi tolstolobik (*Hypophthalmichthys nobilis*)
 
-**Porodica:** šaranke (Cyprinidae) · **Unesena vrsta** (iz istočne Azije) · Drugo ime: tolstolobik glavaš
+**Porodica šarana** (Cyprinidae) · **Unesena vrsta** (iz istočne Azije) · Drugo ime: tolstolobik glavaš
 
 ## Izgled
 Ima **ogromnu glavu**, skoro trećinu dužine tela, sa širokim ustima okrenutim nagore. **Oči su nisko, ispod linije usta.** Leđa i bokovi su tamnosivi do maslinasti, sa **nepravilnim tamnim mrljama**, a trbuh svetao.

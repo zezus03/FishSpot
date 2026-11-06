@@ -1,6 +1,6 @@
 # Klen (*Squalius cephalus*)
 
-**Porodica:** šaranke (Cyprinidae) · **Domaća vrsta**
+**Porodica šarana** (Cyprinidae) · **Domaća vrsta**
 
 ## Izgled
 Telo je valjkasto i snažno, glava široka, a usta velika. Krljušti su krupne, sa tamnim ivicama, pa bokovi izgledaju „mrežasto“. Leđa su tamnozelenkasta, bokovi srebrnasti, a trbušna i analna peraja narandžastocrvena.

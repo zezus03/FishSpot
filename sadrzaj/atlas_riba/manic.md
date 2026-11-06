@@ -1,6 +1,6 @@
 # Manić (*Lota lota*)
 
-**Porodica:** manići (Lotidae) · **Domaća vrsta**
+**Porodica manića** (Lotidae) · **Domaća vrsta**
 
 ## Izgled
 Jedina slatkovodna riba iz porodice bakalara. Telo je izduženo i valjkasto, pozadi bočno spljošteno, pokriveno sitnim krljuštima i sluzi. Na bradi ima **jedan brk**. Ima dva leđna peraja: kratko i vrlo dugačko, koje ide skoro do repa. Boja je mrkozelena sa mramornim šarama.

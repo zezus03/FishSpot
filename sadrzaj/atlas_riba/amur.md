@@ -1,6 +1,6 @@
 # Amur (*Ctenopharyngodon idella*)
 
-**Porodica:** šaranke (Cyprinidae) · **Unesena vrsta** (iz istočne Azije) · Drugo ime: beli amur
+**Porodica šarana** (Cyprinidae) · **Unesena vrsta** (iz istočne Azije) · Drugo ime: beli amur
 
 ## Izgled
 Izduženo, valjkasto, „torpedo“ telo sa krupnim krljuštima koje imaju tamne ivice, pa izgleda mrežasto. **Nema brkove.** Glava je široka, usta mala, a leđno peraje kratko. Leđa su tamnozelenkasta, a bokovi zlatkastosrebrni.

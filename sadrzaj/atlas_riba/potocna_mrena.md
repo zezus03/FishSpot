@@ -1,6 +1,6 @@
 # Potočna mrena (*Barbus meridionalis*)
 
-**Porodica:** šaranke (Cyprinidae) · **Domaća vrsta** · Drugo ime: sapača
+**Porodica šarana** (Cyprinidae) · **Domaća vrsta** · Drugo ime: sapača
 
 Napomena: naučnici danas balkanske populacije često vode pod imenom *Barbus balcanicus*. U narodu je to ista riba, „potočna mrena“ ili „sapača“.
 

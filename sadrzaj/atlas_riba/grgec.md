@@ -1,6 +1,6 @@
 # Grgeč (*Perca fluviatilis*)
 
-**Porodica:** grgeči (Percidae) · **Domaća vrsta** · Drugo ime: bandar
+**Porodica grgeča** (Percidae) · **Domaća vrsta** · Drugo ime: bandar
 
 ## Izgled
 Zdepasto, malo grbavo telo sa **dva leđna peraja**. Prvo ima oštre bodlje i **crnu mrlju na kraju**. Preko zelenkastih bokova je 5–8 tamnih poprečnih pruga, a trbušna i analna peraja su jarko narandžastocrvena. Škržni poklopac ima oštar trn, pa pazi kad ga držiš.

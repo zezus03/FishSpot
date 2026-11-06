@@ -1,6 +1,6 @@
 # Sunčanica (*Lepomis gibbosus*)
 
-**Porodica:** sunčanice (Centrarchidae) · **Invazivna unesena vrsta** (iz Severne Amerike)
+**Porodica sunčanica** (Centrarchidae) · **Invazivna unesena vrsta** (iz Severne Amerike)
 
 ## Izgled
 Mala, skoro okrugla i bočno spljoštena riba jarkih boja. Trbuh je narandžastožut, bokovi zelenkasti sa plavim i narandžastim pegama, a na obrazima su **plave vijugave linije**. Na kraju škržnog poklopca ima crnu mrlju sa **crvenom tačkom**. Leđno peraje ima oštre bodlje.

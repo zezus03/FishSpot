@@ -1,6 +1,6 @@
 # Beli tolstolobik (*Hypophthalmichthys molitrix*)
 
-**Porodica:** šaranke (Cyprinidae) · **Unesena vrsta** (iz istočne Azije)
+**Porodica šarana** (Cyprinidae) · **Unesena vrsta** (iz istočne Azije)
 
 ## Izgled
 Srebrnasta riba sa sitnim krljuštima i bočno spljoštenim telom. Najlakše se prepoznaje po glavi: **oči su nisko, ispod linije usta**, a usta su okrenuta nagore, sa isturenom donjom vilicom. Na trbuhu, od grla do analnog otvora, ima oštru kobilicu.

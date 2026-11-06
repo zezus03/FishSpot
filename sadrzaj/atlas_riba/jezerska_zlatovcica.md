@@ -1,6 +1,6 @@
 # Jezerska zlatovčica (*Salvelinus umbla*)
 
-**Porodica:** pastrmke (Salmonidae) · Alpska vrsta, kod nas unesena
+**Porodica pastrmki** (Salmonidae) · Alpska vrsta, kod nas unesena
 
 ## Izgled
 Vitko telo sa sitnim krljuštima i masnim perajem. Za razliku od pastrmki, ima **svetle tačke na tamnijoj podlozi**. Trbuh je u mrestu jarko narandžastocrven, a donja peraja imaju **belu prednju ivicu**.

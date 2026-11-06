@@ -1,6 +1,6 @@
 # Ohridska pastrmka (*Salmo letnica*)
 
-**Porodica:** pastrmke (Salmonidae) · Endem Ohridskog jezera · Drugo ime: letnica
+**Porodica pastrmki** (Salmonidae) · Endem Ohridskog jezera · Drugo ime: letnica
 
 ## Izgled
 Jezerska pastrmka izduženog, srebrnastog tela. Ima **sitne tamne tačke** i malo ili nimalo crvenih tačaka. Leđa su tamnija, sivoplava do maslinasta, a trbuh srebrnobeo. Ima masno peraje kao i druge pastrmke.

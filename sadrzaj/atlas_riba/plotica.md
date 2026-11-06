@@ -1,6 +1,6 @@
 # Plotica (*Rutilus virgo*)
 
-**Porodica:** šaranke (Cyprinidae) · **Domaća vrsta**
+**Porodica šarana** (Cyprinidae) · **Domaća vrsta**
 
 ## Izgled
 Izdužena srebrnasta riba sa krupnim, sjajnim krljuštima. Peraja su narandžastocrvena, a oko crvenkasto. Usta su malo podvučena ispod njuške. U mrestu mužjaci dobijaju sitne bele kvržice po glavi i telu.

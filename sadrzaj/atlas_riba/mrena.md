@@ -1,6 +1,6 @@
 # Mrena (*Barbus barbus*)
 
-**Porodica:** šaranke (Cyprinidae) · **Domaća vrsta**
+**Porodica šarana** (Cyprinidae) · **Domaća vrsta**
 
 ## Izgled
 Telo je izduženo, sa ravnim trbuhom, kao stvoreno za dno i struju. Usta su ispod njuške, sa debelim mesnatim usnama i **dva para brkova**. Leđa su zelenkastobronzana, bokovi zlatkasti, a donja peraja crvenkasta.

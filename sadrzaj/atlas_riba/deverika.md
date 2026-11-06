@@ -1,6 +1,6 @@
 # Deverika (*Abramis brama*)
 
-**Porodica:** šaranke (Cyprinidae) · **Domaća vrsta**
+**Porodica šarana** (Cyprinidae) · **Domaća vrsta**
 
 ## Izgled
 Telo je visoko, bočno spljošteno i tanko, kao da je „pljosnata“. Glava je mala, a usta se izvlače nadole kao cevčica. Mlade deverike su srebrnaste, a starije postaju tamne, bronzane i zlatkaste. Peraja su sivkasta, a analno peraje je dugačko.

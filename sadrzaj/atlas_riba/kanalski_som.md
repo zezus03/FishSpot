@@ -1,6 +1,6 @@
 # Kanalski som (*Ictalurus punctatus*)
 
-**Porodica:** američki somovi (Ictaluridae) · **Unesena vrsta** (iz Severne Amerike)
+**Porodica američkih somova** (Ictaluridae) · **Unesena vrsta** (iz Severne Amerike)
 
 ## Izgled
 Vitkiji od domaćeg soma, bez krljušti, sa **osam brkova** i malim masnim perajem na leđima. **Rep je duboko račvast.** Boja je sivoplava do maslinasta, bokovi svetli, a mlađi primerci imaju sitne tamne tačke. Prvi zraci leđnog i grudnih peraja su oštre bodlje.

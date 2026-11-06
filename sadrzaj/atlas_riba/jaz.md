@@ -1,6 +1,6 @@
 # Jaz (*Leuciscus idus*)
 
-**Porodica:** šaranke (Cyprinidae) · **Domaća vrsta** · Drugo ime: protfiš
+**Porodica šarana** (Cyprinidae) · **Domaća vrsta** · Drugo ime: protfiš
 
 ## Izgled
 Telo je zdepasto, malo bočno spljošteno, sa sitnijim krljuštima. Leđa su tamna, sivoplava, bokovi srebrnasti do zlatasti, a trbušna i analna peraja crvenkasta. Analno peraje je **udubljeno**.

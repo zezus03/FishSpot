@@ -1,6 +1,6 @@
 # Babuška (*Carassius gibelio*)
 
-**Porodica:** šaranke (Cyprinidae) · **Invazivna unesena vrsta** (iz Azije)
+**Porodica šarana** (Cyprinidae) · **Invazivna unesena vrsta** (iz Azije)
 
 ## Izgled
 Visoko, bočno spljošteno telo sa krupnim, **srebrnastim** krljuštima. **Nema brkove.** Leđno peraje je dugačko, a prvi zrak mu je tvrd i nazubljen. Trbušna duplja je iznutra crna.
@@ -14,7 +14,7 @@ Visoko, bočno spljošteno telo sa krupnim, **srebrnastim** krljuštima. **Nema 
 Svaštojed: larve, crvići, alge, delovi biljaka, detritus sa dna, ikra drugih riba.
 
 ## Razmnožavanje
-Mresti se od **aprila do jula**, više puta godišnje, na bilju u plićaku. Ima neobičnu osobinu: u mnogim populacijama postoje **skoro samo ženke**, koje za pokretanje razvoja ikre koriste mleč drugih šaranki (šarana, deverike), a mladunci su kopije majke. Zato se babuška širi tako brzo.
+Mresti se od **aprila do jula**, više puta godišnje, na bilju u plićaku. Ima neobičnu osobinu: u mnogim populacijama postoje **skoro samo ženke**, koje za pokretanje razvoja ikre koriste mleč drugih riba iz porodice šarana (šarana, deverike), a mladunci su kopije majke. Zato se babuška širi tako brzo.
 
 ## Način pecanja
 - **Tehnike:** plovak, feeder, dubinac.

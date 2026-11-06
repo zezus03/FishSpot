@@ -1,11 +1,11 @@
 # Bucov (*Leuciscus aspius*)
 
-**Porodica:** šaranke (Cyprinidae) · **Domaća vrsta**
+**Porodica šarana** (Cyprinidae) · **Domaća vrsta**
 
 ## Izgled
 Izdužena, snažna srebrnasta riba. Usta su velika i sežu do ispod oka, a donja vilica viri ispred gornje. Nema zube u vilicama, ali ima kvržicu na donjoj vilici kojom drži plen. Leđa su sivoplava, a peraja sivkasta, ponekad crvenkasta.
 
-**Kako da ga ne pomešaš:** jedini je pravi grabljivac među našim šarankama. Klen ima šira, tupa usta i mrežaste krljušti.
+**Kako da ga ne pomešaš:** jedini je pravi grabljivac među našim ribama iz porodice šarana. Klen ima šira, tupa usta i mrežaste krljušti.
 
 ## Stanište
 Živi u velikim rekama sa strujom: Dunav, Sava, Tisa, Velika Morava, Drina. Drži se brzaka, sprudova, mesta ispod brana i svuda gde struja nosi sitnu ribu.

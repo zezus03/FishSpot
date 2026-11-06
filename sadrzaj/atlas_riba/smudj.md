@@ -1,6 +1,6 @@
 # Smuđ (*Sander lucioperca*)
 
-**Porodica:** grgeči (Percidae) · **Domaća vrsta**
+**Porodica grgeča** (Percidae) · **Domaća vrsta**
 
 ## Izgled
 Izduženo telo sa **dva leđna peraja**: prvo ima oštre bodlje, a drugo je meko. U ustima su sitni zubi i nekoliko krupnih **očnjaka**. Oči su velike i staklaste, prilagođene za slabu svetlost. Boja je sivozelenkasta, sa tamnim poprečnim prugama preko leđa, a trbuh beo.
