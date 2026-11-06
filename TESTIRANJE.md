@@ -20,10 +20,11 @@ Ovo se koristi i za odgovore na „Apply for production“ (šta su testeri prij
 | 6.11. | tester | AR merenje se ne vidi na nekim telefonima | Nije greška: telefon ne podržava ARCore (Google spisak); na Samsungu radi |
 | 6.11. | ja | Kalifornijska pastrmka se ne prepoznaje u proveri lovostaja | Popravljeno u verziji 3 |
 | 6.11. | ja | Zaštićene vrste (linjak, zlatni karaš, kečiga) mogu da se izaberu kod ulova | Popravljeno u verziji 3: ne mogu da se objave, server im ne daje poene |
+| 6.11. | tester | Predlog: prijava greške i prijava komentara iz aplikacije | „Prijavi grešku“ (mail sa podacima o telefonu) u verziji 3; prijava komentara u 1.1 |
 
 ## Verzije u testiranju
 
 | Verzija | Datum | Izmene |
 |---|---|---|
 | 2 (1.0) | 4.11.2026. | Prva verzija na Play-u (target API 36) |
-| 3 (1.0.1) | u pripremi | Popravke iz testiranja (vidi gore) |
+| 3 (1.0.1) | 6.11.2026. | Popravke iz testiranja (vidi gore) i dugme „Prijavi grešku ili predlog“ u profilu |
