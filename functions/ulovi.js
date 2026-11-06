@@ -24,8 +24,21 @@ function poeniZaUlov(tezinaKg) {
 const IZVORI_SA_POENIMA = ["aplikacija", "kamera", "poslata"];
 const BONUS_ZA_APLIKACIJU = 1.2;
 
+// Vrste u trajnoj zabrani ulova koje se mogu izabrati u aplikaciji (isto kao ZasticeneVrste.kt).
+// Ulov takve vrste ne donosi poene, pa ni bedževe, rang listu ni izazove. Ulovi pre ZASTITA_OD
+// (iz verzije 1.0, kad zaštita nije postojala) zadržavaju poene.
+const ZASTICENE_VRSTE = ["karas", "linjak", "keciga"];
+const ZASTITA_OD = Date.UTC(2026, 10, 6, 23, 0); // 7.11.2026. 00:00 po beogradskom vremenu
+
+function jeZasticenUlov(ulov) {
+    if ((ulov.timestamp ?? Date.now()) < ZASTITA_OD) return false;
+    const vrste = ulov.cuvarka === true ? (ulov.cuvarkaVrste || []).map((v) => v.id) : [ulov.vrstaId];
+    return vrste.some((id) => ZASTICENE_VRSTE.includes(id));
+}
+
 // Poeni za novi ulov (sa poljem izvorSlike); slika koja je već objavljena ne donosi poene
 function poeniZaNoviUlov(ulov) {
+    if (jeZasticenUlov(ulov)) return 0;
     if (ulov.proveraSlike?.duplikatOd) return 0;
     if (!IZVORI_SA_POENIMA.includes(ulov.izvorSlike)) return 0;
     const osnovni = poeniZaUlov(ulov.tezinaRibe ?? 0);
@@ -292,4 +305,4 @@ exports.obrisiNalog = functions.https.onCall(async (data, context) => {
     return { obrisano: true };
 });
 
-exports._interno = { nazivVrsta, poeniZaUlov, poeniZaNoviUlov, stanjePoena, dodeljeniPoeni, promeniPoene, putanjaIzLinka, PRAG_ZA_ADMINA };
+exports._interno = { nazivVrsta, jeZasticenUlov, poeniZaUlov, poeniZaNoviUlov, stanjePoena, dodeljeniPoeni, promeniPoene, putanjaIzLinka, PRAG_ZA_ADMINA };

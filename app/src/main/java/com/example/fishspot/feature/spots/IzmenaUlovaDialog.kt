@@ -127,6 +127,8 @@ fun IzmenaUlovaDialog(
     val greska = when {
         naziv.isBlank() -> "Unesi naziv mesta"
         !ribaOtkljucana -> null
+        com.example.fishspot.feature.fish.ZasticeneVrste.greska(izabranaVrsta.takeIf { !cuvarka }, if (cuvarka) vrsteCuvarke else emptyList()) != null ->
+            com.example.fishspot.feature.fish.ZasticeneVrste.greska(izabranaVrsta.takeIf { !cuvarka }, if (cuvarka) vrsteCuvarke else emptyList())
         cuvarka -> proveraCuvarke(vrsteCuvarke, tezinaBroj)
         izabranaVrsta == null -> "Izaberi vrstu ribe sa liste"
         else -> com.example.fishspot.feature.fish.OgranicenjaRibe.proveri(
@@ -245,8 +247,9 @@ fun IzmenaUlovaDialog(
                             predlozi.forEach { vrsta ->
                                 val lokalni = com.example.fishspot.feature.fish.LokalniNazivi.pogodak(vrsta.id, vrstaUnos)
                                 Text(
-                                    vrsta.prikaz + (lokalni?.let { "  ·  poznata i kao: $it" } ?: ""),
-                                    color = FishBoje.TekstPrimarni,
+                                    vrsta.prikaz + (lokalni?.let { "  ·  poznata i kao: $it" } ?: "") +
+                                        (if (com.example.fishspot.feature.fish.ZasticeneVrste.jeZasticena(vrsta.id)) "  ·  TRAJNA ZABRANA ULOVA" else ""),
+                                    color = if (com.example.fishspot.feature.fish.ZasticeneVrste.jeZasticena(vrsta.id)) FishBoje.Greska else FishBoje.TekstPrimarni,
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .clickable {

@@ -161,6 +161,7 @@ fun AddSpotScreen(
     // --- 1. INICIJALIZACIJA LOKALNOG MODELA ---
     val fishDetector = remember { FishDetector(context) }
     var showLovostajUpozorenje by remember { mutableStateOf<String?>(null) }
+    var zasticenaUpozorenje by remember { mutableStateOf<String?>(null) }
 
     // Gašenje modela kada se ekran zatvori
     DisposableEffect(Unit) {
@@ -333,6 +334,8 @@ fun AddSpotScreen(
         slike.isEmpty() -> "Dodaj fotografiju ulova"
         isValidatingFish -> "Proveravam fotografije…"
         !ribaPronadjena -> "Ni na jednoj fotografiji nije prepoznata riba"
+        com.example.fishspot.feature.fish.ZasticeneVrste.greska(izabranaVrsta.takeIf { !cuvarka }, if (cuvarka) vrsteCuvarke else emptyList()) != null ->
+            com.example.fishspot.feature.fish.ZasticeneVrste.greska(izabranaVrsta.takeIf { !cuvarka }, if (cuvarka) vrsteCuvarke else emptyList())
         cuvarka -> proveraCuvarke(vrsteCuvarke, tezinaRibe.replace(',', '.').toDoubleOrNull())
         izabranaVrsta == null -> "Izaberi vrstu ribe sa liste"
         else -> com.example.fishspot.feature.fish.OgranicenjaRibe.proveri(
@@ -623,6 +626,9 @@ fun AddSpotScreen(
                                             Text(vrsta.latinskiNaziv, color = FishBoje.Akcenat, fontSize = 12.sp,
                                                 fontStyle = FontStyle.Italic)
                                         }
+                                        if (com.example.fishspot.feature.fish.ZasticeneVrste.jeZasticena(vrsta.id)) {
+                                            Text("Trajna zabrana ulova", color = FishBoje.Greska, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                        }
                                         if (lokalni != null && !LovostajChecker.normalizujTekst(vrsta.naziv)
                                                 .startsWith(LovostajChecker.normalizujTekst(vrstaRibe))) {
                                             Text("Poznata i kao: $lokalni", color = FishBoje.TekstSekundarni, fontSize = 12.sp)
@@ -630,6 +636,14 @@ fun AddSpotScreen(
                                     }
                                 },
                                 onClick = {
+                                    // Zaštićena vrsta se ne bira: samo upozorenje da se riba pusti
+                                    if (com.example.fishspot.feature.fish.ZasticeneVrste.jeZasticena(vrsta.id)) {
+                                        zasticenaUpozorenje = com.example.fishspot.feature.fish.ZasticeneVrste.poruka(vrsta.naziv)
+                                        vrstaRibe = ""
+                                        vrstaMeniOtvoren = false
+                                        focusManager.clearFocus()
+                                        return@DropdownMenuItem
+                                    }
                                     if (cuvarka) {
                                         // Čuvarka: vrsta se dodaje na spisak, polje se prazni za sledeću
                                         if (vrsteCuvarke.none { it.id == vrsta.id } && vrsteCuvarke.size < MAKS_VRSTA_CUVARKE) {
@@ -814,6 +828,25 @@ fun AddSpotScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
         }
+    }
+
+    // --- DIJALOG ZA VRSTU U TRAJNOJ ZABRANI ULOVA ---
+    zasticenaUpozorenje?.let { poruka ->
+        AlertDialog(
+            onDismissRequest = { zasticenaUpozorenje = null },
+            containerColor = FishBoje.Kartica,
+            titleContentColor = FishBoje.TekstPrimarni,
+            textContentColor = FishBoje.TekstSekundarni,
+            icon = { Icon(Icons.Default.Warning, contentDescription = null, tint = FishBoje.Greska) },
+            title = { Text("Zaštićena vrsta", fontWeight = FontWeight.Bold) },
+            text = { Text(poruka) },
+            confirmButton = {
+                Button(
+                    onClick = { zasticenaUpozorenje = null },
+                    colors = ButtonDefaults.buttonColors(containerColor = FishBoje.Greska, contentColor = Color.White)
+                ) { Text("Razumem", fontWeight = FontWeight.Bold) }
+            }
+        )
     }
 
     // --- DIJALOG KOJI ISKAČE AKO JE LOVOSTAJ ILI ISPOD MERE ---
