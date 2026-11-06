@@ -40,6 +40,9 @@ object LokalniNazivi {
         "ljuskas" to "Divljak, golać i ljuskaš su oblici šarana.",
     )
 
+    // Svi narodni nazivi vrste (za prikaz u atlasu riba)
+    fun nazivi(vrstaId: String): List<String> = poVrsti[vrstaId].orEmpty()
+
     // Lokalni naziv vrste koji odgovara unetom tekstu ("kar" -> "karaš" za babušku), ili null
     fun pogodak(vrstaId: String, unos: String): String? {
         val trazeno = LovostajChecker.normalizujTekst(unos)

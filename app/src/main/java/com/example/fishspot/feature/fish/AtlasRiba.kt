@@ -56,7 +56,8 @@ data class VrstaAtlasa(
     val drugoIme: String,
     val status: StatusVrste,
     val uvod: String,
-    val odeljci: List<OdeljakAtlasa>
+    val odeljci: List<OdeljakAtlasa>,
+    val narodniNazivi: List<String> = emptyList()
 )
 
 object AtlasRiba {
@@ -64,6 +65,12 @@ object AtlasRiba {
 
     // Lokalna imena koja su ista riba kao vrsta u atlasu
     private val drugaImena = mapOf("bandar" to "grgec", "nosara" to "sljivar", "sapaca" to "potocna_mrena", "protfis" to "jaz")
+
+    // Id vrste u bazi (VrsteRiba), gde su i narodni nazivi, kad se razlikuje od id-a u atlasu
+    private val idUBazi = mapOf(
+        "smudj_kamenjar" to "smud-kamenjar", "cverglan" to "patuljasti-som",
+        "sljivar" to "nosara", "zlatni_karas" to "karas"
+    )
 
     fun sve(context: Context): List<VrstaAtlasa> = vrste ?: synchronized(this) {
         vrste ?: ucitaj(context).also { vrste = it }
@@ -96,6 +103,10 @@ object AtlasRiba {
                     else -> StatusVrste.DOMACA
                 },
                 uvod = o.optString("uvod"),
+                narodniNazivi = o.getString("id").let { id ->
+                    LokalniNazivi.nazivi(idUBazi[id] ?: id.replace("_", "-"))
+                        .filter { !it.equals(o.optString("drugoIme"), ignoreCase = true) && !it.equals(o.getString("naziv"), ignoreCase = true) }
+                },
                 odeljci = (0 until odeljci.length()).map { j ->
                     val od = odeljci.getJSONObject(j)
                     OdeljakAtlasa(od.getString("naslov"), od.getString("tekst"))
@@ -178,6 +189,13 @@ fun AtlasDialog(vrsta: VrstaAtlasa, onZatvori: () -> Unit) {
                     if (podaci.isNotBlank()) {
                         Spacer(Modifier.height(4.dp))
                         Text(podaci, color = FishBoje.TekstSekundarni, fontSize = 13.sp)
+                    }
+                    if (vrsta.narodniNazivi.isNotEmpty()) {
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            "Narodni nazivi: " + vrsta.narodniNazivi.joinToString(", "),
+                            color = FishBoje.TekstSekundarni, fontSize = 13.sp
+                        )
                     }
                     Spacer(Modifier.height(10.dp))
                     OznakaStatusa(vrsta.status)

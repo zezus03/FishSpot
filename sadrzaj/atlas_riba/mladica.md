@@ -3,7 +3,7 @@
 **Porodica pastrmki** (Salmonidae) · **Domaća vrsta**, ugrožena
 
 ## Izgled
-Najveća pastrmka Dunavskog sliva, poznata i kao „dunavski losos“. Telo je dugo i valjkasto, glava velika, a usta široka i puna zuba. Leđa su tamna, zelenkastosiva, bokovi srebrni sa bakarnocrvenim odsjajem, a po telu su sitne tamne tačke, često u obliku slova X. Ima masno peraje.
+Najveća pastrmka Dunavskog sliva, poznata i kao „dunavski losos“. Telo je dugo i valjkasto, glava velika, a usta široka i puna zuba. Leđa su tamna, zelenkastosiva, bokovi srebrni sa bakarnocrvenim odsjajem, a po telu su sitne tamne tačke, često u obliku slova X.
 
 **Kako da je ne pomešaš:** potočna pastrmka je mnogo manja i ima crvene tačke.
 

@@ -3,7 +3,7 @@
 **Porodica pastrmki** (Salmonidae) · **Domaća vrsta** · **TRAJNA ZABRANA ULOVA**
 
 ## Izgled
-Krupna pastrmka sa velikom glavom (otuda ime) i masnim perajem. Nema prave tačke, nego **mramorne šare**: tamne i svetle vijugave linije po celom telu, kao mermer.
+Krupna pastrmka sa velikom glavom (otuda ime). Nema prave tačke, nego **mramorne šare**: tamne i svetle vijugave linije po celom telu, kao mermer.
 
 **Kako da je ne pomešaš:** potočna pastrmka ima okrugle crne i crvene tačke, a glavatica šare kao mermer.
 

@@ -3,9 +3,9 @@
 **Porodica američkih somova** (Ictaluridae) · **Invazivna unesena vrsta** (iz Severne Amerike)
 
 ## Izgled
-Mala, tamna riba bez krljušti, sa **osam brkova** (četiri na donjoj vilici). Ima malo masno peraje na leđima. Prvi zrak leđnog i grudnih peraja je **oštra bodlja** koja bolno uboda. Rep je zasečen ravno ili blago udubljeno. Boja je tamnosmeđa do crna, a trbuh svetliji.
+Mala, tamna riba bez krljušti, sa **osam brkova** (četiri na donjoj vilici). Na leđima, ispred repa, ima malo peraje bez zrakova. Prvi zrak leđnog i grudnih peraja je **oštra bodlja** koja bolno uboda. Rep je zasečen ravno ili blago udubljeno. Boja je tamnosmeđa do crna, a trbuh svetliji.
 
-**Kako da ga ne pomešaš:** kanalski som ima duboko račvast rep i svetle bokove. Domaći som ima samo šest brkova i nema masno peraje.
+**Kako da ga ne pomešaš:** kanalski som ima duboko račvast rep i svetle bokove. Domaći som ima samo šest brkova i nema malo peraje ispred repa.
 
 ## Stanište
 Mirne, tople, muljevite vode: bare, kanali, rukavci, jezera i ribnjaci. Podnosi zagađenu vodu sa malo kiseonika.

@@ -3,7 +3,7 @@
 **Porodica pastrmki** (Salmonidae) · **Domaća vrsta**, endem sliva Vardara
 
 ## Izgled
-Vrlo je slična potočnoj pastrmki: vitko telo, sitne krljušti, masno peraje. Po bokovima ima **mnogo krupnih crnih i crvenih tačaka**, često sa svetlim prstenom, a peraja su žućkasta. Pouzdano se od potočne pastrmke razlikuje tek po genetici i poreklu.
+Vrlo je slična potočnoj pastrmki: vitko telo i sitne krljušti. Po bokovima ima **mnogo krupnih crnih i crvenih tačaka**, često sa svetlim prstenom, a peraja su žućkasta. Pouzdano se od potočne pastrmke razlikuje tek po genetici i poreklu.
 
 ## Stanište
 Prirodno živi samo u slivu reke Vardar. U Srbiji je to **sliv Pčinje** na jugu zemlje. Voli hladne, čiste brdske reke i potoke sa kamenitim dnom.

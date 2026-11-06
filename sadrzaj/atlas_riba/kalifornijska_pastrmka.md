@@ -1,9 +1,9 @@
-# Dužičasta pastrmka (*Oncorhynchus mykiss*)
+# Kalifornijska pastrmka (*Oncorhynchus mykiss*)
 
-**Porodica pastrmki** (Salmonidae) · **Unesena vrsta** (iz Severne Amerike)
+**Porodica pastrmki** (Salmonidae) · **Unesena vrsta** (iz Severne Amerike) · Drugo ime: dužičasta pastrmka
 
 ## Izgled
-Vitko telo sa **ružičastom, dugom prugom** duž bokova (otud ime „dužičasta“). Po leđima, bokovima i **repu** su sitne crne tačke. Crvenih tačaka nema. Kao i druge pastrmke ima masno peraje.
+Vitko telo sa **ružičastom, dugom prugom** duž bokova (otud drugo ime „dužičasta“). Po leđima, bokovima i **repu** su sitne crne tačke. Crvenih tačaka nema.
 
 **Kako da je ne pomešaš:** potočna pastrmka ima crvene tačke sa svetlim prstenom i nema tačke na repu.
 

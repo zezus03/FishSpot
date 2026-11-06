@@ -3,9 +3,9 @@
 **Porodica pastrmki** (Salmonidae) · Endem Ohridskog jezera · Drugo ime: letnica
 
 ## Izgled
-Jezerska pastrmka izduženog, srebrnastog tela. Ima **sitne tamne tačke** i malo ili nimalo crvenih tačaka. Leđa su tamnija, sivoplava do maslinasta, a trbuh srebrnobeo. Ima masno peraje kao i druge pastrmke.
+Jezerska pastrmka izduženog, srebrnastog tela. Ima **sitne tamne tačke** i malo ili nimalo crvenih tačaka. Leđa su tamnija, sivoplava do maslinasta, a trbuh srebrnobeo.
 
-**Kako da je ne pomešaš:** potočna pastrmka je šarenija, sa krupnim crvenim tačkama. Dužičasta ima ružičastu prugu duž tela.
+**Kako da je ne pomešaš:** potočna pastrmka je šarenija, sa krupnim crvenim tačkama. Kalifornijska pastrmka ima ružičastu prugu duž tela.
 
 ## Stanište
 Prirodno živi samo u **Ohridskom jezeru**, gde se drži dubljih, hladnih slojeva vode. Kod nas se može naći samo u vodama gde je poribljavana.

@@ -79,7 +79,10 @@ fun LovostajScreen(onNavigateBack: () -> Unit) {
     val brojULovostaju = sveStavke.count { it.status == Status.U_LOVOSTAJU }
 
     val trazeno = LovostajChecker.normalizujTekst(pretraga)
-    val filtrirano = sveStavke.filter { trazeno.isEmpty() || LovostajChecker.normalizujTekst(it.propis.naziv).contains(trazeno) }
+    val filtrirano = sveStavke.filter { s ->
+        trazeno.isEmpty() || (listOf(s.propis.naziv) + uAtlasu(s.propis.naziv)?.narodniNazivi.orEmpty())
+            .any { LovostajChecker.normalizujTekst(it).contains(trazeno) }
+    }
     val grupe = listOf(
         "U lovostaju danas" to filtrirano.filter { it.status == Status.U_LOVOSTAJU }.sortedBy { it.dana },
         "Počinje uskoro" to filtrirano.filter { it.status == Status.USKORO }.sortedBy { it.dana },
@@ -90,7 +93,7 @@ fun LovostajScreen(onNavigateBack: () -> Unit) {
     // Vrste iz atlasa koje nemaju lovostaj ni meru: zaštićene i unesene (amur, babuška, tolstolobici...)
     val saPropisom = remember { sveStavke.mapNotNull { uAtlasu(it.propis.naziv)?.id }.toSet() }
     val odgovara: (VrstaAtlasa) -> Boolean = { v ->
-        trazeno.isEmpty() || listOf(v.naziv, v.drugoIme, v.latinski).any { LovostajChecker.normalizujTekst(it).contains(trazeno) }
+        trazeno.isEmpty() || (listOf(v.naziv, v.drugoIme, v.latinski) + v.narodniNazivi).any { LovostajChecker.normalizujTekst(it).contains(trazeno) }
     }
     val zasticene = atlas.filter { it.status == StatusVrste.ZABRANA && odgovara(it) }
     val unesene = atlas.filter { it.status == StatusVrste.UNESENA && it.id !in saPropisom && odgovara(it) }

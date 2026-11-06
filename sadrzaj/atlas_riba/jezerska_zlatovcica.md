@@ -3,7 +3,7 @@
 **Porodica pastrmki** (Salmonidae) · Alpska vrsta, kod nas unesena
 
 ## Izgled
-Vitko telo sa sitnim krljuštima i masnim perajem. Za razliku od pastrmki, ima **svetle tačke na tamnijoj podlozi**. Trbuh je u mrestu jarko narandžastocrven, a donja peraja imaju **belu prednju ivicu**.
+Vitko telo sa sitnim krljuštima. Za razliku od pastrmki, ima **svetle tačke na tamnijoj podlozi**. Trbuh je u mrestu jarko narandžastocrven, a donja peraja imaju **belu prednju ivicu**.
 
 **Kako da je ne pomešaš:** pastrmke imaju tamne tačke na svetloj podlozi. Potočna zlatovčica ima crvolike šare na leđima i crvene tačke sa plavim prstenom.
 

@@ -3,7 +3,7 @@
 **Porodica pastrmki** (Salmonidae) · **Unesena vrsta** (iz Severne Amerike)
 
 ## Izgled
-Šarena riba sa sitnim krljuštima i masnim perajem. Na tamnim leđima ima svetle **crvolike šare** (kao lavirint). Na bokovima su svetle tačke i pokoja **crvena tačka sa plavim prstenom**. Donja peraja su narandžasta, sa **belom pa crnom prednjom ivicom**.
+Šarena riba sa sitnim krljuštima. Na tamnim leđima ima svetle **crvolike šare** (kao lavirint). Na bokovima su svetle tačke i pokoja **crvena tačka sa plavim prstenom**. Donja peraja su narandžasta, sa **belom pa crnom prednjom ivicom**.
 
 **Kako da je ne pomešaš:** potočna pastrmka nema crvolike šare na leđima i nema belu ivicu na perajima.
 

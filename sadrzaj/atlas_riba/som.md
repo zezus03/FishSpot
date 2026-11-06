@@ -5,7 +5,7 @@
 ## Izgled
 Najveća slatkovodna riba Evrope. Koža je bez krljušti, glatka i sluzava. Glava je ogromna i spljoštena, a usta široka, sa sitnim zubićima nalik turpiji. Na gornjoj vilici su **dva duga brka**, a na donjoj četiri kratka. Leđno peraje je sićušno, a analno vrlo dugačko i spaja se skoro do repa. Boja je tamna, maslinasta do crnkasta, sa mramornim šarama, a trbuh svetao.
 
-**Kako da ga ne pomešaš:** cverglan i kanalski som imaju osam brkova i masno peraje na leđima, i mnogo su manji.
+**Kako da ga ne pomešaš:** cverglan i kanalski som imaju osam brkova i malo peraje na leđima ispred repa, i mnogo su manji.
 
 ## Stanište
 Velike reke i akumulacije: Dunav, Sava, Tisa, Velika Morava, Đerdap, kanali i jezera. Preko dana leži u dubokim rupama („bunarima“), ispod korenja, potopljenog drveća i ruševina. Noću izlazi u plićake i na ivice struje.

@@ -3,7 +3,7 @@
 **Porodica pastrmki** (Salmonidae) · **Domaća vrsta**
 
 ## Izgled
-Vitka srebrnastosiva riba sa **velikim leđnim perajem kao jedro**, išaranim crvenim, ljubičastim i tamnim pegama. Usta su mala, a zenica oka je kruškastog oblika. Kao i pastrmke, ima masno peraje. Sveže ulovljen lipljen blago miriše na majčinu dušicu (timijan), otuda latinsko ime.
+Vitka srebrnastosiva riba sa **velikim leđnim perajem kao jedro**, išaranim crvenim, ljubičastim i tamnim pegama. Usta su mala, a zenica oka je kruškastog oblika. Sveže ulovljen lipljen blago miriše na majčinu dušicu (timijan), otuda latinsko ime.
 
 **Kako da ga ne pomešaš:** nijedna druga naša riba nema ovako veliko, šareno leđno peraje.
 

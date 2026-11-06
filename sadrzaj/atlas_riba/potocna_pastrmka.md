@@ -3,9 +3,9 @@
 **Porodica pastrmki** (Salmonidae) · **Domaća vrsta**
 
 ## Izgled
-Vitko, snažno telo sa sitnim krljuštima. Po bokovima su **crne i crvene tačke**, često okružene svetlim prstenom. Na leđima, između leđnog peraja i repa, ima malo **masno peraje** bez zrakova. Boja zavisi od vode: od zlatnožute do tamnomaslinaste.
+Vitko, snažno telo sa sitnim krljuštima. Po bokovima su **crne i crvene tačke**, često okružene svetlim prstenom. Na leđima, između leđnog peraja i repa, ima malo peraje bez zrakova, po kom se pastrmke prepoznaju. Boja zavisi od vode: od zlatnožute do tamnomaslinaste.
 
-**Kako da je ne pomešaš:** dužičasta pastrmka ima ružičastu prugu duž tela i crne tačke na repu, a nema crvene tačke. Potočna zlatovčica ima svetle tačke i crvolike šare na leđima.
+**Kako da je ne pomešaš:** kalifornijska pastrmka ima ružičastu prugu duž tela i crne tačke na repu, a nema crvene tačke. Potočna zlatovčica ima svetle tačke i crvolike šare na leđima.
 
 ## Stanište
 Hladni, čisti i kiseonikom bogati brdski i planinski potoci i reke, sa temperaturom vode retko iznad 15–16 °C: Gradac, Rzav, Mlava, Lim, gornji tokovi Ibra i Drine i mnogi potoci zapadne i jugozapadne Srbije. Drži se iza kamenja, u virovima, ispod obala i korenja.

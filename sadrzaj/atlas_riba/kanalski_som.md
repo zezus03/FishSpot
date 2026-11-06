@@ -3,9 +3,9 @@
 **Porodica američkih somova** (Ictaluridae) · **Unesena vrsta** (iz Severne Amerike)
 
 ## Izgled
-Vitkiji od domaćeg soma, bez krljušti, sa **osam brkova** i malim masnim perajem na leđima. **Rep je duboko račvast.** Boja je sivoplava do maslinasta, bokovi svetli, a mlađi primerci imaju sitne tamne tačke. Prvi zraci leđnog i grudnih peraja su oštre bodlje.
+Vitkiji od domaćeg soma, bez krljušti, sa **osam brkova** i malim perajem bez zrakova na leđima, ispred repa. **Rep je duboko račvast.** Boja je sivoplava do maslinasta, bokovi svetli, a mlađi primerci imaju sitne tamne tačke. Prvi zraci leđnog i grudnih peraja su oštre bodlje.
 
-**Kako da ga ne pomešaš:** cverglan je tamniji, manji i ima ravan rep. Domaći som ima šest brkova i nema masno peraje.
+**Kako da ga ne pomešaš:** cverglan je tamniji, manji i ima ravan rep. Domaći som ima šest brkova i nema malo peraje ispred repa.
 
 ## Stanište
 Kod nas je unesen u pojedine ribnjake, a odatle povremeno dospeva u kanale i reke. Voli toplu vodu sa peskovitim ili muljevitim dnom.

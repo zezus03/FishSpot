@@ -10,8 +10,8 @@ SIRINA = 480
 
 # Koja slika se koristi kad postoji vise (podrazumevano prva: <id>_1)
 IZBOR = {
-    "pastruga": "pastruga_3", "grgec": "grgec_bandar_1", "beli_tolstolobik": "beli_tolstolobik_1",
-    "recni_rak": "recni_rak_3", "cverglan": "cverglan_2", "sim": "sim_2",
+    "pastruga": "pastruga_3", "beli_tolstolobik": "beli_tolstolobik_1",
+    "recni_rak": "recni_rak_3",
 }
 
 def nadji(id_):

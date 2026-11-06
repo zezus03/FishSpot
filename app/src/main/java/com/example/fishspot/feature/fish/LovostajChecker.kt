@@ -32,7 +32,8 @@ object LovostajChecker {
 
         // Pastrmke i zlatovčice (Zimski lovostaj 1.10. - 1.3. ili 28.2.)
         "Potocna pastrmka" to PraviloRibe(1001, 228, 25.0),
-        "Duzicasta pastrmka" to PraviloRibe(1001, 301, 25.0),
+        "Kalifornijska pastrmka" to PraviloRibe(1001, 301, 25.0),
+        "Duzicasta pastrmka" to PraviloRibe(1001, 301, 25.0), // drugi naziv za kalifornijsku
         "Makedonska pastrmka" to PraviloRibe(1001, 301, 25.0),
         "Ohridska pastrmka" to PraviloRibe(1001, 228, 40.0),
         "Jezerska zlatovcica" to PraviloRibe(1001, 228, 25.0),
@@ -74,7 +75,7 @@ object LovostajChecker {
     // Nazivi sa kvačicama za prikaz na ekranu Lovostaj
     private val naziviZaPrikaz = mapOf(
         "Saran" to "Šaran", "Stuka" to "Štuka", "Smud" to "Smuđ", "Smud kamenjar" to "Smuđ kamenjar",
-        "Potocna pastrmka" to "Potočna pastrmka", "Duzicasta pastrmka" to "Dužičasta pastrmka",
+        "Potocna pastrmka" to "Potočna pastrmka", "Grgec" to "Grgeč",
         "Jezerska zlatovcica" to "Jezerska zlatovčica", "Potocna zlatovcica" to "Potočna zlatovčica",
         "Krkusa" to "Krkuša", "Manic" to "Manić", "Sljivar" to "Šljivar", "Potocna mrena" to "Potočna mrena",
         "Sapaca" to "Sapača", "Recna skoljka" to "Rečna školjka"
@@ -83,9 +84,12 @@ object LovostajChecker {
     // Propis za jednu vrstu, za prikaz na ekranu Lovostaj
     data class Propis(val naziv: String, val pravilo: PraviloRibe)
 
-    // Sve vrste koje imaju lovostaj ili minimalnu meru ("Protfis" je isto što i Jaz)
+    // Drugi nazivi iste ribe: služe za prepoznavanje unetog naziva, ali se na ekranu Lovostaj ne ponavljaju
+    private val drugiNazivi = setOf("Protfis", "Duzicasta pastrmka", "Bandar", "Nosara", "Sapaca")
+
+    // Sve vrste koje imaju lovostaj ili minimalnu meru
     fun sviPropisi(): List<Propis> = lovostaji
-        .filterKeys { it != "Protfis" }
+        .filterKeys { it !in drugiNazivi }
         .filterValues { it.pocetak != null || it.minimalnaDužina > 0.0 }
         .map { (kljuc, pravilo) -> Propis(naziviZaPrikaz[kljuc] ?: kljuc, pravilo) }
 
