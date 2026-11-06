@@ -1,4 +1,4 @@
-# Patuljasti somić (*Ameiurus* sp.)
+# Cverglan (*Ameiurus* sp.)
 
 **Porodica:** američki somovi (Ictaluridae) · **Invazivna unesena vrsta** (iz Severne Amerike)
 

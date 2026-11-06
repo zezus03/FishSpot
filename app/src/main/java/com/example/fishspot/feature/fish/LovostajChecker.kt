@@ -67,6 +67,7 @@ object LovostajChecker {
         "Stampajzer" to PraviloRibe(null, null, 0.0),
         // Strane vrste bez zabrane; navedene da ih ne bi uhvatila pravila za "Som" ili "Saran"
         "Patuljasti som" to PraviloRibe(null, null, 0.0),
+        "Cverglan" to PraviloRibe(null, null, 0.0),
         "Babuska" to PraviloRibe(null, null, 0.0)
     )
 

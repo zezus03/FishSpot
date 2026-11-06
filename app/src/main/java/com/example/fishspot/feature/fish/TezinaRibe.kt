@@ -54,6 +54,7 @@ object TezinaRibe {
         "Som" to Koeficijenti(0.00631, 2.99),
         "Crni patuljasti som" to Koeficijenti(0.00871, 3.12),
         "Patuljasti som" to Koeficijenti(0.00832, 3.12),
+        "Cverglan" to Koeficijenti(0.00832, 3.12),
         "Manic" to Koeficijenti(0.00537, 3.04),
         "Jegulja" to Koeficijenti(0.00095, 3.17),
         "Keciga" to Koeficijenti(0.00138, 3.28),
