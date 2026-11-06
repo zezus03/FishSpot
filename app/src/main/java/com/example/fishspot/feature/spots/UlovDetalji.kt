@@ -258,8 +258,6 @@ fun UlovDetalji(
                         bojaIkone = if (isLiked) FishBoje.Greska else FishBoje.TekstSekundarni,
                         velikoSlovo = true,
                         ikonaModifier = Modifier.scale(heartScale),
-                        // Dodir na broj otvara spisak ko je lajkovao
-                        onTekstClick = { if (spot.likedBy.isNotEmpty()) prikaziLajkove = true },
                         onClick = {
                             if (currentUserId != null) {
                                 isLiked = !isLiked
@@ -268,6 +266,12 @@ fun UlovDetalji(
                             }
                         }
                     )
+                    // Do 3 sličice poslednjih koji su lajkovali; dodir otvara ceo spisak
+                    val lajkovali = spot.likedBy.filter { it !in com.example.fishspot.feature.chat.Blokiranje.uidovi.collectAsState().value }
+                    if (lajkovali.isNotEmpty()) {
+                        Spacer(modifier = Modifier.width(6.dp))
+                        SliciceLajkova(lajkovali.takeLast(3).reversed()) { prikaziLajkove = true }
+                    }
                     Spacer(modifier = Modifier.width(8.dp))
                     Tablet(Icons.Default.ChatBubbleOutline, "${comments.size}", velikoSlovo = true)
 
@@ -820,6 +824,28 @@ private fun LajkoviDialog(uidovi: List<String>, onZatvori: () -> Unit, onKorisni
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+// Male preklopljene sličice ljudi koji su lajkovali (najnoviji prvi)
+@Composable
+private fun SliciceLajkova(uidovi: List<String>, onClick: () -> Unit) {
+    Box(
+        Modifier.clip(RoundedCornerShape(20.dp)).clickable(onClick = onClick).padding(4.dp)
+    ) {
+        uidovi.forEachIndexed { i, uid ->
+            val slika by produceState(SlikeAutora.poznata(uid), uid) { value = SlikeAutora.slika(uid) }
+            Box(
+                Modifier.padding(start = (i * 20).dp).size(30.dp).clip(CircleShape)
+                    .border(2.dp, FishBoje.Pozadina, CircleShape).background(FishBoje.Krug),
+                contentAlignment = Alignment.Center
+            ) {
+                val s = slika
+                if (s != null) coil.compose.AsyncImage(s, contentDescription = null,
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop, modifier = Modifier.fillMaxSize())
+                else Icon(Icons.Default.Favorite, null, tint = FishBoje.Greska, modifier = Modifier.size(14.dp))
             }
         }
     }
