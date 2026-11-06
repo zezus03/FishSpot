@@ -25,5 +25,5 @@ Za mrest mu treba duga, brza reka. Mresti se leti, kad voda dostigne 20 °C.
 Obično 5–20 kg. Primerak preko 30 kg je trofej, a raste i preko 40 kg.
 
 ## Lovostaj i najmanja mera
-- **Lovostaj:** nema [proveri: pravila revira]
-- **Najmanja dužina:** nema [proveri]
+- **Lovostaj:** nema
+- **Najmanja dužina:** nema
