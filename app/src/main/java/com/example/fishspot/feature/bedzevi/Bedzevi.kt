@@ -138,7 +138,7 @@ fun RedBedzeva(osvojeni: List<OsvojenBedz>, onOtvori: () -> Unit, modifier: Modi
 fun BedzeviDialog(ime: String?, osvojeni: List<OsvojenBedz>, onZatvori: () -> Unit) {
     val osvojeniIds = osvojeni.associateBy { it.id }
     val redosled = Bedzevi.svi.sortedBy { if (it.id in osvojeniIds) 0 else 1 }
-    Dialog(onDismissRequest = onZatvori, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+    Dialog(onDismissRequest = onZatvori, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
         Surface(modifier = Modifier.fillMaxSize(), color = FishBoje.Pozadina) {
             Column(Modifier.fillMaxSize().systemBarsPadding()) {
                 Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp, top = 8.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -149,12 +149,9 @@ fun BedzeviDialog(ime: String?, osvojeni: List<OsvojenBedz>, onZatvori: () -> Un
                     }
                     IconButton(onClick = onZatvori) { Icon(Icons.Default.Close, "Zatvori", tint = FishBoje.TekstPrimarni) }
                 }
-                // Na nekim telefonima prozor ide ispod donje trake sa dugmićima i poslednji bedž je bio
-                // isečen do pola, pa se ispod spiska dodaje i visina te trake
-                val donjaTraka = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
                 LazyColumn(
                     modifier = Modifier.weight(1f),
-                    contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 32.dp + donjaTraka),
+                    contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 32.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(redosled, key = { it.id }) { b ->

@@ -36,7 +36,7 @@ import java.util.Locale
 // Svi razgovori: dodir otvara razgovor, bez obzira da li je drugi pecaroš sada na mapi
 @Composable
 fun PorukeEkran(razgovori: List<Razgovor>, onOtvori: (Razgovor) -> Unit, onZatvori: () -> Unit) {
-    Dialog(onDismissRequest = onZatvori, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+    Dialog(onDismissRequest = onZatvori, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
         Surface(modifier = Modifier.fillMaxSize(), color = FishBoje.Pozadina) {
             Column(Modifier.fillMaxSize().systemBarsPadding()) {
                 Row(

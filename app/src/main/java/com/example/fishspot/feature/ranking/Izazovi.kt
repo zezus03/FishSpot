@@ -194,7 +194,7 @@ private fun IzazovDetaljiDialog(
     val ucestvujem = mojIndeks >= 0
     val mozeDaSePrijavi = !ucestvujem && System.currentTimeMillis() <= iz.doKraja
 
-    Dialog(onDismissRequest = onZatvori, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+    Dialog(onDismissRequest = onZatvori, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
         Surface(modifier = Modifier.fillMaxSize(), color = FishBoje.Pozadina) {
             Column(Modifier.fillMaxSize().systemBarsPadding()) {
                 Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp, top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -204,11 +204,9 @@ private fun IzazovDetaljiDialog(
                     }
                     IconButton(onClick = onZatvori) { Icon(Icons.Default.Close, "Zatvori", tint = FishBoje.TekstPrimarni) }
                 }
-                // Ispod spiska i visina donje trake sa dugmićima, da se vide i poslednji učesnici
                 LazyColumn(
                     modifier = Modifier.weight(1f),
-                    contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp,
-                        bottom = 32.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()),
+                    contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 32.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     if (iz.slikaUrl.isNotBlank()) item {
@@ -295,7 +293,7 @@ private fun IzazovDetaljiDialog(
 private fun UloviUcesnikaDialog(
     mesto: Int, u: UcesnikIzazova, merilo: String, onUlov: (String) -> Unit, onZatvori: () -> Unit
 ) {
-    Dialog(onDismissRequest = onZatvori, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+    Dialog(onDismissRequest = onZatvori, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
         Surface(modifier = Modifier.fillMaxSize(), color = FishBoje.Pozadina) {
             Column(Modifier.fillMaxSize().systemBarsPadding()) {
                 Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp, top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -329,8 +327,7 @@ private fun UloviUcesnikaDialog(
                 }
                 LazyColumn(
                     modifier = Modifier.weight(1f),
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp,
-                        bottom = 32.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 32.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(u.ulovi, key = { it.id }) { ulov -> RedUlova(ulov) { onUlov(ulov.id) } }

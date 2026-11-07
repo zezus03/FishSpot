@@ -1041,6 +1041,12 @@ fun MapScreen(
                         onZatvori = {
                             focusManager.clearFocus()
                             openedChatUserId = null
+                        },
+                        onProfil = {
+                            val uid = openedUser.userId
+                            focusManager.clearFocus()
+                            openedChatUserId = null
+                            if (uid.isNotBlank()) onNavigateToUloviKorisnika(uid)
                         }
                     )
                 }

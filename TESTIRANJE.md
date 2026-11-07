@@ -21,10 +21,13 @@ Ovo se koristi i za odgovore na „Apply for production“ (šta su testeri prij
 | 6.11. | ja | Kalifornijska pastrmka se ne prepoznaje u proveri lovostaja | Popravljeno u verziji 3 |
 | 6.11. | ja | Zaštićene vrste (linjak, zlatni karaš, kečiga) mogu da se izaberu kod ulova | Popravljeno u verziji 3: ne mogu da se objave, server im ne daje poene |
 | 6.11. | tester | Predlog: prijava greške i prijava komentara iz aplikacije | „Prijavi grešku“ (mail sa podacima o telefonu) u verziji 3; prijava komentara u 1.1 |
+| 7.11. | tester | I u 1.0.1 poslednji učesnik izazova je ispod donje trake (telefon sa 3 dugmeta) | Verzija 4: prozori preko celog ekrana sami ostavljaju mesto za trake (decorFitsSystemWindows) |
+| 7.11. | ja | U chatu klik na sliku sagovornika da otvori njegov profil | Verzija 4 |
 
 ## Verzije u testiranju
 
 | Verzija | Datum | Izmene |
 |---|---|---|
 | 2 (1.0) | 4.11.2026. | Prva verzija na Play-u (target API 36) |
+| 4 (1.0.2) | 7.11.2026. | Donja traka u prozorima (izazovi, bedževi, poruke), profil iz chata |
 | 3 (1.0.1) | 6.11.2026. | Popravke iz testiranja (vidi gore) i dugme „Prijavi grešku ili predlog“ u profilu |
