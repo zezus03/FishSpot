@@ -134,7 +134,7 @@ fun ZvonceObavestenja(onOtvoriUlov: (String) -> Unit, modifier: Modifier = Modif
 @Composable
 private fun ObavestenjaDialog(onZatvori: () -> Unit, onOtvoriUlov: (String) -> Unit) {
     val lista by Obavestenja.lista.collectAsState()
-    Dialog(onDismissRequest = onZatvori, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+    Dialog(onDismissRequest = onZatvori, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
         Surface(modifier = Modifier.fillMaxSize(), color = FishBoje.Pozadina) {
             Column(Modifier.fillMaxSize().systemBarsPadding()) {
                 Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 8.dp, top = 8.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -152,8 +152,7 @@ private fun ObavestenjaDialog(onZatvori: () -> Unit, onOtvoriUlov: (String) -> U
                 }
                 LazyColumn(
                     modifier = Modifier.weight(1f),
-                    contentPadding = PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp,
-                        bottom = 32.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()),
+                    contentPadding = PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 32.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     items(lista, key = { it.id }) { o -> RedObavestenja(o) { onOtvoriUlov(o.ulovId) } }

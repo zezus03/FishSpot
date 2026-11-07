@@ -168,7 +168,7 @@ fun SlicicaVrste(vrsta: VrstaAtlasa, sirina: Dp = 64.dp, onClick: () -> Unit) {
 
 @Composable
 fun AtlasDialog(vrsta: VrstaAtlasa, onZatvori: () -> Unit) {
-    Dialog(onDismissRequest = onZatvori, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+    Dialog(onDismissRequest = onZatvori, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
         Surface(modifier = Modifier.fillMaxSize(), color = FishBoje.Pozadina) {
             Column(Modifier.fillMaxSize().systemBarsPadding()) {
                 Row(
@@ -179,12 +179,11 @@ fun AtlasDialog(vrsta: VrstaAtlasa, onZatvori: () -> Unit) {
                         fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                     IconButton(onClick = onZatvori) { Icon(Icons.Default.Close, "Zatvori", tint = FishBoje.TekstPrimarni) }
                 }
-                val donjaTraka = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
                 Column(
                     Modifier
                         .weight(1f)
                         .verticalScroll(rememberScrollState())
-                        .padding(start = 16.dp, end = 16.dp, bottom = 24.dp + donjaTraka)
+                        .padding(start = 16.dp, end = 16.dp, bottom = 24.dp)
                 ) {
                     SlikaVrste(
                         vrsta.id,
