@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
@@ -40,7 +41,8 @@ fun PrivatniChat(
     poruke: List<UserMessage>,
     mojId: String?,
     onPosalji: (String) -> Unit,
-    onZatvori: () -> Unit
+    onZatvori: () -> Unit,
+    onProfil: (() -> Unit)? = null // dodir na sliku ili ime otvara profil sagovornika
 ) {
     var novaPoruka by remember { mutableStateOf("") }
     // "Na mapi u blizini" samo kad sagovornik stvarno deli lokaciju i bio je aktivan u poslednjih 5 minuta
@@ -77,6 +79,11 @@ fun PrivatniChat(
                     tint = FishBoje.TekstSekundarni, modifier = Modifier.size(20.dp))
             }
             Spacer(Modifier.width(12.dp))
+            Row(
+                modifier = Modifier.weight(1f).clip(RoundedCornerShape(12.dp))
+                    .then(if (onProfil != null) Modifier.clickable(onClick = onProfil) else Modifier),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
             Avatar(sagovornik, 44.dp)
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -87,6 +94,7 @@ fun PrivatniChat(
                     Spacer(Modifier.width(6.dp))
                     Text("na mapi u blizini", color = FishBoje.TekstSekundarni, fontSize = 13.sp)
                 }
+            }
             }
             MeniKorisnika(
                 uid = sagovornik.userId,
